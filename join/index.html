@@ -10,19 +10,34 @@
   h1 { font-size:20px; margin:0 0 8px; }
   p { color:#555; font-size:14px; margin:0 0 20px; line-height:1.5; }
   .code { font-size:32px; font-weight:800; letter-spacing:4px; color:#4F46E5; background:#EEF2FF; border-radius:12px; padding:16px; margin-bottom:20px; }
-  .hint { font-size:13px; color:#888; margin-bottom:0; }
+  .cta { display:block; background:#4F46E5; color:#fff; text-decoration:none; font-weight:700; font-size:15px; border-radius:12px; padding:14px; margin-bottom:12px; }
+  .cta:active { opacity:0.85; }
+  .hint { font-size:12px; color:#999; margin-bottom:0; }
 </style>
 </head>
 <body>
+  <!-- Reached only when the app ISN'T installed — a verified Android App Link intercepts
+       this URL before the browser ever loads it when the app IS installed (see
+       AndroidManifest.xml's autoVerify intent-filter), so this page's job is purely
+       "get the app, here's your code for after." -->
   <div class="card">
     <h1>You're invited to a quiz! 🎉</h1>
-    <p>Open the QuizCode app, tap <b>Join Quiz</b>, then enter this code:</p>
+    <p>Get the QuizCode app to join — then enter this code:</p>
     <div class="code" id="code">------</div>
-    <p class="hint">Don't have QuizCode installed yet? Ask the quiz creator for it — we're not on the Play Store just yet.</p>
+    <a class="cta" id="playStoreLink" href="https://play.google.com/store/apps/details?id=com.craftbytestudio.quizcode.learning">📲 Get QuizCode on Google Play</a>
+    <p class="hint">Not showing up yet? The app is still in testing — ask the quiz creator directly.</p>
   </div>
   <script>
     var code = new URLSearchParams(window.location.search).get('code');
-    if (code) document.getElementById('code').textContent = code.toUpperCase();
+    if (code) {
+      code = code.toUpperCase();
+      document.getElementById('code').textContent = code;
+      // Carries the code through to Play Store as a referrer, so once the app IS
+      // installed from here it can pick this same code back up automatically
+      // (Play Install Referrer API) instead of the user having to retype it.
+      var link = document.getElementById('playStoreLink');
+      link.href = link.href + '&referrer=' + encodeURIComponent('code=' + code);
+    }
   </script>
 </body>
 </html>
