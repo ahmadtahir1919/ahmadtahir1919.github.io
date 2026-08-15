@@ -72,8 +72,36 @@ function render() {
     case "quiz": return renderQuiz();
     case "finishing": return renderLoading("Submitting…");
     case "result": return renderResult();
+    case "closed": return renderClosed();
     case "error": return renderError();
   }
+}
+
+/** Leaving the flow (Done, or the X mid-quiz) never navigates anywhere — there's
+ *  no page at the site root, which is exactly what caused the 404. This just
+ *  swaps to a plain "you're done" screen; the tab itself is meant to be closed
+ *  by hand or via the Close button below (best-effort — window.close() only
+ *  actually works on tabs the browser considers script-opened; most mobile
+ *  browsers won't close a tab that was reached via a regular link tap, so the
+ *  message says so explicitly rather than promising something that may not fire). */
+function leaveQuiz(message) {
+  clearInterval(state.timerHandle);
+  state.closedMessage = message;
+  state.screen = "closed";
+  render();
+}
+
+function renderClosed() {
+  app.appendChild(
+    el("div", { class: "screen centered" }, [
+      el("div", { class: "card", style: "width:100%" }, [
+        el("p", { style: "font-size:40px;margin:0" }, ["👋"]),
+        el("h2", { class: "quiz-title" }, [state.closedMessage || "Thanks!"]),
+        el("p", { class: "muted" }, ["You can close this tab now."]),
+        el("button", { class: "primary", style: "margin-top:8px", onclick: () => window.close() }, ["Close tab"]),
+      ]),
+    ])
+  );
 }
 
 function el(tag, props, children) {
@@ -381,7 +409,7 @@ function finishQuiz() {
 
 /** Top bar: X close, title, timer chip — mirrors QuizPreviewScreen's PreviewTopBar. */
 function buildQuizTopBar(quiz, q) {
-  const closeBtn = el("button", { class: "icon-btn", onclick: () => { if (confirm("Leave this quiz? Your progress won't be saved.")) window.location.href = "/"; } }, []);
+  const closeBtn = el("button", { class: "icon-btn", onclick: () => { if (confirm("Leave this quiz? Your progress won't be saved.")) leaveQuiz("Quiz closed"); } }, []);
   closeBtn.appendChild(html(CLOSE_X_SVG));
 
   // Reserved-width slot either way, so the title stays centered whether or not
@@ -612,7 +640,7 @@ function renderResult() {
   }
 
   content.appendChild(
-    el("button", { class: "primary", style: "margin-top:8px", onclick: () => { window.location.href = "/"; } }, ["Done"])
+    el("button", { class: "primary", style: "margin-top:8px", onclick: () => leaveQuiz("Thanks for taking the quiz!") }, ["Done"])
   );
 
   app.appendChild(content);
@@ -639,6 +667,18 @@ async function boot() {
     }
     state.quiz = quiz;
     state.user = await SC.getCurrentUser();
+
+    // The Google sign-in redirect leaves an extra "in transit" history entry
+    // (this page -> Google -> back here) and a #access_token=... fragment in
+    // the address bar. Now that the session has definitely been read out of
+    // it, collapse it into a clean current URL — pressing Back later goes to
+    // wherever the user actually came from (WhatsApp's browser, the join
+    // page, …), not back into that OAuth hop, and the token stops sitting
+    // visibly in the address bar.
+    if (window.location.hash) {
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+
     state.screen = "landing";
     render();
   } catch (e) {
