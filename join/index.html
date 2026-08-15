@@ -12,6 +12,9 @@
   .code { font-size:32px; font-weight:800; letter-spacing:4px; color:#4F46E5; background:#EEF2FF; border-radius:12px; padding:16px; margin-bottom:20px; }
   .cta { display:block; background:#4F46E5; color:#fff; text-decoration:none; font-weight:700; font-size:15px; border-radius:12px; padding:14px; margin-bottom:12px; }
   .cta:active { opacity:0.85; }
+  .cta.secondary { background:#EEF0FE; color:#4F46E5; }
+  .divider { display:flex; align-items:center; gap:10px; margin:4px 0 16px; color:#bbb; font-size:12px; }
+  .divider::before, .divider::after { content:""; flex:1; height:1px; background:#eee; }
   .hint { font-size:12px; color:#999; margin-bottom:0; }
 </style>
 </head>
@@ -25,7 +28,9 @@
     <p>Get the QuizCode app to join — then enter this code:</p>
     <div class="code" id="code">------</div>
     <a class="cta" id="playStoreLink" href="https://play.google.com/store/apps/details?id=com.craftbytestudio.quizcode.learning">📲 Get QuizCode on Google Play</a>
-    <p class="hint">Not showing up yet? The app is still in testing — ask the quiz creator directly.</p>
+    <div class="divider">or</div>
+    <a class="cta secondary" id="takeInBrowserLink" href="/take/">🌐 Take it in your browser</a>
+    <p class="hint" style="margin-top:12px">Not showing up yet? The app is still in testing — ask the quiz creator directly.</p>
   </div>
   <script>
     var code = new URLSearchParams(window.location.search).get('code');
@@ -37,6 +42,7 @@
       // (Play Install Referrer API) instead of the user having to retype it.
       var link = document.getElementById('playStoreLink');
       link.href = link.href + '&referrer=' + encodeURIComponent('code=' + code);
+      document.getElementById('takeInBrowserLink').href = '/take/?code=' + encodeURIComponent(code);
     }
   </script>
 </body>
