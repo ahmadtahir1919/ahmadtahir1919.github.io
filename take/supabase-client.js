@@ -13,11 +13,11 @@ const SUPABASE_ANON_KEY = "sb_publishable_wD6qD3zEVnyYV1-TROtMgQ_XlQK9uT9";
 // very first lines destructure window.SupabaseClient, which would silently
 // throw. Catching it here and exposing the error lets app.js show it on
 // screen instead of a dead white page.
-let supabase = null;
+let supabaseClient = null;
 let initError = null;
 try {
   if (!window.supabase) throw new Error("Supabase library failed to load from CDN.");
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 } catch (e) {
   initError = e;
 }
@@ -30,19 +30,19 @@ function resolveDisplayName(user) {
 }
 
 async function getCurrentUser() {
-  const { data } = await supabase.auth.getUser();
+  const { data } = await supabaseClient.auth.getUser();
   return data?.user ?? null;
 }
 
 async function signInWithGoogle(redirectTo) {
-  return supabase.auth.signInWithOAuth({
+  return supabaseClient.auth.signInWithOAuth({
     provider: "google",
     options: { redirectTo },
   });
 }
 
 async function signOut() {
-  return supabase.auth.signOut();
+  return supabaseClient.auth.signOut();
 }
 
 // ── Quiz + questions (mirrors fetchQuizByShareCode) ──────────────────────
@@ -97,14 +97,14 @@ function effectiveStatus(quiz, now) {
 }
 
 async function fetchQuizByShareCode(code) {
-  const { data: quizRow, error } = await supabase
+  const { data: quizRow, error } = await supabaseClient
     .from("quizzes")
     .select("*")
     .eq("share_code", code)
     .maybeSingle();
   if (error || !quizRow) return null;
 
-  const { data: questionRows, error: qErr } = await supabase
+  const { data: questionRows, error: qErr } = await supabaseClient
     .from("questions")
     .select("*")
     .eq("quiz_id", quizRow.id);
@@ -123,7 +123,7 @@ async function submitAttempt(quizId, userId, score, total, answers) {
   const attemptId = crypto.randomUUID();
   const finishedAt = Date.now();
 
-  const { error: attemptErr } = await supabase.from("attempts").insert({
+  const { error: attemptErr } = await supabaseClient.from("attempts").insert({
     id: attemptId,
     quiz_id: quizId,
     user_id: userId,
@@ -144,7 +144,7 @@ async function submitAttempt(quizId, userId, score, total, answers) {
     used_hint: false,
   }));
   if (answerRows.length > 0) {
-    const { error: answersErr } = await supabase.from("attempt_answers").insert(answerRows);
+    const { error: answersErr } = await supabaseClient.from("attempt_answers").insert(answerRows);
     if (answersErr) throw answersErr;
   }
 
@@ -154,18 +154,18 @@ async function submitAttempt(quizId, userId, score, total, answers) {
 // ── Poll (mirrors pushPollState/pushPollVote/fetchPollStates/fetchPollVotes) ─
 
 async function ensurePollOpen(questionId, timeSec, noTimeLimit) {
-  const { data: existing } = await supabase.from("poll_states").select("*").eq("question_id", questionId).maybeSingle();
+  const { data: existing } = await supabaseClient.from("poll_states").select("*").eq("question_id", questionId).maybeSingle();
   if (existing) return existing;
   const openedAt = Date.now();
   const closesAt = noTimeLimit || timeSec <= 0 ? null : openedAt + timeSec * 1000;
   const row = { question_id: questionId, status: "OPEN", opened_at: openedAt, closes_at: closesAt };
-  const { error } = await supabase.from("poll_states").upsert(row);
+  const { error } = await supabaseClient.from("poll_states").upsert(row);
   if (error) throw error;
   return row;
 }
 
 async function fetchPollVotes(questionId) {
-  const { data, error } = await supabase.from("poll_votes").select("*").eq("question_id", questionId);
+  const { data, error } = await supabaseClient.from("poll_votes").select("*").eq("question_id", questionId);
   if (error) return [];
   return (data || []).map((r) => ({
     questionId: r.question_id,
@@ -188,12 +188,12 @@ async function castPollVote(vote) {
     updated_at: Date.now(),
     participant_id: vote.participantId,
   };
-  const { error } = await supabase.from("poll_votes").upsert(row);
+  const { error } = await supabaseClient.from("poll_votes").upsert(row);
   if (error) throw error;
 }
 
 window.SupabaseClient = {
-  supabase,
+  supabase: supabaseClient,
   initError,
   getCurrentUser,
   resolveDisplayName,
