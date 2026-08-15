@@ -88,6 +88,30 @@ function el(tag, props, children) {
   return node;
 }
 
+/** Fragment from an HTML string — used for the small inline SVG icons below. */
+function html(markup) {
+  const t = document.createElement("template");
+  t.innerHTML = markup.trim();
+  return t.content.firstChild;
+}
+
+// Official 4-color Google "G" — same colors as LoginScreen.kt's GoogleGLogo
+// (#EA4335 red, #FBBC05 yellow, #34A853 green, #4285F4 blue).
+const GOOGLE_G_SVG = `
+<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+  <path fill="#4285F4" d="M19.6 10.23c0-.68-.06-1.36-.18-2.02H10v3.83h5.38a4.6 4.6 0 0 1-2 3.02v2.5h3.23c1.9-1.75 2.99-4.33 2.99-7.33z"/>
+  <path fill="#34A853" d="M10 20c2.7 0 4.96-.89 6.62-2.42l-3.23-2.5c-.9.6-2.05.95-3.39.95-2.6 0-4.8-1.76-5.59-4.12H1.06v2.59A10 10 0 0 0 10 20z"/>
+  <path fill="#FBBC05" d="M4.41 11.9a5.99 5.99 0 0 1 0-3.8V5.51H1.06a10 10 0 0 0 0 8.98l3.35-2.6z"/>
+  <path fill="#EA4335" d="M10 3.98c1.47 0 2.79.5 3.83 1.5l2.87-2.87A9.6 9.6 0 0 0 10 0 10 10 0 0 0 1.06 5.51l3.35 2.59C5.2 5.74 7.4 3.98 10 3.98z"/>
+</svg>`;
+
+const CHECK_SVG = `<svg viewBox="0 0 20 20" fill="none"><path d="M4 10.5l4 4 8-9" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const CLOSE_X_SVG = `<svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
+const CLOCK_SVG = `<svg viewBox="0 0 20 20" fill="none" width="13" height="13"><circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="1.6"/><path d="M10 6v4l2.6 2.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+const CHEVRON_RIGHT_SVG = `<svg viewBox="0 0 16 16" fill="none" width="14" height="14"><path d="M6 3l5 5-5 5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const CHEVRON_DOWN_SVG = `<svg viewBox="0 0 16 16" fill="none" width="14" height="14"><path d="M4 6l4 4 4-4" stroke="#BBBACC" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const TROPHY_SVG = `<svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M7 4h10v4a5 5 0 01-10 0V4z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/><path d="M7 6H4a3 3 0 003 3M17 6h3a3 3 0 01-3 3" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/><path d="M12 13v3M9 20h6M9.5 20c0-2 .8-3 2.5-3s2.5 1 2.5 3" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
 function renderLoading(label) {
   app.appendChild(
     el("div", { class: "screen centered" }, [
@@ -129,19 +153,21 @@ function renderLanding() {
   }
 
   if (!state.user) {
+    const googleBtn = el(
+      "button",
+      {
+        class: "google",
+        onclick: async () => {
+          const redirectTo = `${window.location.origin}${window.location.pathname}?code=${shareCode}`;
+          await SC.signInWithGoogle(redirectTo);
+        },
+      },
+      ["Sign in with Google"]
+    );
+    googleBtn.prepend(html(GOOGLE_G_SVG));
     body.push(
       el("p", { class: "muted" }, ["Sign in with Google to take this quiz — your result is saved to your account, same as the app."]),
-      el(
-        "button",
-        {
-          class: "google",
-          onclick: async () => {
-            const redirectTo = `${window.location.origin}${window.location.pathname}?code=${shareCode}`;
-            await SC.signInWithGoogle(redirectTo);
-          },
-        },
-        ["Sign in with Google"]
-      )
+      googleBtn
     );
   } else {
     body.push(
@@ -201,13 +227,32 @@ function startTimer() {
   }, 1000);
 }
 
+function formatSeconds(total) {
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  if (m > 0) return `${m}m ${String(s).padStart(2, "0")}s`;
+  return `${s}s`;
+}
+
+/** Mirrors QuizPreviewScreen's TimerChip (top bar) + TimerProgressBar (above the
+ *  bottom bar) — both update every tick without a full re-render. */
 function updateTimerDisplay() {
-  const timerEl = document.getElementById("timer-display");
-  const fillEl = document.getElementById("timer-fill");
-  if (!timerEl || state.totalTimeSec <= 0) return;
-  timerEl.textContent = `${state.secondsRemaining}s`;
-  timerEl.className = "timer" + (state.secondsRemaining <= 10 ? " low" : "");
-  if (fillEl) fillEl.style.width = `${(state.secondsRemaining / state.totalTimeSec) * 100}%`;
+  if (state.totalTimeSec <= 0) return;
+  const urgent = state.secondsRemaining <= 10;
+  const chip = document.getElementById("timer-chip");
+  if (chip) {
+    chip.textContent = "";
+    chip.appendChild(html(CLOCK_SVG));
+    chip.appendChild(document.createTextNode(" " + formatSeconds(state.secondsRemaining)));
+    chip.className = "timer-chip" + (urgent ? " urgent" : "");
+  }
+  const fill = document.getElementById("timer-fill");
+  if (fill) {
+    fill.style.width = `${(state.secondsRemaining / state.totalTimeSec) * 100}%`;
+    fill.style.background = urgent ? "#EF4444" : "var(--accent)";
+  }
 }
 
 function toggleAnswer(optionIndex) {
@@ -334,96 +379,243 @@ function finishQuiz() {
     });
 }
 
+/** Top bar: X close, title, timer chip — mirrors QuizPreviewScreen's PreviewTopBar. */
+function buildQuizTopBar(quiz, q) {
+  const closeBtn = el("button", { class: "icon-btn", onclick: () => { if (confirm("Leave this quiz? Your progress won't be saved.")) window.location.href = "/"; } }, []);
+  closeBtn.appendChild(html(CLOSE_X_SVG));
+
+  // Reserved-width slot either way, so the title stays centered whether or not
+  // this question has a timer.
+  const right = q.timeSec > 0
+    ? el("div", { id: "timer-chip", class: "timer-chip" }, [])
+    : el("div", { style: "width:36px" }, []);
+
+  return el("div", { class: "quiz-topbar" }, [closeBtn, el("span", { class: "title" }, [quiz.title]), right]);
+}
+
+function buildQuestionProgressBar(quiz) {
+  const pct = ((state.currentIndex + 1) / quiz.questions.length) * 100;
+  return el("div", { class: "progress-track" }, [el("div", { class: "progress-fill", style: `width:${pct}%` })]);
+}
+
+/** Bottom action bar: timer progress bar pinned above it, Skip + Next — mirrors
+ *  QuizPreviewScreen's PreviewBottomBar. */
+function buildBottomBar(q, isLastQuestion, onSkipFn, onNextFn) {
+  const rows = [];
+  if (q.timeSec > 0) {
+    rows.push(
+      el("div", { class: "progress-track" }, [
+        el("div", { id: "timer-fill", class: "progress-fill", style: `width:${(state.secondsRemaining / state.totalTimeSec) * 100}%` }),
+      ])
+    );
+  }
+  const disabled = !!state.instantFeedback;
+  const nextBtn = el("button", { class: "next-btn", onclick: onNextFn }, []);
+  if (disabled) nextBtn.disabled = true;
+  nextBtn.appendChild(document.createTextNode(isLastQuestion ? "Finish" : "Next"));
+  nextBtn.appendChild(html(CHEVRON_RIGHT_SVG));
+
+  const skipBtn = el("button", { class: "skip-link", onclick: onSkipFn }, ["Skip"]);
+  if (disabled) skipBtn.disabled = true;
+
+  rows.push(el("div", { class: "bar-row" }, [skipBtn, nextBtn]));
+  return el("div", { class: "quiz-bottombar" }, rows);
+}
+
 function renderQuiz() {
   const q = currentQuestion();
   const quiz = state.quiz;
   const accent = themeColorFromName(quiz.themeColorName);
   document.documentElement.style.setProperty("--accent", accent);
+  const isLastQuestion = state.currentIndex === quiz.questions.length - 1;
+
+  const wrapper = el("div", { style: "display:flex;flex-direction:column;min-height:100%" }, [
+    buildQuizTopBar(quiz, q),
+    buildQuestionProgressBar(quiz),
+  ]);
 
   if (q.type === "POLL" || q.type === "FILL_BLANK") {
-    app.appendChild(
-      el("div", { class: "screen" }, [
-        el("div", { class: "progress-track" }, [el("div", { class: "progress-fill", style: `width:${((state.currentIndex + 1) / quiz.questions.length) * 100}%` })]),
+    wrapper.appendChild(
+      el("div", { class: "screen", style: "flex:1" }, [
         el("div", { class: "card" }, [
           el("p", { class: "quiz-meta" }, [`Question ${state.currentIndex + 1} of ${quiz.questions.length}`]),
           el("p", { class: "question-text" }, [q.text]),
           el("p", { class: "muted" }, ["This question type isn't available in the browser yet — open it in the QuizCode app, or skip it here."]),
         ]),
-        el("button", { class: "primary", onclick: onNext }, ["Skip"]),
       ])
     );
+    wrapper.appendChild(buildBottomBar(q, isLastQuestion, onNext, onNext));
+    app.appendChild(wrapper);
     return;
   }
 
-  const progress = el("div", { class: "progress-track" }, [
-    el("div", { class: "progress-fill", style: `width:${((state.currentIndex + 1) / quiz.questions.length) * 100}%` }),
+  const questionArea = el("div", { class: "screen no-pad-top", style: "flex:1" }, [
+    el("div", { class: "card" }, [el("p", { class: "question-text" }, [q.text])]),
   ]);
-
-  const header = el("div", { class: "topbar" }, [
-    el("div", {}, [
-      el("p", { class: "quiz-meta" }, [`Question ${state.currentIndex + 1} of ${quiz.questions.length}`]),
-      q.timeSec > 0 ? el("span", { id: "timer-display", class: "timer" }, [`${state.secondsRemaining}s`]) : el("span", {}, []),
-    ]),
-  ]);
-
-  const questionCard = el("div", { class: "card" }, [el("p", { class: "question-text" }, [q.text])]);
-
-  const answerArea = el("div", { class: "screen", style: "padding-top:0" }, []);
 
   if (state.instantFeedback) {
     const fb = state.instantFeedback;
-    answerArea.appendChild(
-      el("div", { class: "feedback-banner " + (fb.isCorrect ? "correct" : "wrong") }, [fb.isCorrect ? "Correct!" : "Not quite"])
+    questionArea.appendChild(
+      el("div", { class: "feedback-banner " + (fb.isCorrect ? "correct" : "wrong") }, [fb.isCorrect ? "✓ Correct!" : "✗ Not quite"])
     );
     if (!fb.isCorrect && fb.correctWrittenAnswer) {
-      answerArea.appendChild(el("p", { class: "muted" }, [`Correct answer: ${fb.correctWrittenAnswer}`]));
+      questionArea.appendChild(el("p", { class: "muted" }, [`Correct answer: ${fb.correctWrittenAnswer}`]));
+    }
+    // Also color the option rows themselves while feedback is showing.
+    if (q.options && fb.correctOptionIndices) {
+      q.options.forEach((optText, i) => {
+        const wasSelected = state.selectedAnswers.has(String(i));
+        const isCorrectOpt = fb.correctOptionIndices.has(i);
+        const cls = isCorrectOpt ? "correct" : wasSelected ? "wrong" : "";
+        const row = el("div", { class: "option-row" + (cls ? " " + cls : "") }, [
+          el("div", { class: "option-marker" + (q.type === "MULTIPLE_CORRECT" ? " square" : "") }, isCorrectOpt || wasSelected ? [html(CHECK_SVG)] : []),
+          el("span", {}, [optText]),
+        ]);
+        questionArea.appendChild(row);
+      });
     }
   } else if (q.type === "WRITTEN") {
-    answerArea.appendChild(
+    questionArea.appendChild(
       el("textarea", {
         rows: "4",
         placeholder: "Type your answer…",
         oninput: (e) => { state.writtenAnswer = e.target.value; },
       }, [])
     );
-    answerArea.appendChild(el("button", { class: "primary", onclick: onNext }, ["Next"]));
   } else {
     (q.options || []).forEach((optText, i) => {
       const selected = state.selectedAnswers.has(String(i));
-      const isTF = q.type === "TRUE_FALSE";
-      answerArea.appendChild(
+      const markerShape = q.type === "MULTIPLE_CORRECT" ? " square" : "";
+      questionArea.appendChild(
         el("div", { class: "option-row" + (selected ? " selected" : ""), onclick: () => toggleAnswer(i) }, [
-          el("div", { class: "option-marker" + (q.type === "MULTIPLE_CORRECT" ? " square" : "") }, []),
+          el("div", { class: "option-marker" + markerShape }, selected ? [html(CHECK_SVG)] : []),
           el("span", {}, [optText]),
         ])
       );
     });
-    answerArea.appendChild(el("button", { class: "primary", onclick: onNext }, ["Next"]));
   }
 
-  app.appendChild(el("div", {}, [header, progress, el("div", { class: "screen" }, [questionCard]), answerArea]));
+  wrapper.appendChild(questionArea);
+  wrapper.appendChild(buildBottomBar(q, isLastQuestion, onNext, onNext));
+  app.appendChild(wrapper);
   updateTimerDisplay();
+}
+
+const expandedReviews = new Set();
+
+/** Mirrors ResultScreen.kt's ScoreCard — same gradient, trophy badge, big score +
+ *  accuracy%, and progress track. accuracy/passed use the same formula as
+ *  ResultUiState (accuracy = floor(score*100/total), passed = accuracy >= 60). */
+function buildScoreCard(score, total) {
+  const accuracy = total > 0 ? Math.floor((score * 100) / total) : 0;
+  const passed = accuracy >= 60;
+
+  const badge = el("div", { class: "badge" }, []);
+  badge.appendChild(html(TROPHY_SVG));
+
+  const card = el("div", { class: "score-card" }, [
+    el("div", { class: "row-top" }, [
+      badge,
+      el("div", {}, [
+        el("div", { class: "label" }, ["YOUR SCORE"]),
+        el("div", { class: "status" }, [passed ? "Passed" : "Not passed"]),
+      ]),
+    ]),
+    el("div", { class: "numbers" }, [
+      el("div", { style: "display:flex;align-items:flex-end" }, [
+        el("span", { class: "score-big" }, [String(score)]),
+        el("span", { class: "score-total" }, [` / ${total}`]),
+      ]),
+      el("div", {}, [
+        el("div", { class: "accuracy-num" }, [`${accuracy}%`]),
+        el("div", { class: "accuracy-label" }, ["ACCURACY"]),
+      ]),
+    ]),
+    el("div", { class: "track" }, [el("div", { class: "fill", style: `width:${accuracy}%` })]),
+  ]);
+  return card;
+}
+
+/** Mirrors ResultScreen.kt's ReviewCard: colored left accent, Q# pill, question
+ *  text, expands to show the options (or written comparison) with correct/wrong
+ *  highlighting. */
+function buildReviewCard(answer, index) {
+  const q = state.quiz.questions.find((qq) => qq.id === answer.questionId);
+  if (!q) return null;
+  const isCorrect = answer.isCorrect;
+  const expanded = expandedReviews.has(answer.questionId);
+
+  const accent = el("div", { class: "review-accent " + (isCorrect ? "correct" : "wrong") }, []);
+  const meta = el("div", { class: "review-meta" }, [
+    el("span", { class: "q-pill " + (isCorrect ? "correct" : "wrong") }, [`Q${index + 1}`]),
+    el("span", { class: "muted" }, [`⏱ ${answer.timeTakenSec}s`]),
+  ]);
+  const header = el(
+    "div",
+    { class: "review-header", onclick: () => { expandedReviews.has(q.id) ? expandedReviews.delete(q.id) : expandedReviews.add(q.id); render(); } },
+    [accent, el("div", { style: "flex:1" }, [meta, el("div", { class: "review-question" }, [q.text])])]
+  );
+  header.appendChild(html(CHEVRON_DOWN_SVG));
+
+  const card = el("div", { class: "review-card" }, [header]);
+
+  if (expanded) {
+    const bodyEl = el("div", { class: "review-body" }, []);
+    if (q.type === "WRITTEN") {
+      const given = answer.givenAnswers[0] || "";
+      bodyEl.appendChild(reviewLine("CORRECT ANSWER", q.writtenAnswer || "", "#22C55E"));
+      bodyEl.appendChild(reviewLine("YOUR ANSWER", given || "(no answer)", isCorrect ? "#22C55E" : "#EF4444"));
+    } else {
+      (q.options || []).forEach((opt) => {
+        const wasGiven = answer.givenAnswers.includes(opt);
+        const isCorrectOpt = (q.correctAnswers || []).includes(opt);
+        const cls = isCorrectOpt ? "correct" : wasGiven ? "wrong" : "";
+        bodyEl.appendChild(
+          el("div", { class: "option-row" + (cls ? " " + cls : ""), style: "cursor:default" }, [
+            el("div", { class: "option-marker" }, isCorrectOpt || wasGiven ? [html(CHECK_SVG)] : []),
+            el("span", {}, [opt]),
+          ])
+        );
+      });
+    }
+    card.appendChild(bodyEl);
+  }
+  return card;
+}
+
+function reviewLine(label, text, color) {
+  return el("div", { class: "review-answer-line", style: `border-left-color:${color}` }, [
+    el("span", { class: "rline-label", style: `color:${color}` }, [label]),
+    el("span", {}, [text]),
+  ]);
 }
 
 function renderResult() {
   const quiz = state.quiz;
   const accent = themeColorFromName(quiz.themeColorName);
   document.documentElement.style.setProperty("--accent", accent);
-  const { score, total } = state.result;
+  const { score, total, answers } = state.result;
 
-  const body = [
-    el("div", { class: "score-circle" }, [
-      el("span", { class: "score" }, [`${score}/${total}`]),
-      el("span", { class: "total" }, ["score"]),
-    ]),
-    el("h2", { class: "quiz-title", style: "text-align:center" }, [quiz.title]),
-  ];
+  const content = el("div", { class: "screen" }, [
+    el("h2", { class: "quiz-title", style: "text-align:center;margin:4px 0 0" }, [quiz.title]),
+    buildScoreCard(score, total),
+  ]);
 
   if (!quiz.showResult) {
-    body.push(el("p", { class: "muted", style: "text-align:center" }, ["Results are hidden for this quiz — check with the quiz creator."]));
+    content.appendChild(el("p", { class: "muted", style: "text-align:center" }, ["Results are hidden for this quiz — check with the quiz creator."]));
+  } else if (quiz.showAnswers) {
+    content.appendChild(el("p", { class: "muted", style: "font-weight:700;letter-spacing:0.6px" }, ["ANSWER REVIEW"]));
+    answers.forEach((a, i) => {
+      const card = buildReviewCard(a, i);
+      if (card) content.appendChild(card);
+    });
   }
 
-  app.appendChild(el("div", { class: "screen centered" }, [el("div", { class: "card" }, body)]));
+  content.appendChild(
+    el("button", { class: "primary", style: "margin-top:8px", onclick: () => { window.location.href = "/"; } }, ["Done"])
+  );
+
+  app.appendChild(content);
 }
 
 // ── Boot ───────────────────────────────────────────────────────────────────
