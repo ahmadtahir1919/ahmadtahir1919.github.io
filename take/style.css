@@ -1,22 +1,22 @@
-/* Ported from app/src/main/java/.../ui/theme/Color.kt and QuizThemeColors.kt —
-   keep these in sync with that file if the app's palette ever changes. */
+/* Ported from app/src/main/java/.../ui/theme/Color.kt, QuizThemeColors.kt, and the
+   actual component styles in LoginScreen.kt / QuizPreviewScreen.kt / ResultScreen.kt —
+   keep these in sync if those change. */
 :root {
   --primary: #5B4FE8;
-  --primary-tint: #EEF0FE;
+  --primary-container: #E0E7FF;
   --background: #F7F8FA;
   --surface: #FFFFFF;
-  --text-primary: #111827;
-  --text-secondary: #6B7280;
+  --text-primary: #1C1B1F;
+  --text-secondary: #6B6880;
   --icon-gray: #9CA3AF;
-  --chip-bg: #F3F4F6;
-  --chip-text: #4B5563;
-  --divider: #F1F2F4;
+  --divider: #F0EFF8;
   --border-light: #E0E0F5;
+  --success: #22C55E;
   --success-bg: #ECFDF5;
-  --success-border: #A7F3D0;
-  --success-text: #047857;
-  --error: #DC2626;
-  /* Per-quiz accent — overridden inline via QUIZ_THEME_COLORS lookup once a quiz loads. */
+  --error: #EF4444;
+  --error-bg: #FEF2F2;
+  --timer-track: #E8E7F8;
+  /* Per-quiz accent — set inline once a quiz loads, via QUIZ_THEME_COLORS. */
   --accent: var(--primary);
 }
 
@@ -30,6 +30,9 @@ body {
   min-height: 100vh;
 }
 
+/* Mobile: a single edge-to-edge column, same as the app. Desktop (see media query
+   below): the same column becomes a centered, elevated "device" card over a soft
+   decorative background, instead of stretching into a bare strip of white. */
 #app {
   max-width: 480px;
   margin: 0 auto;
@@ -39,18 +42,17 @@ body {
   flex-direction: column;
 }
 
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px 20px;
-  position: relative;
-}
-.topbar h1 {
-  font-size: 17px;
-  font-weight: 700;
-  margin: 0;
-  color: var(--text-primary);
+@media (min-width: 640px) {
+  body {
+    background: linear-gradient(160deg, var(--background) 0%, color-mix(in srgb, var(--accent) 10%, var(--background)) 100%);
+    padding: 40px 16px;
+  }
+  #app {
+    min-height: min(860px, calc(100vh - 80px));
+    border-radius: 28px;
+    box-shadow: 0 30px 80px rgba(17, 24, 39, 0.18), 0 2px 8px rgba(17, 24, 39, 0.06);
+    overflow: hidden;
+  }
 }
 
 .screen {
@@ -60,15 +62,12 @@ body {
   padding: 20px;
   gap: 16px;
 }
-.screen.centered {
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-}
+.screen.centered { align-items: center; justify-content: center; text-align: center; }
+.screen.no-pad-top { padding-top: 0; }
 
 .card {
   background: var(--surface);
-  border-radius: 18px;
+  border-radius: 20px;
   padding: 24px 20px;
   box-shadow: 0 2px 12px rgba(17, 24, 39, 0.06);
 }
@@ -87,7 +86,15 @@ body {
 .quiz-title { font-size: 22px; font-weight: 800; margin: 8px 0 4px; }
 .quiz-meta { font-size: 13px; color: var(--text-secondary); }
 
+/* ── Buttons ──────────────────────────────────────────────────────────── */
+
+button { font-family: inherit; }
+
 button.primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   background: var(--accent);
   color: #fff;
   border: none;
@@ -99,56 +106,94 @@ button.primary {
   width: 100%;
 }
 button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
-button.primary:active:not(:disabled) { opacity: 0.85; }
+button.primary:active:not(:disabled) { transform: scale(0.98); }
 
+/* Real-app treatment (LoginScreen.kt's GoogleSignInButton): white surface, soft
+   border+shadow, official 4-color "G" glyph — not a plain grey text button. */
 button.google {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 12px;
   background: #fff;
   color: var(--text-primary);
-  border: 1.5px solid var(--border-light);
-  border-radius: 100px;
-  padding: 13px 20px;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 16px;
+  padding: 15px 20px;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   width: 100%;
+  box-shadow: 0 1px 6px rgba(17, 24, 39, 0.08);
 }
-button.google img { width: 18px; height: 18px; }
+button.google:active { transform: scale(0.98); }
+button.google svg { width: 20px; height: 20px; flex-shrink: 0; }
 
 button.text-link {
   background: none;
   border: none;
-  color: var(--accent);
-  font-weight: 600;
-  font-size: 14px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: 15px;
   cursor: pointer;
   padding: 8px;
 }
 
+/* ── In-quiz top chrome ───────────────────────────────────────────────── */
+
+.quiz-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+}
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.quiz-topbar .title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.timer-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 20px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--primary-container);
+  color: var(--accent);
+  transition: background 0.4s ease, color 0.4s ease;
+}
+.timer-chip.urgent { background: #FDE2E1; color: #DC2626; }
+
 .progress-track {
-  height: 6px;
-  border-radius: 100px;
-  background: var(--divider);
-  overflow: hidden;
+  height: 4px;
+  background: #D9D7F5;
 }
 .progress-fill {
   height: 100%;
   background: var(--accent);
-  transition: width 0.2s ease;
+  transition: width 0.3s ease;
 }
 
-.timer {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-secondary);
-}
-.timer.low { color: var(--error); }
+/* ── Question + options ──────────────────────────────────────────────── */
 
 .question-text {
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 700;
   line-height: 1.4;
   color: var(--text-primary);
@@ -166,12 +211,9 @@ button.text-link {
   font-size: 15px;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
-.option-row.selected {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
-}
-.option-row.correct { border-color: var(--success-text); background: var(--success-bg); }
-.option-row.wrong { border-color: var(--error); background: #FEF2F2; }
+.option-row.selected { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+.option-row.correct { border-color: var(--success); background: var(--success-bg); }
+.option-row.wrong { border-color: var(--error); background: var(--error-bg); }
 
 .option-marker {
   width: 22px;
@@ -179,9 +221,16 @@ button.text-link {
   border-radius: 50%;
   border: 2px solid var(--icon-gray);
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.option-row.selected .option-marker { border-color: var(--accent); background: var(--accent); }
+.option-row.selected .option-marker,
+.option-row.correct .option-marker { border-color: var(--accent); background: var(--accent); }
+.option-row.correct .option-marker { border-color: var(--success); background: var(--success); }
+.option-row.wrong .option-marker { border-color: var(--error); background: var(--error); }
 .option-marker.square { border-radius: 6px; }
+.option-marker svg { width: 13px; height: 13px; }
 
 textarea, input[type="text"], input[type="email"] {
   width: 100%;
@@ -201,22 +250,87 @@ textarea:focus, input:focus { outline: none; border-color: var(--accent); }
   font-weight: 700;
   text-align: center;
 }
-.feedback-banner.correct { background: var(--success-bg); color: var(--success-text); border: 1.5px solid var(--success-border); }
-.feedback-banner.wrong { background: #FEF2F2; color: var(--error); border: 1.5px solid #FECACA; }
+.feedback-banner.correct { background: var(--success-bg); color: #16A34A; border: 1.5px solid #A7F3D0; }
+.feedback-banner.wrong { background: var(--error-bg); color: #DC2626; border: 1.5px solid #FECACA; }
 
-.score-circle {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  border: 8px solid var(--accent);
+/* ── Bottom action bar (pinned, same shape as PreviewBottomBar) ──────── */
+
+.quiz-bottombar {
+  background: var(--surface);
+  box-shadow: 0 -4px 16px rgba(17, 24, 39, 0.06);
+}
+.quiz-bottombar .bar-row {
   display: flex;
   align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  margin: 0 auto;
+  justify-content: space-between;
+  padding: 14px 24px;
 }
-.score-circle .score { font-size: 32px; font-weight: 800; }
-.score-circle .total { font-size: 13px; color: var(--text-secondary); }
+.skip-link { color: var(--text-secondary); font-weight: 500; font-size: 15px; background: none; border: none; cursor: pointer; padding: 8px; }
+.next-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 100px;
+  padding: 14px 28px;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+}
+.next-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Result screen ────────────────────────────────────────────────────── */
+
+.score-card {
+  width: 100%;
+  border-radius: 20px;
+  padding: 20px;
+  background: linear-gradient(135deg, #7C6FF7, #4834D4);
+  color: #fff;
+}
+.score-card .row-top { display: flex; align-items: center; gap: 12px; }
+.score-card .badge {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: rgba(255,255,255,0.18);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+}
+.score-card .label { font-size: 11px; letter-spacing: 0.8px; color: rgba(255,255,255,0.7); text-transform: uppercase; }
+.score-card .status { font-weight: 500; color: #fff; }
+.score-card .numbers { display: flex; align-items: flex-end; justify-content: space-between; margin-top: 20px; }
+.score-card .score-big { font-size: 48px; font-weight: 800; line-height: 1; }
+.score-card .score-total { font-size: 20px; color: rgba(255,255,255,0.65); }
+.score-card .accuracy-num { font-size: 32px; font-weight: 800; text-align: right; }
+.score-card .accuracy-label { font-size: 11px; color: rgba(255,255,255,0.7); text-align: right; }
+.score-card .track { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.22); margin-top: 14px; overflow: hidden; }
+.score-card .fill { height: 100%; background: #fff; border-radius: 3px; transition: width 0.9s ease; }
+
+.review-card {
+  background: var(--surface);
+  border-radius: 14px;
+  box-shadow: 0 1px 4px rgba(17, 24, 39, 0.06);
+  overflow: hidden;
+}
+.review-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+}
+.review-accent { width: 3px; height: 40px; border-radius: 2px; flex-shrink: 0; }
+.review-accent.correct { background: var(--success); }
+.review-accent.wrong { background: var(--error); }
+.review-meta { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.q-pill { font-size: 11px; font-weight: 700; border-radius: 4px; padding: 2px 6px; }
+.q-pill.correct { background: var(--success-bg); color: var(--success); }
+.q-pill.wrong { background: var(--error-bg); color: var(--error); }
+.review-question { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.review-body { padding: 0 14px 14px; display: flex; flex-direction: column; gap: 6px; background: #FAF9FF; }
+.review-answer-line { font-size: 13px; padding: 8px 10px; border-left: 3px solid; border-radius: 4px; background: #fff; }
+.review-answer-line .rline-label { font-size: 11px; font-weight: 700; display: block; margin-bottom: 2px; }
 
 .spinner {
   width: 32px;
