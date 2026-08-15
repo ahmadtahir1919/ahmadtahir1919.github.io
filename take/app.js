@@ -15,10 +15,33 @@ function themeColorFromName(name) {
   return QUIZ_THEME_COLORS[name] || QUIZ_THEME_COLORS.Indigo;
 }
 
+const app = document.getElementById("app");
+
+// A missing global here (evaluator.js/supabase-client.js failed to load or
+// threw during init — e.g. the Supabase CDN script was blocked/slow) used to
+// throw right here and leave the whole page blank with nothing on screen and
+// no clue why. Show it instead of silently dying.
+if (!window.Evaluator || !window.SupabaseClient) {
+  app.innerHTML =
+    '<div style="padding:24px;font-family:sans-serif;color:#DC2626">' +
+    "<b>Couldn't load this page.</b><br><br>" +
+    "A required script failed to load (often a slow/blocked connection to the Supabase library CDN). " +
+    "Please check your connection and reload the page." +
+    "</div>";
+  throw new Error("QuizCode web: required globals missing (Evaluator/SupabaseClient) — aborting boot.");
+}
+if (window.SupabaseClient.initError) {
+  app.innerHTML =
+    '<div style="padding:24px;font-family:sans-serif;color:#DC2626">' +
+    "<b>Couldn't connect.</b><br><br>" +
+    window.SupabaseClient.initError.message +
+    "</div>";
+  throw new Error("QuizCode web: Supabase client failed to initialize — aborting boot.");
+}
+
 const { evaluate, computeScore, defaultAnswerRule } = window.Evaluator;
 const SC = window.SupabaseClient;
 
-const app = document.getElementById("app");
 const params = new URLSearchParams(window.location.search);
 const shareCode = (params.get("code") || "").toUpperCase();
 
@@ -405,26 +428,34 @@ function renderResult() {
 
 // ── Boot ───────────────────────────────────────────────────────────────────
 async function boot() {
-  if (!shareCode) {
-    state.errorMessage = "No quiz code in the link.";
+  try {
+    if (!shareCode) {
+      state.errorMessage = "No quiz code in the link.";
+      state.screen = "error";
+      render();
+      return;
+    }
+
+    render(); // loading
+
+    const quiz = await SC.fetchQuizByShareCode(shareCode);
+    if (!quiz) {
+      state.errorMessage = "Quiz not found. Double-check the code.";
+      state.screen = "error";
+      render();
+      return;
+    }
+    state.quiz = quiz;
+    state.user = await SC.getCurrentUser();
+    state.screen = "landing";
+    render();
+  } catch (e) {
+    // Any unexpected failure (network drop, a Supabase error, …) now shows a
+    // message instead of leaving the loading spinner stuck forever.
+    state.errorMessage = e?.message || String(e);
     state.screen = "error";
     render();
-    return;
   }
-
-  render(); // loading
-
-  const quiz = await SC.fetchQuizByShareCode(shareCode);
-  if (!quiz) {
-    state.errorMessage = "Quiz not found. Double-check the code.";
-    state.screen = "error";
-    render();
-    return;
-  }
-  state.quiz = quiz;
-  state.user = await SC.getCurrentUser();
-  state.screen = "landing";
-  render();
 }
 
 boot();
