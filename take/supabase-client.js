@@ -8,7 +8,19 @@
 const SUPABASE_URL = "https://zorkzqyazigqucskseyp.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_wD6qD3zEVnyYV1-TROtMgQ_XlQK9uT9";
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// A failure here (e.g. the CDN script blocked/slow, so window.supabase never
+// showed up) used to leave the whole page blank with no clue why — app.js's
+// very first lines destructure window.SupabaseClient, which would silently
+// throw. Catching it here and exposing the error lets app.js show it on
+// screen instead of a dead white page.
+let supabase = null;
+let initError = null;
+try {
+  if (!window.supabase) throw new Error("Supabase library failed to load from CDN.");
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+} catch (e) {
+  initError = e;
+}
 
 /** Same fallback chain as AuthRepository.kt's toDomainUser(): full_name metadata,
  *  then name metadata, then email. */
@@ -182,6 +194,7 @@ async function castPollVote(vote) {
 
 window.SupabaseClient = {
   supabase,
+  initError,
   getCurrentUser,
   resolveDisplayName,
   signInWithGoogle,
