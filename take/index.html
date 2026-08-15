@@ -4,7 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Take Quiz — QuizCode</title>
-<link rel="stylesheet" href="style.css">
+<!-- Brand-colored favicon (Primary #5B4FE8) instead of the browser's blank
+     default — an inline SVG data URI, no separate asset file to host. -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%235B4FE8'/%3E%3Cpath d='M9 21l4-4-4-4M15 21h8' stroke='white' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E">
+<!-- ?v= is a manual cache-buster — bump it on every deploy of these files, since
+     GitHub Pages/browsers otherwise happily serve a stale cached copy after an
+     update (this cost real debugging time once already: fixes that were live on
+     the server weren't showing up on-device because of exactly this). -->
+<link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
   <div id="app"></div>
@@ -16,8 +23,8 @@
        library above or with each other — that's what caused the blank-page
        SyntaxError. They still communicate via window.X, same as before;
        modules just can't leak their own top-level names into the global scope. -->
-  <script type="module" src="evaluator.js"></script>
-  <script type="module" src="supabase-client.js"></script>
-  <script type="module" src="app.js"></script>
+  <script type="module" src="evaluator.js?v=3"></script>
+  <script type="module" src="supabase-client.js?v=3"></script>
+  <script type="module" src="app.js?v=3"></script>
 </body>
 </html>
