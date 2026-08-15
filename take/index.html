@@ -9,9 +9,15 @@
 <body>
   <div id="app"></div>
 
+  <!-- Plain (non-module) — a UMD bundle that attaches itself as window.supabase. -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="evaluator.js"></script>
-  <script src="supabase-client.js"></script>
-  <script src="app.js"></script>
+  <!-- type="module": each file gets its own isolated top-level scope, so nothing
+       declared in these (evaluate, supabase, etc.) can ever collide with the
+       library above or with each other — that's what caused the blank-page
+       SyntaxError. They still communicate via window.X, same as before;
+       modules just can't leak their own top-level names into the global scope. -->
+  <script type="module" src="evaluator.js"></script>
+  <script type="module" src="supabase-client.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>
