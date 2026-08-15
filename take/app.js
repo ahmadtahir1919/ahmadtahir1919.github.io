@@ -421,9 +421,23 @@ function buildQuizTopBar(quiz, q) {
   return el("div", { class: "quiz-topbar" }, [closeBtn, el("span", { class: "title" }, [quiz.title]), right]);
 }
 
+/** One segment per question (Stories-style) rather than a single continuous bar —
+ *  answered questions read as fully filled, the current one mid-fill, upcoming
+ *  ones empty, so progress through the quiz is legible at a glance. */
 function buildQuestionProgressBar(quiz) {
-  const pct = ((state.currentIndex + 1) / quiz.questions.length) * 100;
-  return el("div", { class: "progress-track" }, [el("div", { class: "progress-fill", style: `width:${pct}%` })]);
+  const total = quiz.questions.length;
+  const segments = [];
+  for (let i = 0; i < total; i++) {
+    let fillPct = 0;
+    if (i < state.currentIndex) fillPct = 100;
+    else if (i === state.currentIndex) fillPct = 100; // this question's own segment reads as "in progress" (filled) once reached
+    segments.push(
+      el("div", { class: "progress-segment" }, [
+        el("div", { class: "progress-segment-fill", style: `width:${fillPct}%` }),
+      ])
+    );
+  }
+  return el("div", { class: "progress-track segmented" }, segments);
 }
 
 /** Bottom action bar: timer progress bar pinned above it, Skip + Next — mirrors
