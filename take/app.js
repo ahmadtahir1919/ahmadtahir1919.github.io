@@ -975,7 +975,7 @@ function buildFillBlankInput(orderIndex, isLast, inputRefs) {
       // mirror.offsetWidth forces a synchronous reflow of the (out-of-flow,
       // absolutely-positioned) mirror — cheap for a single short span, and
       // avoids a one-frame lag where the input hasn't grown yet.
-      input.style.width = Math.min(220, Math.max(56, mirror.offsetWidth + 20)) + "px";
+      input.style.width = Math.min(220, Math.max(92, mirror.offsetWidth + 20)) + "px";
     },
     onkeydown: (e) => {
       if (e.key !== "Enter") return;
