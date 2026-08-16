@@ -305,7 +305,7 @@ textarea:focus, input:focus { outline: none; border-color: var(--accent); }
 
 .fb-blank-input,
 .fb-blank-chip {
-  min-width: 56px;
+  min-width: 92px;
   max-width: 220px;
   border-radius: 10px;
   border: 1.5px solid var(--border-light);
@@ -317,9 +317,15 @@ textarea:focus, input:focus { outline: none; border-color: var(--accent); }
   color: var(--text-primary);
   text-align: center;
   box-sizing: border-box;
-  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+  transition: width 0.12s ease, border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
 }
-.fb-blank-input { width: 56px; } /* JS grows this inline as the mirror's width changes */
+/* input[type="text"] earlier in this file sets width:100% and — because it
+   combines an attribute selector with the element type — is actually MORE
+   specific than a bare .fb-blank-input class rule, so it was silently
+   winning and stretching every empty blank to the full sentence width
+   (forcing each onto its own line). This selector's specificity beats that
+   rule outright rather than relying on source order. */
+input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as the mirror's width changes */
 .fb-blank-input::placeholder { color: #AAAAAA; font-weight: 400; }
 .fb-blank-input:focus { outline: none; border-color: var(--accent); }
 .fb-blank-input.filled {
