@@ -45,6 +45,36 @@ async function signOut() {
   return supabaseClient.auth.signOut();
 }
 
+/** False only once a genuinely new signup hasn't confirmed their name yet —
+ *  see profiles.name_confirmed in schema.sql. Fails open (true) on any error
+ *  so a network hiccup here never blocks someone from taking the quiz. */
+async function fetchNameConfirmed(userId) {
+  const { data, error } = await supabaseClient
+    .from("profiles")
+    .select("name_confirmed")
+    .eq("id", userId)
+    .maybeSingle();
+  if (error || !data) return true;
+  return data.name_confirmed !== false;
+}
+
+/** Mirrors AuthRepository.kt's confirmDisplayName: updates both the auth user's
+ *  metadata (what resolveDisplayName reads back locally) and profiles.display_name
+ *  (what everyone else sees for this person as a quiz owner/participant), then
+ *  marks the name confirmed so this is only ever asked once. */
+async function confirmDisplayName(userId, name) {
+  const trimmed = name.trim();
+  const { error: authErr } = await supabaseClient.auth.updateUser({
+    data: { full_name: trimmed, name: trimmed },
+  });
+  if (authErr) throw authErr;
+  const { error: profileErr } = await supabaseClient
+    .from("profiles")
+    .update({ display_name: trimmed, name_confirmed: true })
+    .eq("id", userId);
+  if (profileErr) throw profileErr;
+}
+
 // ── Quiz + questions (mirrors fetchQuizByShareCode) ──────────────────────
 
 /** QuestionDto -> the same shape app.js/evaluator.js expect (camelCase, matching
@@ -77,6 +107,7 @@ function quizFromRow(row, questions) {
     shareCode: row.share_code,
     defaultTimeSec: row.default_time_sec,
     isDraft: row.is_draft,
+    isArchived: row.is_archived,
     startAt: row.start_at,
     endAt: row.end_at,
     allowRetake: row.allow_retake,
@@ -199,6 +230,8 @@ window.SupabaseClient = {
   resolveDisplayName,
   signInWithGoogle,
   signOut,
+  fetchNameConfirmed,
+  confirmDisplayName,
   fetchQuizByShareCode,
   effectiveStatus,
   submitAttempt,
