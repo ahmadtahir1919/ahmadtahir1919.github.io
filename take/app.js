@@ -1,8 +1,9 @@
 // ============================================================================
 // Web quiz-taking — mirrors ui/preview/QuizPreviewViewModel.kt's flow: load,
 // per-question timer, answer, (optional) instant feedback, advance, score,
-// submit. Poll/Fill-blank rendering land in later passes (see the plan);
-// they currently show a "not available on web yet" placeholder with Skip.
+// submit. Poll rendering lands in a later pass (see the plan); it currently
+// shows a "not available on web yet" placeholder with Skip. Fill Blank mirrors
+// the app's inline sentence design exactly (see FillBlankQuestionBody.kt).
 // ============================================================================
 
 // Same palette as ui/theme/QuizThemeColors.kt — keep in sync if it changes.
@@ -21,14 +22,14 @@ const app = document.getElementById("app");
 // threw during init — e.g. the Supabase CDN script was blocked/slow) used to
 // throw right here and leave the whole page blank with nothing on screen and
 // no clue why. Show it instead of silently dying.
-if (!window.Evaluator || !window.SupabaseClient) {
+if (!window.Evaluator || !window.SupabaseClient || !window.FillBlank || !window.Poll) {
   app.innerHTML =
     '<div style="padding:24px;font-family:sans-serif;color:#DC2626">' +
     "<b>Couldn't load this page.</b><br><br>" +
     "A required script failed to load (often a slow/blocked connection to the Supabase library CDN). " +
     "Please check your connection and reload the page." +
     "</div>";
-  throw new Error("QuizCode web: required globals missing (Evaluator/SupabaseClient) — aborting boot.");
+  throw new Error("QuizCode web: required globals missing (Evaluator/SupabaseClient/FillBlank/Poll) — aborting boot.");
 }
 if (window.SupabaseClient.initError) {
   app.innerHTML =
@@ -41,19 +42,31 @@ if (window.SupabaseClient.initError) {
 
 const { evaluate, computeScore, defaultAnswerRule } = window.Evaluator;
 const SC = window.SupabaseClient;
+const FB = window.FillBlank;
+const PL = window.Poll;
 
 const params = new URLSearchParams(window.location.search);
 const shareCode = (params.get("code") || "").toUpperCase();
 
 // ── State ──────────────────────────────────────────────────────────────────
 const state = {
-  screen: "loading", // loading | landing | quiz | finishing | result | error
+  screen: "loading", // loading | landing | confirmName | quiz | finishing | result | error
   errorMessage: "",
   quiz: null,
   user: null,
   currentIndex: 0,
   selectedAnswers: new Set(), // index-strings, same convention as the Kotlin VM
   writtenAnswer: "",
+  fillBlankDraft: [], // FILL_BLANK only — one entry per blank, in template order
+  // POLL only — mirrors QuizPreviewUiState's poll* fields.
+  pollState: null, // { status, opened_at, closes_at } | null
+  pollDisplayOrder: [], // shuffled option indices, "Other" excluded (always last)
+  pollSelected: new Set(), // numeric option indices, PL.POLL_OTHER_INDEX for "Other"
+  pollOtherText: "",
+  pollReasonText: "",
+  pollHasVoted: false,
+  pollDistribution: null, // set once the poll is closed
+  pollConsensus: null,
   secondsRemaining: 0,
   totalTimeSec: 0,
   timerHandle: null,
@@ -69,6 +82,7 @@ function render() {
   switch (state.screen) {
     case "loading": return renderLoading();
     case "landing": return renderLanding();
+    case "confirmName": return renderConfirmName();
     case "quiz": return renderQuiz();
     case "finishing": return renderLoading("Submitting…");
     case "result": return renderResult();
@@ -170,6 +184,15 @@ function renderLanding() {
     el("p", { class: "quiz-meta" }, [`${quiz.questions.length} question${quiz.questions.length === 1 ? "" : "s"}`]),
   ];
 
+  // Archived overrides schedule-based status entirely, same rule as the Android app's
+  // ArchivedQuizStatusAction — the creator deliberately took this quiz out of
+  // circulation, distinct from it simply having expired on its own schedule.
+  if (quiz.isArchived) {
+    body.push(el("p", { class: "muted" }, ["This quiz has been archived by its creator and is no longer accepting responses."]));
+    app.appendChild(el("div", { class: "screen" }, [el("div", { class: "card" }, body)]));
+    return;
+  }
+
   if (status !== "ACTIVE") {
     body.push(
       el("p", { class: "muted" }, [
@@ -207,6 +230,71 @@ function renderLanding() {
   app.appendChild(el("div", { class: "screen" }, [el("div", { class: "card" }, body)]));
 }
 
+/** One-time gate right after a brand-new signup (profiles.name_confirmed = false) —
+ *  mirrors the Android app's ConfirmNameScreen. Blocking, no skip: some Google
+ *  accounts have the wrong/nickname-y name attached, and this is what the quiz
+ *  creator and other participants will see this person as everywhere else. */
+function renderConfirmName() {
+  if (state.confirmNameDraft == null) {
+    state.confirmNameDraft = SC.resolveDisplayName(state.user);
+  }
+  const trimmed = (state.confirmNameDraft || "").trim();
+
+  const input = el("input", {
+    type: "text",
+    value: state.confirmNameDraft || "",
+    placeholder: "Your name",
+    autocomplete: "name",
+    oninput: (e) => {
+      state.confirmNameDraft = e.target.value;
+      saveBtn.disabled = state.confirmNameSaving || e.target.value.trim().length === 0;
+    },
+  });
+
+  const saveBtn = el(
+    "button",
+    { class: "primary", onclick: () => submitConfirmedName() },
+    [state.confirmNameSaving ? "Saving…" : "Confirm & Continue"]
+  );
+  saveBtn.disabled = state.confirmNameSaving || trimmed.length === 0;
+
+  const body = [
+    el("span", { class: "pill" }, ["ONE QUICK THING"]),
+    el("h2", { class: "quiz-title" }, ["Confirm your name"]),
+    el("p", { class: "quiz-meta" }, [
+      "This is the name shown on your quizzes and results — some Google accounts have the wrong name attached, so fix it here if needed.",
+    ]),
+    input,
+  ];
+  if (state.confirmNameError) {
+    body.push(el("p", { class: "muted", style: "color:var(--error)" }, [state.confirmNameError]));
+  }
+  body.push(saveBtn);
+
+  app.appendChild(el("div", { class: "screen" }, [el("div", { class: "card" }, body)]));
+}
+
+async function submitConfirmedName() {
+  const name = (state.confirmNameDraft || "").trim();
+  if (!name || state.confirmNameSaving) return;
+  state.confirmNameSaving = true;
+  state.confirmNameError = null;
+  render();
+  try {
+    await SC.confirmDisplayName(state.user.id, name);
+    // Keep the in-memory user in sync so the "Signed in as ..." line on the landing
+    // screen right after this reflects the corrected name without a re-fetch.
+    state.user.user_metadata = { ...(state.user.user_metadata || {}), full_name: name, name };
+    state.confirmNameSaving = false;
+    state.screen = "landing";
+    render();
+  } catch (e) {
+    state.confirmNameSaving = false;
+    state.confirmNameError = "Couldn't save your name. Check your connection and try again.";
+    render();
+  }
+}
+
 function currentQuestion() {
   return state.quiz.questions[state.currentIndex];
 }
@@ -222,14 +310,87 @@ function prepareCurrentQuestion() {
   const q = currentQuestion();
   state.selectedAnswers = new Set();
   state.writtenAnswer = "";
+  state.fillBlankDraft = q.type === "FILL_BLANK" && q.fillBlankContent
+    ? new Array(FB.orderedBlanks(q.fillBlankContent).length).fill("")
+    : [];
   state.instantFeedback = null;
   state.questionStartSec = Math.floor(Date.now() / 1000);
   if (q.type === "POLL") {
-    // Poll rendering lands in a later pass — see task list.
-    render();
+    state.pollState = null;
+    state.pollDisplayOrder = [];
+    state.pollSelected = new Set();
+    state.pollOtherText = "";
+    state.pollReasonText = "";
+    state.pollHasVoted = false;
+    state.pollDistribution = null;
+    state.pollConsensus = null;
+    state.totalTimeSec = 0; // reset; loadPollForCurrentQuestion sets these once the
+    state.secondsRemaining = 0; // real closes_at is known (only when OPEN + timed)
+    render(); // loading state while ensurePollOpen/fetchPollVotes round-trip
+    loadPollForCurrentQuestion(q);
     return;
   }
   startTimer();
+  render();
+}
+
+/** Opens the poll on first visit (lazy — mirrors PollRepository.ensureOpen:
+ *  the poll's clock starts the first time ANYONE, on any device, reaches this
+ *  question), pre-fills this voter's own existing vote if they've been here
+ *  before, and computes the static distribution once closed. Mirrors
+ *  QuizPreviewViewModel.loadPollForCurrentQuestion() exactly. */
+async function loadPollForCurrentQuestion(q) {
+  const settings = q.pollSettings || {};
+  let opened;
+  try {
+    opened = await SC.ensurePollOpen(q.id, q.timeSec, settings.noTimeLimit);
+  } catch (e) {
+    // RLS rejects a non-owner's very first open (poll_states writes are
+    // owner-only — same latent gap the Android app has today, see schema.sql).
+    // Falls back to a local-only "just opened now" state so voting still works
+    // for this visitor even though it never reaches other devices.
+    opened = { status: "OPEN", opened_at: Date.now(), closes_at: settings.noTimeLimit || !q.timeSec ? null : Date.now() + q.timeSec * 1000 };
+  }
+  // Stale question guard — the user may have already swiped past this question
+  // (Next/timer) by the time this async round-trip resolves.
+  if (currentQuestion()?.id !== q.id) return;
+
+  const now = Date.now();
+  const effectiveClosed = opened.status === "CLOSED" || (opened.closes_at != null && now >= opened.closes_at);
+  state.pollState = opened;
+
+  const votes = (await SC.fetchPollVotes(q.id).catch(() => [])) || [];
+  const myVote = votes.find((v) => v.voterKey === state.user.id) || null;
+  state.pollHasVoted = myVote != null;
+  if (myVote) {
+    state.pollSelected = new Set(myVote.selectedOptionIndices || []);
+    state.pollOtherText = myVote.otherText || "";
+    state.pollReasonText = myVote.reason || "";
+  }
+
+  if (effectiveClosed) {
+    const distribution = PL.computePollDistribution(q.options || [], votes);
+    state.pollDistribution = distribution;
+    state.pollConsensus = PL.computePollConsensus(distribution);
+  } else {
+    state.pollDisplayOrder = PL.pollShuffledOrder(state.user.id, q.id, (q.options || []).length);
+    if (opened.closes_at) {
+      state.totalTimeSec = Math.max(1, Math.round((opened.closes_at - opened.opened_at) / 1000));
+      state.secondsRemaining = Math.max(0, Math.round((opened.closes_at - now) / 1000));
+      state.timerHandle = setInterval(() => {
+        state.secondsRemaining -= 1;
+        if (state.secondsRemaining <= 0) {
+          clearInterval(state.timerHandle);
+          advance(true);
+          return;
+        }
+        updateTimerDisplay();
+      }, 1000);
+    } else {
+      state.totalTimeSec = 0;
+      state.secondsRemaining = 0;
+    }
+  }
   render();
 }
 
@@ -296,27 +457,64 @@ function toggleAnswer(optionIndex) {
   render();
 }
 
+/** Poll's own toggle — separate from toggleAnswer() since options are already
+ *  cast, and this respects allowMultiple + the "Other" sentinel index (-1)
+ *  instead of the plain single/multi rule every other question type uses. */
+function togglePollOption(optionIndex) {
+  const q = currentQuestion();
+  const settings = q.pollSettings || {};
+  const locked = state.pollHasVoted && settings.allowVoteChange === false;
+  if (locked) return;
+  if (settings.allowMultiple) {
+    if (state.pollSelected.has(optionIndex)) state.pollSelected.delete(optionIndex);
+    else state.pollSelected.add(optionIndex);
+  } else {
+    state.pollSelected = state.pollSelected.has(optionIndex) ? new Set() : new Set([optionIndex]);
+  }
+  render();
+}
+
+// Skip and Next both advance, but only Next casts whatever's selected on a
+// Poll question — a skipped poll is left unvoted, even if an option was
+// tapped first, mirroring QuizPreviewViewModel's onSkip()/onNext() split.
 function onNext() { advance(true); }
+function onSkip() { advance(false); }
 
 function advance(castPollVote) {
   if (state.instantFeedback) return; // already mid-feedback — ignore stray taps
   const q = currentQuestion();
   clearInterval(state.timerHandle);
 
-  if (q.type !== "POLL") {
-    const elapsed = Math.max(1, Math.floor(Date.now() / 1000) - state.questionStartSec);
-    state.questionTimings[q.id] = elapsed;
-    if (q.type === "WRITTEN") {
-      state.questionAnswers[q.id] = state.writtenAnswer.trim() ? [state.writtenAnswer] : [];
-    } else if (q.type === "FILL_BLANK") {
-      state.questionAnswers[q.id] = []; // filled in by the fill-blank pass
-    } else {
-      state.questionAnswers[q.id] = Array.from(state.selectedAnswers);
+  if (q.type === "POLL") {
+    const settings = q.pollSettings || {};
+    const locked = state.pollHasVoted && settings.allowVoteChange === false;
+    if (castPollVote && !locked && state.pollSelected.size > 0 && state.pollState) {
+      const vote = {
+        questionId: q.id,
+        voterKey: state.user.id,
+        selectedOptionIndices: Array.from(state.pollSelected),
+        otherText: state.pollSelected.has(PL.POLL_OTHER_INDEX) ? state.pollOtherText : null,
+        reason: state.pollReasonText || null,
+        participantId: settings.anonymous ? null : state.user.id,
+      };
+      SC.castPollVote(vote).catch(() => {}); // fire-and-forget, same as the app
     }
+    proceedPastQuestion();
+    return;
+  }
+
+  const elapsed = Math.max(1, Math.floor(Date.now() / 1000) - state.questionStartSec);
+  state.questionTimings[q.id] = elapsed;
+  if (q.type === "WRITTEN") {
+    state.questionAnswers[q.id] = state.writtenAnswer.trim() ? [state.writtenAnswer] : [];
+  } else if (q.type === "FILL_BLANK") {
+    state.questionAnswers[q.id] = [...state.fillBlankDraft];
+  } else {
+    state.questionAnswers[q.id] = Array.from(state.selectedAnswers);
   }
 
   const quiz = state.quiz;
-  if (quiz.showCorrectnessInstantly && q.type !== "POLL") {
+  if (quiz.showCorrectnessInstantly) {
     const feedback = buildInstantFeedback(q, state.questionAnswers[q.id] || []);
     state.instantFeedback = feedback;
     render();
@@ -344,6 +542,10 @@ function buildInstantFeedback(q, rawKeys) {
       correct = computeScore(evaluate(userInput, expected, rule), q.points, rule) > 0;
     }
     return { isCorrect: correct, correctWrittenAnswer: !correct ? expected : null };
+  }
+  if (q.type === "FILL_BLANK" && q.fillBlankContent) {
+    const blankCorrectness = FB.fillBlankCorrectness(q.fillBlankContent, rawKeys);
+    return { isCorrect: blankCorrectness.length > 0 && blankCorrectness.every(Boolean), blankCorrectness };
   }
   return { isCorrect: true };
 }
@@ -378,7 +580,7 @@ function finishQuiz() {
         ? evaluator.computeScore(evaluator.evaluate(userInput, expected, rule), q.points, rule) > 0
         : false;
     } else if (q.type === "FILL_BLANK") {
-      isCorrect = false; // fill-blank grading lands in a later pass
+      isCorrect = q.fillBlankContent ? FB.fillBlankIsQuestionCorrect(q.fillBlankContent, given) : false;
     } else {
       const a = new Set(given), b = new Set(q.correctAnswers || []);
       isCorrect = a.size === b.size && [...a].every((x) => b.has(x));
@@ -476,26 +678,62 @@ function renderQuiz() {
     buildQuestionProgressBar(quiz),
   ]);
 
-  if (q.type === "POLL" || q.type === "FILL_BLANK") {
-    wrapper.appendChild(
-      el("div", { class: "screen", style: "flex:1" }, [
-        el("div", { class: "card" }, [
-          el("p", { class: "quiz-meta" }, [`Question ${state.currentIndex + 1} of ${quiz.questions.length}`]),
-          el("p", { class: "question-text" }, [q.text]),
-          el("p", { class: "muted" }, ["This question type isn't available in the browser yet — open it in the QuizCode app, or skip it here."]),
-        ]),
-      ])
-    );
-    wrapper.appendChild(buildBottomBar(q, isLastQuestion, onNext, onNext));
+  if (q.type === "POLL") {
+    const questionArea = el("div", { class: "screen no-pad-top", style: "flex:1" }, [
+      el("div", { class: "card" }, [el("p", { class: "question-text" }, [q.text])]),
+    ]);
+    if (!state.pollState) {
+      questionArea.appendChild(el("p", { class: "muted" }, ["Loading…"]));
+    } else if (state.pollDistribution) {
+      questionArea.appendChild(buildPollResults(q));
+    } else {
+      questionArea.appendChild(buildPollVoting(q));
+    }
+    wrapper.appendChild(questionArea);
+    wrapper.appendChild(buildBottomBar(q, isLastQuestion, onSkip, onNext));
     app.appendChild(wrapper);
+    updateTimerDisplay();
     return;
   }
 
-  const questionArea = el("div", { class: "screen no-pad-top", style: "flex:1" }, [
-    el("div", { class: "card" }, [el("p", { class: "question-text" }, [q.text])]),
-  ]);
+  // Fill Blank has an optional heading instead of a mandatory question text —
+  // absent entirely when the creator left it blank, rather than falling back to
+  // the auto-generated underscore sentence (that's already shown, interactively,
+  // in the sentence card itself). Mirrors QuizPreviewScreen.kt's same condition.
+  const fillBlankTitle = q.type === "FILL_BLANK" ? (q.fillBlankContent?.title || "").trim() : "";
+  const showTitleCard = q.type !== "FILL_BLANK" || fillBlankTitle;
+  const questionArea = el("div", { class: "screen no-pad-top", style: "flex:1" },
+    showTitleCard
+      ? [el("div", { class: "card" }, [el("p", { class: "question-text" }, [fillBlankTitle || q.text])])]
+      : []
+  );
 
-  if (state.instantFeedback) {
+  if (q.type === "FILL_BLANK") {
+    // Unlike WRITTEN/options (which swap their whole input away for a banner
+    // during feedback), the sentence itself always stays on screen — it's just
+    // as much the answer *display* as it is the input, so it renders its own
+    // correct/wrong coloring inline rather than disappearing behind a banner.
+    if (q.fillBlankContent) {
+      questionArea.appendChild(buildFillBlankSentence(q));
+    }
+    if (state.instantFeedback) {
+      const fb = state.instantFeedback;
+      questionArea.appendChild(
+        el("div", { class: "feedback-banner " + (fb.isCorrect ? "correct" : "wrong") }, [fb.isCorrect ? "✓ Correct!" : "✗ Not quite"])
+      );
+      const ordered = q.fillBlankContent ? FB.orderedBlanks(q.fillBlankContent) : [];
+      ordered.forEach((blank, i) => {
+        if (fb.blankCorrectness && fb.blankCorrectness[i] === false) {
+          const correctAnswer = (blank.acceptedAnswers || [])[0];
+          if (correctAnswer) {
+            questionArea.appendChild(
+              el("p", { class: "fb-answer-reveal" }, [`Blank ${i + 1} — Correct answer: ${correctAnswer}`])
+            );
+          }
+        }
+      });
+    }
+  } else if (state.instantFeedback) {
     const fb = state.instantFeedback;
     questionArea.appendChild(
       el("div", { class: "feedback-banner " + (fb.isCorrect ? "correct" : "wrong") }, [fb.isCorrect ? "✓ Correct!" : "✗ Not quite"])
@@ -538,9 +776,217 @@ function renderQuiz() {
   }
 
   wrapper.appendChild(questionArea);
-  wrapper.appendChild(buildBottomBar(q, isLastQuestion, onNext, onNext));
+  wrapper.appendChild(buildBottomBar(q, isLastQuestion, onSkip, onNext));
   app.appendChild(wrapper);
   updateTimerDisplay();
+}
+
+// ── Poll — voting + results (mirrors PollComponents.kt's PollVotingBody /
+// PollDistributionBody: options in the per-voter shuffled order, "Other" and
+// "Why?" fields, then a static percent-bar distribution once closed). ───────
+
+function buildPollVoting(q) {
+  const settings = q.pollSettings || {};
+  const locked = state.pollHasVoted && settings.allowVoteChange === false;
+  const container = el("div", { style: "display:flex;flex-direction:column;gap:10px" }, []);
+
+  if (settings.allowMultiple && !locked) {
+    container.appendChild(el("p", { class: "poll-note" }, ["Select all that apply"]));
+  }
+
+  const optionRow = (idx, label) => {
+    const selected = state.pollSelected.has(idx);
+    const props = {
+      class: "option-row" + (selected ? " selected" : ""),
+      style: locked ? "cursor:default;opacity:0.65" : "",
+    };
+    if (!locked) props.onclick = () => togglePollOption(idx);
+    return el("div", props, [
+      el("div", { class: "option-marker" + (settings.allowMultiple ? " square" : "") }, selected ? [html(CHECK_SVG)] : []),
+      el("span", {}, [label]),
+    ]);
+  };
+
+  state.pollDisplayOrder.forEach((idx) => {
+    container.appendChild(optionRow(idx, (q.options || [])[idx]));
+  });
+
+  if (settings.allowOther) {
+    const otherSelected = state.pollSelected.has(PL.POLL_OTHER_INDEX);
+    container.appendChild(optionRow(PL.POLL_OTHER_INDEX, "Other"));
+    if (otherSelected) {
+      const otherProps = {
+        type: "text",
+        placeholder: "Type your answer…",
+        value: state.pollOtherText,
+        oninput: (e) => { state.pollOtherText = e.target.value; },
+      };
+      if (locked) otherProps.disabled = "true";
+      container.appendChild(el("input", otherProps));
+    }
+  }
+
+  if (settings.askReason && state.pollSelected.size > 0) {
+    const reasonProps = {
+      rows: "2",
+      placeholder: "Why? (optional)",
+      oninput: (e) => { state.pollReasonText = e.target.value; },
+    };
+    if (locked) reasonProps.disabled = "true";
+    container.appendChild(el("textarea", reasonProps, state.pollReasonText ? [state.pollReasonText] : []));
+  }
+
+  if (state.pollHasVoted) {
+    container.appendChild(el("p", { class: "poll-voted-check" }, ["✓ You voted"]));
+    if (locked) container.appendChild(el("p", { class: "poll-note" }, ["Results are shown once the poll closes."]));
+  } else if (state.pollSelected.size > 0) {
+    container.appendChild(el("p", { class: "poll-note" }, ["Tap Next to cast your vote."]));
+  }
+
+  return container;
+}
+
+function buildPollResults(q) {
+  const dist = state.pollDistribution;
+  const container = el("div", { style: "display:flex;flex-direction:column;gap:10px" }, [
+    el("p", { class: "poll-note" }, [`${dist.voterCount} participant${dist.voterCount === 1 ? "" : "s"}`]),
+  ]);
+
+  if (state.pollConsensus) {
+    container.appendChild(el("div", { class: "poll-consensus" }, [consensusText(state.pollConsensus)]));
+  }
+
+  dist.options.forEach((opt) => {
+    container.appendChild(buildPollResultRow(opt, state.pollSelected.has(opt.optionIndex)));
+  });
+  if (dist.other.count > 0) {
+    container.appendChild(buildPollResultRow(dist.other, state.pollSelected.has(PL.POLL_OTHER_INDEX)));
+  }
+
+  return container;
+}
+
+function buildPollResultRow(opt, mine) {
+  return el("div", { class: "poll-result-row" + (mine ? " mine" : "") }, [
+    el("div", { class: "top" }, [
+      el("span", { class: "label" }, [opt.label]),
+      el("span", { class: "pct" }, [`${opt.percent}%`]),
+    ]),
+    el("div", { class: "poll-result-bar" }, [el("div", { class: "poll-result-bar-fill", style: `width:${opt.percent}%` })]),
+    el("div", { class: "poll-result-count" }, [`${opt.count} vote${opt.count === 1 ? "" : "s"}`]),
+  ]);
+}
+
+function consensusText(c) {
+  if (c.type === "strong") return `🔥 Strong agreement — ${c.percent}% chose "${c.option}"`;
+  if (c.type === "divided") return `⚖️ Split — "${c.optionA}" vs "${c.optionB}"`;
+  return `📊 "${c.option}" is leading with ${c.percent}%`;
+}
+
+// ── Fill Blank — inline sentence (mirrors QuizPreviewScreen.kt's
+// FillBlankQuestionBody/InlineBlankField exactly: the blank is a real input
+// embedded directly in the flowing sentence, not a separate field list). ─────
+
+/** Groups parsed template segments into lines on the creator's manual line
+ *  breaks, splitting each line's text into individual words so within-line
+ *  wrapping is word-by-word — mirrors splitFillBlankSegmentsIntoLines() in
+ *  QuizPreviewScreen.kt exactly (same reasoning: a flex-wrap row needs each
+ *  word as its own child to wrap word-by-word instead of as one ragged block). */
+function splitFillBlankIntoTokenLines(segments) {
+  const lines = [[]];
+  segments.forEach((seg) => {
+    if (seg.type === "text") {
+      seg.text.split("\n").forEach((textLine, i) => {
+        if (i > 0) lines.push([]);
+        textLine.split(/\s+/).filter((w) => w.length > 0).forEach((word) => {
+          lines[lines.length - 1].push({ type: "word", text: word });
+        });
+      });
+    } else {
+      lines[lines.length - 1].push({ type: "blank", orderIndex: seg.orderIndex, blank: seg.blank });
+    }
+  });
+  return lines;
+}
+
+function buildFillBlankSentence(q) {
+  const content = q.fillBlankContent;
+  const segments = FB.parseFillBlankTemplate(content.template, content.blanks);
+  const lines = splitFillBlankIntoTokenLines(segments);
+  const ordered = FB.orderedBlanks(content);
+  const fb = state.instantFeedback;
+
+  // Populated as inputs are built below, in template order — each input's Enter
+  // handler closes over this to hop to the next blank (or blur, on the last).
+  const inputRefs = [];
+
+  const lineEls = lines.map((line) =>
+    el(
+      "div",
+      { class: "fb-sentence" },
+      line.map((token) => {
+        if (token.type === "word") return el("span", { class: "fb-word" }, [token.text]);
+
+        if (fb) {
+          const correct = fb.blankCorrectness ? fb.blankCorrectness[token.orderIndex] : null;
+          const value = state.fillBlankDraft[token.orderIndex] || "";
+          return el(
+            "span",
+            { class: "fb-blank-chip " + (correct ? "correct" : "wrong") },
+            [value || "—"]
+          );
+        }
+        const isLast = token.orderIndex === ordered.length - 1;
+        return buildFillBlankInput(token.orderIndex, isLast, inputRefs);
+      })
+    )
+  );
+
+  return el("div", { class: "card" }, [
+    el("div", { style: "display:flex;flex-direction:column;gap:10px" }, lineEls),
+  ]);
+}
+
+/** One blank, embedded directly in the sentence as just another flowing child —
+ *  a hidden mirror span measures the typed text so the visible input can grow
+ *  to fit it (plain <input> has no native "size to content" everywhere), capped
+ *  via CSS max-width so one very long answer scrolls internally instead of
+ *  blowing out the sentence's layout — same behavior as the Android app's
+ *  capped InlineBlankField. */
+function buildFillBlankInput(orderIndex, isLast, inputRefs) {
+  const value = state.fillBlankDraft[orderIndex] || "";
+  const placeholder = "Your answer…";
+
+  const mirror = el("span", { class: "fb-blank-mirror" }, [value || placeholder]);
+  const input = el("input", {
+    type: "text",
+    class: "fb-blank-input" + (value.trim() ? " filled" : ""),
+    value,
+    placeholder,
+    autocomplete: "off",
+    autocapitalize: "off",
+    spellcheck: "false",
+    enterkeyhint: isLast ? "done" : "next",
+    oninput: (e) => {
+      const v = e.target.value;
+      state.fillBlankDraft[orderIndex] = v;
+      mirror.textContent = v || placeholder;
+      input.classList.toggle("filled", v.trim().length > 0);
+      // mirror.offsetWidth forces a synchronous reflow of the (out-of-flow,
+      // absolutely-positioned) mirror — cheap for a single short span, and
+      // avoids a one-frame lag where the input hasn't grown yet.
+      input.style.width = Math.min(220, Math.max(56, mirror.offsetWidth + 20)) + "px";
+    },
+    onkeydown: (e) => {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      if (isLast) { input.blur(); return; }
+      inputRefs[orderIndex + 1]?.focus();
+    },
+  });
+
+  inputRefs[orderIndex] = input;
+  return el("span", { class: "fb-blank-wrap" }, [mirror, input]);
 }
 
 const expandedReviews = new Set();
@@ -691,6 +1137,16 @@ async function boot() {
     // visibly in the address bar.
     if (window.location.hash) {
       window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+
+    // Some Google accounts have a wrong/nickname-y name attached — a brand-new
+    // signup (mirrors the same one-time gate the Android app now has) is asked
+    // to confirm/correct it once before taking the quiz, since that name is
+    // what the quiz creator and other participants will see them as.
+    if (state.user && !(await SC.fetchNameConfirmed(state.user.id))) {
+      state.screen = "confirmName";
+      render();
+      return;
     }
 
     state.screen = "landing";
