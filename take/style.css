@@ -272,6 +272,113 @@ textarea, input[type="text"], input[type="email"] {
 }
 textarea:focus, input:focus { outline: none; border-color: var(--accent); }
 
+/* ── Fill in the Blank — inline sentence (mirrors the Android app's
+   InlineBlankField exactly: the blank is a real input embedded directly in the
+   flowing sentence, growing with what's typed, capped so a long answer can
+   never blow out the layout — past the cap it scrolls internally like any
+   bounded single-line field, same as everywhere else in this app.) ────────── */
+
+.fb-sentence {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 6px;
+  font-size: 17px;
+  line-height: 1.7;
+  color: var(--text-primary);
+}
+.fb-word { white-space: pre; }
+
+.fb-blank-wrap { position: relative; display: inline-flex; vertical-align: middle; }
+/* Invisible twin of the input's text — measured to grow the real input to fit
+   its content (plain <input> has no native "size to content" in every browser
+   we need to support, so this is the standard cross-browser trick). */
+.fb-blank-mirror {
+  position: absolute;
+  top: 0; left: 0;
+  visibility: hidden;
+  white-space: pre;
+  font: inherit;
+  font-weight: 700;
+  padding: 0 10px;
+}
+
+.fb-blank-input,
+.fb-blank-chip {
+  min-width: 56px;
+  max-width: 220px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border-light);
+  background: var(--surface);
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: center;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.fb-blank-input { width: 56px; } /* JS grows this inline as the mirror's width changes */
+.fb-blank-input::placeholder { color: #AAAAAA; font-weight: 400; }
+.fb-blank-input:focus { outline: none; border-color: var(--accent); }
+.fb-blank-input.filled {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  color: var(--accent);
+}
+.fb-blank-chip.correct { border-color: var(--success); background: var(--success-bg); color: #16A34A; }
+.fb-blank-chip.wrong { border-color: var(--error); background: var(--error-bg); color: #DC2626; }
+
+.fb-answer-reveal { font-size: 13px; color: #16A34A; font-weight: 600; }
+
+/* ── Poll — voting + results (mirrors PollComponents.kt's PollVotingBody /
+   PollDistributionBody: same option-row shell as every other question type,
+   plus a percent bar per option once closed, an "Other"/"Why?" field, and a
+   consensus banner.) ─────────────────────────────────────────────────────── */
+
+.poll-note { font-size: 12px; color: var(--text-secondary); }
+.poll-voted-check { font-weight: 600; color: var(--success); font-size: 14px; }
+
+.poll-consensus {
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--primary-container);
+  color: var(--accent);
+}
+
+.poll-result-row {
+  border-radius: 14px;
+  border: 1.5px solid var(--divider);
+  background: var(--surface);
+  padding: 12px 14px;
+}
+.poll-result-row.mine { border-color: var(--accent); }
+.poll-result-row .top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.poll-result-row .label { font-size: 14px; color: var(--text-primary); font-weight: 500; }
+.poll-result-row .pct { font-size: 14px; font-weight: 700; color: var(--accent); }
+.poll-result-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--primary-container);
+  overflow: hidden;
+}
+.poll-result-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: var(--accent);
+  transition: width 0.5s ease;
+}
+.poll-result-count { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+
 .feedback-banner {
   border-radius: 14px;
   padding: 14px 16px;
