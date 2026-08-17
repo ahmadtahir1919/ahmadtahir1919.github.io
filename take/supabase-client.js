@@ -172,10 +172,21 @@ async function fetchExistingAttempt(quizId, userId) {
  *  so this satisfies the exact same RLS the Android app relies on. No
  *  separate "guest" path or reconciliation needed. */
 async function submitAttempt(quizId, userId, score, total, answers) {
-  const attemptId = crypto.randomUUID();
   const finishedAt = Date.now();
 
-  const { error: attemptErr } = await supabaseClient.from("attempts").insert({
+  // Retaking with the same account reuses the existing attempt entity instead of creating a
+  // second one — mirrors AttemptRepository.saveAttempt's retake-reuse on the Android side, so
+  // a quiz answered partly on the app and partly on the web still ends up as one row per
+  // person, not two side by side in the owner's participants list.
+  const existing = await fetchExistingAttempt(quizId, userId);
+  const attemptId = existing ? existing.id : crypto.randomUUID();
+
+  // upsert, not insert: on a genuinely first attempt this behaves exactly like insert: when
+  // reusing an existing id, Postgres still evaluates the same RLS insert policy underneath
+  // (attempt_retake_allowed in schema.sql), so a retake stays gated by "Allow Retake" exactly
+  // as before — this call is what can reject the whole submission, so it runs BEFORE
+  // anything destructive touches the previous answers.
+  const { error: attemptErr } = await supabaseClient.from("attempts").upsert({
     id: attemptId,
     quiz_id: quizId,
     user_id: userId,
@@ -188,13 +199,22 @@ async function submitAttempt(quizId, userId, score, total, answers) {
     source: "WEB",
   });
   if (attemptErr) {
-    // RLS rejects a second real attempt when the quiz doesn't allow retakes
-    // (attempt_retake_allowed() in schema.sql) — surface that distinctly so
-    // the UI can show a clear message instead of a raw Postgres error.
     if (attemptErr.code === "42501") {
       throw new Error("RETAKE_NOT_ALLOWED");
     }
     throw attemptErr;
+  }
+
+  if (existing) {
+    // Only now, once the attempts row is confirmed writable — the previous run's answers
+    // carry their own ids (this run's are freshly generated too), so without clearing them
+    // first they'd sit alongside the new rows under the same attemptId instead of being
+    // replaced by them.
+    const { error: purgeErr } = await supabaseClient
+      .from("attempt_answers")
+      .delete()
+      .eq("attempt_id", attemptId);
+    if (purgeErr) throw purgeErr;
   }
 
   const answerRows = answers.map((a) => ({
