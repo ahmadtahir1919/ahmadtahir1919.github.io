@@ -54,6 +54,7 @@ const state = {
   errorMessage: "",
   quiz: null,
   user: null,
+  existingAttempt: null, // latest real attempt this user already has for this quiz, or null
   currentIndex: 0,
   selectedAnswers: new Set(), // index-strings, same convention as the Kotlin VM
   writtenAnswer: "",
@@ -219,6 +220,14 @@ function renderLanding() {
     body.push(
       el("p", { class: "muted" }, ["Sign in with Google to take this quiz — your result is saved to your account, same as the app."]),
       googleBtn
+    );
+  } else if (state.existingAttempt && !quiz.allowRetake) {
+    // Same rule as JoinScreen.kt's alreadyDoneAndLocked — a completed attempt
+    // already exists and this quiz doesn't allow retakes, so don't offer Start.
+    body.push(
+      el("p", { class: "muted" }, [`Signed in as ${SC.resolveDisplayName(state.user)}`]),
+      el("p", { class: "muted" }, ["You've already completed this quiz. Retakes aren't allowed."]),
+      el("p", { class: "quiz-meta" }, [`Your score: ${state.existingAttempt.score} / ${state.existingAttempt.total}`])
     );
   } else {
     body.push(
@@ -514,7 +523,9 @@ function advance(castPollVote) {
   }
 
   const quiz = state.quiz;
-  if (quiz.showCorrectnessInstantly) {
+  // Never flash right/wrong on a question the owner marks by hand — nobody has decided
+  // yet, so any verdict shown here would be a guess we'd have to take back.
+  if (quiz.showCorrectnessInstantly && !requiresManualMarking(q, quiz)) {
     const feedback = buildInstantFeedback(q, state.questionAnswers[q.id] || []);
     state.instantFeedback = feedback;
     render();
@@ -537,11 +548,19 @@ function buildInstantFeedback(q, rawKeys) {
     const userInput = rawKeys[0] || "";
     const expected = q.writtenAnswer || "";
     let correct = false;
-    if (userInput.trim() && expected.trim()) {
-      const rule = q.answerRule || defaultAnswerRule();
-      correct = computeScore(evaluate(userInput, expected, rule), q.points, rule) > 0;
+    if (userInput.trim()) {
+      // No expected answer was ever set — nothing to grade against, so any attempt
+      // at all counts as correct rather than being auto-failed.
+      if (!expected.trim()) {
+        correct = true;
+      } else {
+        const rule = q.answerRule || defaultAnswerRule();
+        // Math.max(points, 1): see finishQuiz — a no-marks question would otherwise
+        // multiply every verdict down to zero and always read as wrong.
+        correct = computeScore(evaluate(userInput, expected, rule), Math.max(q.points, 1), rule) > 0;
+      }
     }
-    return { isCorrect: correct, correctWrittenAnswer: !correct ? expected : null };
+    return { isCorrect: correct, correctWrittenAnswer: !correct && expected.trim() ? expected : null };
   }
   if (q.type === "FILL_BLANK" && q.fillBlankContent) {
     const blankCorrectness = FB.fillBlankCorrectness(q.fillBlankContent, rawKeys);
@@ -559,6 +578,13 @@ function proceedPastQuestion() {
   prepareCurrentQuestion();
 }
 
+/** Mirrors Grading.kt's requiresManualMarking: the question's own override wins, else
+ *  the quiz-wide default. Polls are never hand-marked — nothing to be right about. */
+function requiresManualMarking(q, quiz) {
+  if (q.type === "POLL") return false;
+  return q.manualMarking != null ? q.manualMarking === true : quiz.manualMarkingDefault === true;
+}
+
 function finishQuiz() {
   state.screen = "finishing";
   render();
@@ -571,19 +597,33 @@ function finishQuiz() {
     if (q.type === "WRITTEN" || q.type === "FILL_BLANK") given = rawKeys;
     else given = rawKeys.map((k) => (q.options || [])[Number(k)]).filter((v) => v !== undefined);
 
-    let isCorrect;
-    if (q.type === "WRITTEN") {
-      const userInput = given[0] || "";
-      const expected = q.writtenAnswer || "";
-      const rule = q.answerRule || defaultAnswerRule();
-      isCorrect = userInput.trim() && expected.trim()
-        ? evaluator.computeScore(evaluator.evaluate(userInput, expected, rule), q.points, rule) > 0
-        : false;
-    } else if (q.type === "FILL_BLANK") {
-      isCorrect = q.fillBlankContent ? FB.fillBlankIsQuestionCorrect(q.fillBlankContent, given) : false;
-    } else {
-      const a = new Set(given), b = new Set(q.correctAnswers || []);
-      isCorrect = a.size === b.size && [...a].every((x) => b.has(x));
+    // Hand-marked questions skip evaluation entirely and submit as pending, exactly as
+    // QuizPreviewViewModel.finishPreview does. Grading them here would hand the taker a
+    // verdict the owner never gave — and one the owner's marking would then overwrite.
+    const isManual = requiresManualMarking(q, state.quiz);
+
+    let isCorrect = false;
+    if (!isManual) {
+      if (q.type === "WRITTEN") {
+        const userInput = given[0] || "";
+        const expected = q.writtenAnswer || "";
+        if (!userInput.trim()) {
+          isCorrect = false;
+        } else if (!expected.trim()) {
+          // No expected answer was ever set — any attempt counts as correct.
+          isCorrect = true;
+        } else {
+          const rule = q.answerRule || defaultAnswerRule();
+          // Math.max(points, 1): computeScore multiplies by points, so a no-marks
+          // question (points = 0) would grade every answer as wrong no matter what.
+          isCorrect = evaluator.computeScore(evaluator.evaluate(userInput, expected, rule), Math.max(q.points, 1), rule) > 0;
+        }
+      } else if (q.type === "FILL_BLANK") {
+        isCorrect = q.fillBlankContent ? FB.fillBlankIsQuestionCorrect(q.fillBlankContent, given) : false;
+      } else {
+        const a = new Set(given), b = new Set(q.correctAnswers || []);
+        isCorrect = a.size === b.size && [...a].every((x) => b.has(x));
+      }
     }
 
     return {
@@ -591,10 +631,16 @@ function finishQuiz() {
       isCorrect,
       givenAnswers: given,
       timeTakenSec: state.questionTimings[q.id] || 0,
+      needsManualMarking: isManual,
+      // null on a manual answer is what marks it pending; an auto-graded one banks its
+      // marks now (full points when right, none when wrong).
+      awardedPoints: isManual ? null : (isCorrect ? q.points : 0),
+      maxPoints: q.points,
     };
   });
 
-  const score = answers.filter((a) => a.isCorrect).length;
+  // Pending answers can't count yet — the owner's marking recomputes this server-side.
+  const score = answers.filter((a) => a.isCorrect && !a.needsManualMarking).length;
 
   SC.submitAttempt(state.quiz.id, state.user.id, score, scored.length, answers)
     .then(() => {
@@ -603,7 +649,11 @@ function finishQuiz() {
       render();
     })
     .catch((err) => {
-      state.errorMessage = "Couldn't save your result: " + (err.message || err);
+      // Backstop for a race (e.g. two tabs submitting at once) — the landing-page
+      // check above normally catches this first, but the server is the real guard.
+      state.errorMessage = err.message === "RETAKE_NOT_ALLOWED"
+        ? "This quiz doesn't allow retakes, and you've already completed it."
+        : "Couldn't save your result: " + (err.message || err);
       state.screen = "error";
       render();
     });
@@ -1024,6 +1074,24 @@ function buildScoreCard(score, total) {
   return card;
 }
 
+/**
+ * "Waiting to be marked" — mirrors ResultScreen.kt's PendingReviewCard.
+ *
+ * Doubles as the partial-marking banner: when some questions WERE app-checked
+ * ([gradedCount] > 0) it renders under the score card and reports that part too, since
+ * withholding it entirely would mean the taker learns nothing from this screen.
+ */
+function buildPendingCard(pending, score, gradedCount) {
+  const body = gradedCount > 0
+    ? `${score} of ${gradedCount} app-checked questions correct. The other ${pending} still need the quiz admin to mark them by hand, so this isn't your final result yet.`
+    : "Your answers have been submitted. The quiz admin still has to mark them by hand, so there's no result to show yet. Check back a little later.";
+
+  return el("div", { class: "pending-card" }, [
+    el("div", { class: "pending-title" }, ["Waiting to be marked"]),
+    el("div", { class: "pending-body" }, [body]),
+  ]);
+}
+
 /** Mirrors ResultScreen.kt's ReviewCard: colored left accent, Q# pill, question
  *  text, expands to show the options (or written comparison) with correct/wrong
  *  highlighting. */
@@ -1031,13 +1099,18 @@ function buildReviewCard(answer, index) {
   const q = state.quiz.questions.find((qq) => qq.id === answer.questionId);
   if (!q) return null;
   const isCorrect = answer.isCorrect;
+  // An unmarked answer isn't wrong, it's undecided — red here would tell the taker they
+  // got something wrong that nobody has actually looked at yet.
+  const isPending = answer.needsManualMarking === true && answer.awardedPoints == null;
+  const stateClass = isPending ? "pending" : isCorrect ? "correct" : "wrong";
   const expanded = expandedReviews.has(answer.questionId);
 
-  const accent = el("div", { class: "review-accent " + (isCorrect ? "correct" : "wrong") }, []);
+  const accent = el("div", { class: "review-accent " + stateClass }, []);
   const meta = el("div", { class: "review-meta" }, [
-    el("span", { class: "q-pill " + (isCorrect ? "correct" : "wrong") }, [`Q${index + 1}`]),
+    el("span", { class: "q-pill " + stateClass }, [`Q${index + 1}`]),
     el("span", { class: "muted" }, [`⏱ ${answer.timeTakenSec}s`]),
   ]);
+  if (isPending) meta.appendChild(el("span", { class: "pending-tag" }, ["Awaiting marking"]));
   const header = el(
     "div",
     { class: "review-header", onclick: () => { expandedReviews.has(q.id) ? expandedReviews.delete(q.id) : expandedReviews.add(q.id); render(); } },
@@ -1051,16 +1124,19 @@ function buildReviewCard(answer, index) {
     const bodyEl = el("div", { class: "review-body" }, []);
     if (q.type === "WRITTEN") {
       const given = answer.givenAnswers[0] || "";
-      bodyEl.appendChild(reviewLine("CORRECT ANSWER", q.writtenAnswer || "", "#22C55E"));
-      bodyEl.appendChild(reviewLine("YOUR ANSWER", given || "(no answer)", isCorrect ? "#22C55E" : "#EF4444"));
+      // The expected answer stays hidden while pending: it's the owner's reference for
+      // marking, and revealing it before they've judged invites "but I wrote that" .
+      if (!isPending) bodyEl.appendChild(reviewLine("CORRECT ANSWER", q.writtenAnswer || "", "#22C55E"));
+      bodyEl.appendChild(reviewLine("YOUR ANSWER", given || "(no answer)", isPending ? "#B08900" : isCorrect ? "#22C55E" : "#EF4444"));
     } else {
       (q.options || []).forEach((opt) => {
         const wasGiven = answer.givenAnswers.includes(opt);
         const isCorrectOpt = (q.correctAnswers || []).includes(opt);
-        const cls = isCorrectOpt ? "correct" : wasGiven ? "wrong" : "";
+        // While pending, only show what they picked — no green "this was right" hints.
+        const cls = isPending ? (wasGiven ? "pending" : "") : isCorrectOpt ? "correct" : wasGiven ? "wrong" : "";
         bodyEl.appendChild(
           el("div", { class: "option-row" + (cls ? " " + cls : ""), style: "cursor:default" }, [
-            el("div", { class: "option-marker" }, isCorrectOpt || wasGiven ? [html(CHECK_SVG)] : []),
+            el("div", { class: "option-marker" }, (isPending ? wasGiven : isCorrectOpt || wasGiven) ? [html(CHECK_SVG)] : []),
             el("span", {}, [opt]),
           ])
         );
@@ -1084,10 +1160,23 @@ function renderResult() {
   document.documentElement.style.setProperty("--accent", accent);
   const { score, total, answers } = state.result;
 
+  const pending = answers.filter((a) => a.needsManualMarking && a.awardedPoints == null).length;
+  const gradedCount = answers.length - pending;
+
   const content = el("div", { class: "screen" }, [
     el("h2", { class: "quiz-title", style: "text-align:center;margin:4px 0 0" }, [quiz.title]),
-    buildScoreCard(score, total),
+    // Nothing marked yet means there is no score — not a zero, not a partial one — so the
+    // score card is replaced outright rather than showing 0/N (mirrors PendingReviewCard).
+    pending > 0 && gradedCount === 0
+      ? buildPendingCard(pending, 0, 0)
+      : buildScoreCard(score, total),
   ]);
+
+  if (pending > 0 && gradedCount > 0) {
+    // Some questions were app-checked and some weren't: the score above is real but not
+    // final, and saying so is the difference between trusting it and being surprised.
+    content.appendChild(buildPendingCard(pending, score, gradedCount));
+  }
 
   if (!quiz.showResult) {
     content.appendChild(el("p", { class: "muted", style: "text-align:center" }, ["Results are hidden for this quiz — check with the quiz creator."]));
@@ -1127,6 +1216,9 @@ async function boot() {
     }
     state.quiz = quiz;
     state.user = await SC.getCurrentUser();
+    if (state.user) {
+      state.existingAttempt = await SC.fetchExistingAttempt(quiz.id, state.user.id);
+    }
 
     // The Google sign-in redirect leaves an extra "in transit" history entry
     // (this page -> Google -> back here) and a #access_token=... fragment in

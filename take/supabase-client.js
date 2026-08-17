@@ -92,6 +92,8 @@ function questionFromRow(row) {
     points: row.points,
     orderIndex: row.order_index,
     hint: row.hint ?? null,
+    // null = inherit the quiz's manual_marking_default (mirrors Question.manualMarking).
+    manualMarking: row.manual_marking ?? null,
     answerRule: row.answer_rule ?? null, // jsonb, already an object (not a JSON string like the Kotlin column)
     pollSettings: row.poll_settings ?? null,
     fillBlankContent: row.fill_blank ?? null,
@@ -113,6 +115,8 @@ function quizFromRow(row, questions) {
     allowRetake: row.allow_retake,
     showResult: row.show_result,
     showAnswers: row.show_answers,
+    // Quiz-wide default for hand-marking; each question can override it.
+    manualMarkingDefault: row.manual_marking_default ?? false,
     themeColorName: row.theme_color_name,
     createdAt: row.created_at,
     questions: questions.sort((a, b) => a.orderIndex - b.orderIndex),
@@ -144,6 +148,23 @@ async function fetchQuizByShareCode(code) {
   return quizFromRow(quizRow, (questionRows || []).map(questionFromRow));
 }
 
+/** Latest real (non-preview) attempt this user already has for a quiz, or null.
+ *  Mirrors JoinViewModel.kt's existing-attempt lookup — used to decide whether
+ *  "Start Quiz" should be offered when the quiz doesn't allow retakes. */
+async function fetchExistingAttempt(quizId, userId) {
+  const { data, error } = await supabaseClient
+    .from("attempts")
+    .select("*")
+    .eq("quiz_id", quizId)
+    .eq("user_id", userId)
+    .eq("is_preview", false)
+    .order("finished_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error || !data) return null;
+  return { id: data.id, score: data.score, total: data.total, finishedAt: data.finished_at };
+}
+
 // ── Attempt submission (mirrors pushAttempt) ──────────────────────────────
 
 /** Writes directly into the real attempts/attempt_answers tables — the web
@@ -162,8 +183,19 @@ async function submitAttempt(quizId, userId, score, total, answers) {
     total,
     finished_at: finishedAt,
     is_preview: false,
+    // Analytics only — lets the creator see how many people answer from the browser
+    // rather than the Android app. Mirrors AttemptSource in Models.kt.
+    source: "WEB",
   });
-  if (attemptErr) throw attemptErr;
+  if (attemptErr) {
+    // RLS rejects a second real attempt when the quiz doesn't allow retakes
+    // (attempt_retake_allowed() in schema.sql) — surface that distinctly so
+    // the UI can show a clear message instead of a raw Postgres error.
+    if (attemptErr.code === "42501") {
+      throw new Error("RETAKE_NOT_ALLOWED");
+    }
+    throw attemptErr;
+  }
 
   const answerRows = answers.map((a) => ({
     id: crypto.randomUUID(),
@@ -173,6 +205,13 @@ async function submitAttempt(quizId, userId, score, total, answers) {
     given_answer: a.givenAnswers,
     time_taken_sec: a.timeTakenSec,
     used_hint: false,
+    // Manual marking — must be written here, not left to defaults: an answer that
+    // silently landed with needs_manual_marking = false would never appear in the
+    // owner's marking queue, and the taker would get an auto-graded verdict for a
+    // question the creator explicitly reserved for themselves.
+    needs_manual_marking: a.needsManualMarking === true,
+    awarded_points: a.awardedPoints ?? null,
+    max_points: a.maxPoints ?? 0,
   }));
   if (answerRows.length > 0) {
     const { error: answersErr } = await supabaseClient.from("attempt_answers").insert(answerRows);
@@ -234,6 +273,7 @@ window.SupabaseClient = {
   confirmDisplayName,
   fetchQuizByShareCode,
   effectiveStatus,
+  fetchExistingAttempt,
   submitAttempt,
   ensurePollOpen,
   fetchPollVotes,

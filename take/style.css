@@ -15,6 +15,9 @@
   --success-bg: #ECFDF5;
   --error: #EF4444;
   --error-bg: #FEF2F2;
+  /* Manual marking: an answer nobody has judged yet is neither green nor red. */
+  --pending: #B08900;
+  --pending-bg: #FFF8E1;
   --timer-track: #E8E7F8;
   /* Per-quiz accent — set inline once a quiz loads, via QUIZ_THEME_COLORS. */
   --accent: var(--primary);
@@ -242,6 +245,9 @@ button.text-link {
 .option-row.selected { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
 .option-row.correct { border-color: var(--success); background: var(--success-bg); }
 .option-row.wrong { border-color: var(--error); background: var(--error-bg); }
+/* What they picked, on a question nobody has marked yet — neutral amber, since neither
+   green nor red would be true. */
+.option-row.pending { border-color: var(--pending); background: var(--pending-bg); }
 
 .option-marker {
   width: 22px;
@@ -257,6 +263,7 @@ button.text-link {
 .option-row.correct .option-marker { border-color: var(--accent); background: var(--accent); }
 .option-row.correct .option-marker { border-color: var(--success); background: var(--success); }
 .option-row.wrong .option-marker { border-color: var(--error); background: var(--error); }
+.option-row.pending .option-marker { border-color: var(--pending); background: var(--pending); }
 .option-marker.square { border-radius: 6px; }
 .option-marker svg { width: 13px; height: 13px; }
 
@@ -462,13 +469,31 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
   padding: 12px 14px;
   cursor: pointer;
 }
+/* "Waiting to be marked" — same shell as .score-card so it reads as the header it
+   replaces, in amber rather than the usual purple so the waiting state is obvious. */
+.pending-card {
+  width: 100%;
+  border-radius: 20px;
+  padding: 20px;
+  background: linear-gradient(135deg, #F6A609, #D98200);
+  color: #fff;
+}
+.pending-card .pending-title { font-size: 18px; font-weight: 700; }
+.pending-card .pending-body { font-size: 13px; margin-top: 8px; color: rgba(255,255,255,0.92); }
+
 .review-accent { width: 3px; height: 40px; border-radius: 2px; flex-shrink: 0; }
 .review-accent.correct { background: var(--success); }
 .review-accent.wrong { background: var(--error); }
+.review-accent.pending { background: var(--pending); }
 .review-meta { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
 .q-pill { font-size: 11px; font-weight: 700; border-radius: 4px; padding: 2px 6px; }
 .q-pill.correct { background: var(--success-bg); color: var(--success); }
 .q-pill.wrong { background: var(--error-bg); color: var(--error); }
+.q-pill.pending { background: var(--pending-bg); color: var(--pending); }
+.pending-tag {
+  font-size: 11px; font-weight: 500; border-radius: 4px; padding: 2px 5px;
+  background: var(--pending-bg); color: var(--pending);
+}
 .review-question { font-size: 14px; font-weight: 600; color: var(--text-primary); }
 .review-body { padding: 0 14px 14px; display: flex; flex-direction: column; gap: 6px; background: #FAF9FF; }
 .review-answer-line { font-size: 13px; padding: 8px 10px; border-left: 3px solid; border-radius: 4px; background: #fff; }
