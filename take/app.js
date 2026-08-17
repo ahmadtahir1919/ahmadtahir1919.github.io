@@ -333,8 +333,8 @@ function prepareCurrentQuestion() {
     state.pollHasVoted = false;
     state.pollDistribution = null;
     state.pollConsensus = null;
-    state.totalTimeSec = 0; // reset; loadPollForCurrentQuestion sets these once the
-    state.secondsRemaining = 0; // real closes_at is known (only when OPEN + timed)
+    state.totalTimeSec = 0; // reset; loadPollForCurrentQuestion starts this taker's own
+    state.secondsRemaining = 0; // countdown once the poll is known to be open
     render(); // loading state while ensurePollOpen/fetchPollVotes round-trip
     loadPollForCurrentQuestion(q);
     return;
@@ -352,20 +352,22 @@ async function loadPollForCurrentQuestion(q) {
   const settings = q.pollSettings || {};
   let opened;
   try {
-    opened = await SC.ensurePollOpen(q.id, q.timeSec, settings.noTimeLimit);
+    opened = await SC.ensurePollOpen(q.id);
   } catch (e) {
     // RLS rejects a non-owner's very first open (poll_states writes are
     // owner-only — same latent gap the Android app has today, see schema.sql).
     // Falls back to a local-only "just opened now" state so voting still works
     // for this visitor even though it never reaches other devices.
-    opened = { status: "OPEN", opened_at: Date.now(), closes_at: settings.noTimeLimit || !q.timeSec ? null : Date.now() + q.timeSec * 1000 };
+    opened = { status: "OPEN", opened_at: Date.now(), closes_at: null };
   }
   // Stale question guard — the user may have already swiped past this question
   // (Next/timer) by the time this async round-trip resolves.
   if (currentQuestion()?.id !== q.id) return;
 
-  const now = Date.now();
-  const effectiveClosed = opened.status === "CLOSED" || (opened.closes_at != null && now >= opened.closes_at);
+  // Only an explicit close counts. A passed closes_at used to close the poll for everyone,
+  // which meant the first person to reach the question locked out everyone who arrived
+  // later — see PollState.closesAt in PollModels.kt.
+  const effectiveClosed = opened.status === "CLOSED";
   state.pollState = opened;
 
   const votes = (await SC.fetchPollVotes(q.id).catch(() => [])) || [];
@@ -383,9 +385,12 @@ async function loadPollForCurrentQuestion(q) {
     state.pollConsensus = PL.computePollConsensus(distribution);
   } else {
     state.pollDisplayOrder = PL.pollShuffledOrder(state.user.id, q.id, (q.options || []).length);
-    if (opened.closes_at) {
-      state.totalTimeSec = Math.max(1, Math.round((opened.closes_at - opened.opened_at) / 1000));
-      state.secondsRemaining = Math.max(0, Math.round((opened.closes_at - now) / 1000));
+    // This taker's own countdown, starting now — the same per-question timer every other
+    // question type gets. When it runs out it just advances them; it never closes the poll.
+    const pollTimeSec = settings.noTimeLimit ? 0 : (q.timeSec || 0);
+    if (pollTimeSec > 0) {
+      state.totalTimeSec = pollTimeSec;
+      state.secondsRemaining = pollTimeSec;
       state.timerHandle = setInterval(() => {
         state.secondsRemaining -= 1;
         if (state.secondsRemaining <= 0) {

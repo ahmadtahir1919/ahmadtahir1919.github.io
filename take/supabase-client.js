@@ -223,12 +223,14 @@ async function submitAttempt(quizId, userId, score, total, answers) {
 
 // ── Poll (mirrors pushPollState/pushPollVote/fetchPollStates/fetchPollVotes) ─
 
-async function ensurePollOpen(questionId, timeSec, noTimeLimit) {
+/** Opens the poll if nobody has yet. No deadline is written: a poll stays open until its
+ *  owner closes it, and the question's time limit is each taker's own countdown — see
+ *  PollState.closesAt in PollModels.kt for why the shared deadline was wrong. */
+async function ensurePollOpen(questionId) {
   const { data: existing } = await supabaseClient.from("poll_states").select("*").eq("question_id", questionId).maybeSingle();
   if (existing) return existing;
   const openedAt = Date.now();
-  const closesAt = noTimeLimit || timeSec <= 0 ? null : openedAt + timeSec * 1000;
-  const row = { question_id: questionId, status: "OPEN", opened_at: openedAt, closes_at: closesAt };
+  const row = { question_id: questionId, status: "OPEN", opened_at: openedAt, closes_at: null };
   const { error } = await supabaseClient.from("poll_states").upsert(row);
   if (error) throw error;
   return row;
