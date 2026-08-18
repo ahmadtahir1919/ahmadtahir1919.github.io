@@ -178,7 +178,7 @@ function renderLoading(label) {
 function renderError() {
   app.appendChild(
     el("div", { class: "screen centered" }, [
-      el("p", { class: "quiz-title" }, ["Something went wrong"]),
+      el("p", { class: "quiz-title" }, ["Oops, that didn't work"]),
       el("p", { class: "muted" }, [state.errorMessage]),
     ])
   );
