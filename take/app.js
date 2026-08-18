@@ -663,9 +663,21 @@ function requiresManualMarking(q, quiz) {
   return q.type !== "POLL" && quiz.manualMarkingDefault === true;
 }
 
-function finishQuiz() {
+async function finishQuiz() {
   state.screen = "finishing";
   render();
+
+  // Mirrors QuizPreviewViewModel.finishPreview on Android — an owner's remove-participant
+  // action deletes this taker's joined_quizzes row remotely at any point during the quiz,
+  // and nothing earlier in this flow would know. `=== false` specifically (not `!== true`):
+  // null means the check itself failed (offline/error), which must never itself block a
+  // legitimate submission — only a confirmed "no" does.
+  if ((await SC.isJoined(state.quiz.id, state.user.id)) === false) {
+    state.errorMessage = "This quiz's owner removed you from it, so this submission can no longer go through.";
+    state.screen = "error";
+    render();
+    return;
+  }
 
   const evaluator = window.Evaluator;
   const scored = state.quiz.questions.filter((q) => q.type !== "POLL");

@@ -269,6 +269,22 @@ async function joinQuiz(userId, quizId) {
   if (error) throw error;
 }
 
+/** Checked right before a real submission lands — mirrors QuizRepository.isJoinedRemote()
+ *  on Android. An owner's remove-participant action deletes this row remotely, but the
+ *  removed taker's own tab has no way to find out short of asking here. Null (not false)
+ *  on failure — a network hiccup must never itself block a legitimate submission; only a
+ *  confirmed "no" (an actual empty result) does. */
+async function isJoined(quizId, userId) {
+  const { data, error } = await supabaseClient
+    .from("joined_quizzes")
+    .select("user_id")
+    .eq("quiz_id", quizId)
+    .eq("user_id", userId)
+    .limit(1);
+  if (error) return null;
+  return (data || []).length > 0;
+}
+
 async function ensurePollOpen(questionId) {
   const { data: existing } = await supabaseClient.from("poll_states").select("*").eq("question_id", questionId).maybeSingle();
   if (existing) return existing;
@@ -320,6 +336,7 @@ window.SupabaseClient = {
   effectiveStatus,
   countdownUntil,
   joinQuiz,
+  isJoined,
   fetchExistingAttempt,
   submitAttempt,
   ensurePollOpen,
