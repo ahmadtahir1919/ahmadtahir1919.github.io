@@ -256,6 +256,19 @@ async function submitAttempt(quizId, userId, score, total, answers) {
 /** Opens the poll if nobody has yet. No deadline is written: a poll stays open until its
  *  owner closes it, and the question's time limit is each taker's own countdown — see
  *  PollState.closesAt in PollModels.kt for why the shared deadline was wrong. */
+/** Records membership — mirrors QuizRepository.joinQuiz()/pushJoinQuiz() on Android. Lets
+ *  the quiz owner's Participants tab show this person as "joined" even before (or without)
+ *  ever completing an attempt, same as joining by code in the app. Upsert: re-joining
+ *  (revisiting the link) just refreshes joined_at rather than erroring on a duplicate row. */
+async function joinQuiz(userId, quizId) {
+  const { error } = await supabaseClient.from("joined_quizzes").upsert({
+    user_id: userId,
+    quiz_id: quizId,
+    joined_at: Date.now(),
+  });
+  if (error) throw error;
+}
+
 async function ensurePollOpen(questionId) {
   const { data: existing } = await supabaseClient.from("poll_states").select("*").eq("question_id", questionId).maybeSingle();
   if (existing) return existing;
@@ -306,6 +319,7 @@ window.SupabaseClient = {
   fetchQuizByShareCode,
   effectiveStatus,
   countdownUntil,
+  joinQuiz,
   fetchExistingAttempt,
   submitAttempt,
   ensurePollOpen,

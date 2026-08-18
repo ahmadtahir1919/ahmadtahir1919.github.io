@@ -77,6 +77,9 @@ const state = {
   instantFeedback: null,
   result: null, // { score, total, answers }
   landingTickerHandle: null, // ticks the Scheduled-quiz countdown on the landing card
+  hasJoined: false, // Join clicked (and joined_quizzes recorded) this session — gates Start Quiz
+  joinError: null,
+  joining: false,
 };
 
 function render() {
@@ -245,6 +248,18 @@ function renderLanding() {
       el("p", { class: "muted" }, ["You've already completed this quiz. Retakes aren't allowed."]),
       el("p", { class: "quiz-meta" }, [`Your score: ${state.existingAttempt.score} / ${state.existingAttempt.total}`])
     );
+  } else if (!state.hasJoined) {
+    // Join is its own step, separate from Start — records membership (joined_quizzes)
+    // right away so the owner's Participants tab sees this person the moment they join,
+    // same as joining by code in the app, rather than only once they actually finish
+    // answering something.
+    body.push(
+      el("p", { class: "muted" }, [`Signed in as ${SC.resolveDisplayName(state.user)}`]),
+      el("button", { class: "primary", onclick: joinQuizAction }, [state.joining ? "Joining…" : "Join"])
+    );
+    if (state.joinError) {
+      body.push(el("p", { class: "muted", style: "color:var(--error)" }, [state.joinError]));
+    }
   } else {
     body.push(
       el("p", { class: "muted" }, [`Signed in as ${SC.resolveDisplayName(state.user)}`]),
@@ -322,6 +337,21 @@ async function submitConfirmedName() {
 
 function currentQuestion() {
   return state.quiz.questions[state.currentIndex];
+}
+
+async function joinQuizAction() {
+  if (state.joining) return;
+  state.joining = true;
+  state.joinError = null;
+  render();
+  try {
+    await SC.joinQuiz(state.user.id, state.quiz.id);
+    state.hasJoined = true;
+  } catch (e) {
+    state.joinError = "Couldn't join — check your connection and try again.";
+  }
+  state.joining = false;
+  render();
 }
 
 function startQuiz() {
