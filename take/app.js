@@ -569,7 +569,10 @@ async function loadPollForCurrentQuestion(q) {
     state.pollDistribution = distribution;
     state.pollConsensus = PL.computePollConsensus(distribution);
   } else {
-    state.pollDisplayOrder = PL.pollShuffledOrder(state.user.id, q.id, (q.options || []).length);
+    const optionCount = (q.options || []).length;
+    state.pollDisplayOrder = settings.shuffleOptions
+      ? PL.pollShuffledOrder(state.user.id, q.id, optionCount)
+      : Array.from({ length: optionCount }, (_, i) => i);
     // This taker's own countdown, starting now — the same per-question timer every other
     // question type gets. When it runs out it just advances them; it never closes the poll.
     const pollTimeSec = settings.noTimeLimit ? 0 : (q.timeSec || 0);
@@ -817,6 +820,12 @@ async function finishQuiz() {
     const isManual = requiresManualMarking(q, state.quiz);
 
     let isCorrect = false;
+    // Populated only for an auto-graded WRITTEN answer with something on both sides to
+    // actually compare — mirrors Android's evalResult, which is likewise null for the
+    // trivial blank-input/blank-expected-answer cases. Used by the review card to show
+    // the same status label/points/word-by-word detail Android's WrittenEvalRow does,
+    // instead of a flat correct/wrong line with no explanation of *why*.
+    let evaluationResult = null;
     if (!isManual) {
       if (q.type === "WRITTEN") {
         const userInput = given[0] || "";
@@ -828,9 +837,10 @@ async function finishQuiz() {
           isCorrect = true;
         } else {
           const rule = q.answerRule || defaultAnswerRule();
+          evaluationResult = evaluator.evaluate(userInput, expected, rule);
           // Math.max(points, 1): computeScore multiplies by points, so a no-marks
           // question (points = 0) would grade every answer as wrong no matter what.
-          isCorrect = evaluator.computeScore(evaluator.evaluate(userInput, expected, rule), Math.max(q.points, 1), rule) > 0;
+          isCorrect = evaluator.computeScore(evaluationResult, Math.max(q.points, 1), rule) > 0;
         }
       } else if (q.type === "FILL_BLANK") {
         isCorrect = q.fillBlankContent ? FB.fillBlankIsQuestionCorrect(q.fillBlankContent, given) : false;
@@ -851,6 +861,10 @@ async function finishQuiz() {
       awardedPoints: isManual ? null : (isCorrect ? q.points : 0),
       maxPoints: q.points,
       usedHint: state.hintUsed[q.id] === true,
+      // In-memory only for this same-session review — attempt_answers has no column for
+      // it (mirrors what's actually persisted), same as Android's evalResult isn't
+      // re-derivable after the fact either without re-running the evaluator.
+      evaluationResult,
     };
   });
 
@@ -1166,21 +1180,39 @@ function buildPollResults(q) {
     container.appendChild(buildPollResultRow(opt, state.pollSelected.has(opt.optionIndex)));
   });
   if (dist.other.count > 0) {
-    container.appendChild(buildPollResultRow(dist.other, state.pollSelected.has(PL.POLL_OTHER_INDEX)));
+    container.appendChild(buildPollResultRow(dist.other, state.pollSelected.has(PL.POLL_OTHER_INDEX), dist.otherEntries));
   }
 
   return container;
 }
 
-function buildPollResultRow(opt, mine) {
-  return el("div", { class: "poll-result-row" + (mine ? " mine" : "") }, [
+function buildPollResultRow(opt, mine, otherEntries) {
+  const children = [
     el("div", { class: "top" }, [
       el("span", { class: "label" }, [opt.label]),
       el("span", { class: "pct" }, [`${opt.percent}%`]),
     ]),
     el("div", { class: "poll-result-bar" }, [el("div", { class: "poll-result-bar-fill", style: `width:${opt.percent}%` })]),
     el("div", { class: "poll-result-count" }, [`${opt.count} vote${opt.count === 1 ? "" : "s"}`]),
-  ]);
+  ];
+  // "Other" free-text entries — what people actually typed, grouped and counted by
+  // computePollDistribution's otherEntries. Was collected and computed but never
+  // rendered anywhere on web (the aggregate "Other: N votes" bar was all a viewer saw).
+  if (otherEntries && otherEntries.length > 0) {
+    children.push(
+      el("ul", { class: "poll-other-entries" }, otherEntries.map((entry) =>
+        el("li", {}, [`${entry.text} (${entry.count})`])
+      ))
+    );
+  }
+  // Per-voter "why" text from Ask Reason — also collected and computed already, just
+  // never shown on web.
+  if (opt.reasons && opt.reasons.length > 0) {
+    children.push(
+      el("ul", { class: "poll-reasons" }, opt.reasons.map((reason) => el("li", {}, [`“${reason}”`])))
+    );
+  }
+  return el("div", { class: "poll-result-row" + (mine ? " mine" : "") }, children);
 }
 
 function consensusText(c) {
@@ -1385,6 +1417,15 @@ function buildReviewCard(answer, index) {
       // marking, and revealing it before they've judged invites "but I wrote that" .
       if (!isPending) bodyEl.appendChild(reviewLine("CORRECT ANSWER", q.writtenAnswer || "", "#22C55E"));
       bodyEl.appendChild(reviewLine("YOUR ANSWER", given || "(no answer)", isPending ? "#B08900" : isCorrect ? "#22C55E" : "#EF4444"));
+      // Mirrors ResultScreen.kt's WrittenEvalRow — status label, points-earned badge,
+      // and per-word matched/unmatched chips from the evaluator's own breakdown. Was
+      // previously discarded entirely on web (only isCorrect survived past evaluate()),
+      // so a typo-tolerant/partial-credit answer just showed a flat green/red line with
+      // no explanation of how the verdict was actually reached.
+      const evalResult = answer.evaluationResult;
+      if (!isPending && evalResult) {
+        bodyEl.appendChild(buildWrittenEvalDetail(evalResult, answer.awardedPoints, answer.maxPoints));
+      }
     } else if (q.type === "FILL_BLANK") {
       // This branch didn't exist at all before — FILL_BLANK has no q.options (that's
       // WRITTEN/FILL_BLANK-only null per buildQuestionFromForm), so it fell into the
@@ -1441,6 +1482,37 @@ function reviewLine(label, text, color) {
     el("span", { class: "rline-label", style: `color:${color}` }, [label]),
     el("span", {}, [text]),
   ]);
+}
+
+const WRITTEN_STATUS_LABELS = {
+  EXACT_MATCH: "Correct",
+  ACCEPTED_WITH_TYPO: "Accepted — small typo",
+  PARTIAL_MATCH: "Partial match",
+  INCORRECT: "Incorrect",
+};
+
+/** Mirrors ResultScreen.kt's WrittenEvalRow: a status chip, a points-earned badge, and
+ *  a word-by-word matched/unmatched breakdown from the evaluator's wordDetails. */
+function buildWrittenEvalDetail(evalResult, awardedPoints, maxPoints) {
+  const statusColor = evalResult.status === "EXACT_MATCH" || evalResult.status === "ACCEPTED_WITH_TYPO"
+    ? "#22C55E"
+    : evalResult.status === "PARTIAL_MATCH" ? "#B08900" : "#EF4444";
+  const children = [
+    el("div", { class: "written-eval-top" }, [
+      el("span", { class: "written-eval-status", style: `color:${statusColor}` }, [
+        WRITTEN_STATUS_LABELS[evalResult.status] || evalResult.status,
+      ]),
+      el("span", { class: "written-eval-points" }, [`${awardedPoints ?? 0}/${maxPoints} points`]),
+    ]),
+  ];
+  if (evalResult.wordDetails && evalResult.wordDetails.length > 0) {
+    children.push(
+      el("div", { class: "written-eval-words" }, evalResult.wordDetails.map((w) =>
+        el("span", { class: "written-eval-word" + (w.matched ? " matched" : " unmatched") }, [w.expectedWord])
+      ))
+    );
+  }
+  return el("div", { class: "written-eval-detail" }, children);
 }
 
 function renderResult() {
