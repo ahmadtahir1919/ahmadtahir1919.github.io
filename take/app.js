@@ -246,7 +246,8 @@ function renderLanding() {
     body.push(
       signedInLine(state.user),
       el("p", { class: "muted" }, ["You've already completed this quiz. Retakes aren't allowed."]),
-      el("p", { class: "quiz-meta" }, [`Your score: ${state.existingAttempt.score} / ${state.existingAttempt.total}`])
+      el("p", { class: "quiz-meta" }, [`Your score: ${state.existingAttempt.score} / ${state.existingAttempt.total}`]),
+      signOutRow()
     );
   } else if (!state.hasJoined) {
     // Join is its own step, separate from Start — records membership (joined_quizzes)
@@ -260,10 +261,12 @@ function renderLanding() {
     if (state.joinError) {
       body.push(el("p", { class: "muted", style: "color:var(--error)" }, [state.joinError]));
     }
+    body.push(signOutRow());
   } else {
     body.push(
       signedInLine(state.user),
-      el("button", { class: "primary", onclick: startQuiz }, ["Start Quiz"])
+      el("button", { class: "primary", onclick: startQuiz }, ["Start Quiz"]),
+      signOutRow()
     );
   }
 
@@ -339,13 +342,17 @@ function currentQuestion() {
   return state.quiz.questions[state.currentIndex];
 }
 
-/** The "Signed in as X" line shown across the landing card's post-sign-in branches,
- *  with a small "Sign out" escape hatch right next to it — wrong Google account picked,
- *  or just wants to switch, shouldn't mean reloading the tab and hunting for a way out. */
 function signedInLine(user) {
-  return el("div", { class: "signed-in-row" }, [
-    el("span", { class: "muted" }, [`Signed in as ${SC.resolveDisplayName(user)}`]),
-    el("button", { class: "skip-link", style: "padding:2px 0", onclick: signOutAction }, ["Not you? Sign out"]),
+  return el("p", { class: "muted" }, [`Signed in as ${SC.resolveDisplayName(user)}`]);
+}
+
+/** "Sign out" escape hatch — wrong Google account picked, or just wants to switch,
+ *  shouldn't mean reloading the tab and hunting for a way out. Deliberately its own
+ *  full-width row below the primary action (Join/Start), separated by a divider line —
+ *  sitting right next to that button risked a mis-tap signing someone out by accident. */
+function signOutRow() {
+  return el("div", { class: "sign-out-row" }, [
+    el("button", { class: "skip-link", onclick: signOutAction }, ["Not you? Sign out"]),
   ]);
 }
 
