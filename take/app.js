@@ -1248,10 +1248,17 @@ function buildReviewCard(answer, index) {
         const isCorrectOpt = (q.correctAnswers || []).includes(opt);
         // While pending, only show what they picked — no green "this was right" hints.
         const cls = isPending ? (wasGiven ? "pending" : "") : isCorrectOpt ? "correct" : wasGiven ? "wrong" : "";
+        // isCorrectOpt alone only ever means "this is a/the right answer" — shown green
+        // whether or not the taker actually picked it (that's what reveals the correct
+        // answer to them). Without a "YOUR ANSWER" tag, nothing distinguished "correct,
+        // and you picked it" from "correct, but you didn't" — both were a plain green
+        // check, so a reader genuinely couldn't tell what the taker had actually chosen.
+        const labelChildren = [el("span", {}, [opt])];
+        if (wasGiven) labelChildren.push(el("span", { class: "option-your-answer-tag" }, ["YOUR ANSWER"]));
         bodyEl.appendChild(
           el("div", { class: "option-row" + (cls ? " " + cls : ""), style: "cursor:default" }, [
             el("div", { class: "option-marker" }, (isPending ? wasGiven : isCorrectOpt || wasGiven) ? [html(CHECK_SVG)] : []),
-            el("span", {}, [opt]),
+            el("div", { style: "display:flex;flex-direction:column;gap:2px" }, labelChildren),
           ])
         );
       });
