@@ -106,10 +106,9 @@ function render() {
 /** Leaving the flow (Done, or the X mid-quiz) never navigates anywhere — there's
  *  no page at the site root, which is exactly what caused the 404. This just
  *  swaps to a plain "you're done" screen; the tab itself is meant to be closed
- *  by hand or via the Close button below (best-effort — window.close() only
- *  actually works on tabs the browser considers script-opened; most mobile
- *  browsers won't close a tab that was reached via a regular link tap, so the
- *  message says so explicitly rather than promising something that may not fire). */
+ *  by hand, or via renderClosed's Close button when the browser will actually
+ *  honor window.close() (see that function's doc — most tabs reached via a
+ *  regular link tap don't qualify, so the button just doesn't render there). */
 function leaveQuiz(message) {
   clearInterval(state.timerHandle);
   state.closedMessage = message;
@@ -118,14 +117,24 @@ function leaveQuiz(message) {
 }
 
 function renderClosed() {
+  // window.close() only actually works when the browser considers this tab
+  // "script-closable" — opened via window.open() (window.opener set) or with no
+  // navigation history of its own (history.length <= 1, i.e. it never followed a
+  // link to get here). The common case — tapping a regular share-code link — is
+  // neither, so the button would silently no-op on click. A dead button is worse
+  // than no button, so it's only rendered when the heuristic says it'll work.
+  const canClose = window.opener != null || window.history.length <= 1;
+  const children = [
+    el("p", { style: "font-size:40px;margin:0" }, ["👋"]),
+    el("h2", { class: "quiz-title" }, [state.closedMessage || "Thanks!"]),
+    el("p", { class: "muted" }, ["You can close this tab now."]),
+  ];
+  if (canClose) {
+    children.push(el("button", { class: "primary", style: "margin-top:8px", onclick: () => window.close() }, ["Close tab"]));
+  }
   app.appendChild(
     el("div", { class: "screen centered" }, [
-      el("div", { class: "card", style: "width:100%" }, [
-        el("p", { style: "font-size:40px;margin:0" }, ["👋"]),
-        el("h2", { class: "quiz-title" }, [state.closedMessage || "Thanks!"]),
-        el("p", { class: "muted" }, ["You can close this tab now."]),
-        el("button", { class: "primary", style: "margin-top:8px", onclick: () => window.close() }, ["Close tab"]),
-      ]),
+      el("div", { class: "card", style: "width:100%" }, children),
     ])
   );
 }
