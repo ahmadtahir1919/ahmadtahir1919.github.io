@@ -160,6 +160,90 @@ function html(markup) {
   return t.content.firstChild;
 }
 
+// ── Markdown (mirrors MarkdownParser.kt) — question text supports bold/italic/
+// underline/strikethrough/code inline spans plus #/##/- block prefixes on Android
+// (QuestionText's parseMarkdown), but this page just printed the raw "**text**"
+// asterisks verbatim since none of that existed here at all. ─────────────────────
+
+const MD_INLINE_MARKERS = [
+  { marker: "**", tag: "strong" },
+  { marker: "~~", tag: "s" },
+  { marker: "__", tag: "u" },
+  { marker: "*",  tag: "em" },
+  { marker: "`",  tag: "code" },
+];
+
+/** Same left-to-right scan as appendInlineSpans() in MarkdownParser.kt: a dangling
+ *  (unclosed) marker is silently dropped rather than shown literally, and a lone "*"
+ *  that's actually the start of "**" is treated as a plain character so bold doesn't
+ *  get misread as two nested italics. */
+function appendInlineMarkdown(container, text, depth) {
+  depth = depth || 0;
+  if (depth > 6 || !text) {
+    if (text) container.appendChild(document.createTextNode(text));
+    return;
+  }
+  let i = 0;
+  let plain = "";
+  const flushPlain = () => {
+    if (plain) { container.appendChild(document.createTextNode(plain)); plain = ""; }
+  };
+  while (i < text.length) {
+    const def = MD_INLINE_MARKERS.find((d) => text.startsWith(d.marker, i));
+    if (!def) { plain += text[i]; i++; continue; }
+    if (def.marker === "*" && text.startsWith("**", i)) { plain += text[i]; i++; continue; }
+    const openEnd = i + def.marker.length;
+    const closeIdx = text.indexOf(def.marker, openEnd);
+    if (closeIdx < 0) { i += def.marker.length; continue; }
+    flushPlain();
+    const span = document.createElement(def.tag);
+    appendInlineMarkdown(span, text.slice(openEnd, closeIdx), depth + 1);
+    container.appendChild(span);
+    i = closeIdx + def.marker.length;
+  }
+  flushPlain();
+}
+
+/** Mirrors parseMarkdown() in MarkdownParser.kt. Returns a DOM fragment (not a string —
+ *  building real <strong>/<em> nodes is the only way to get real formatting; this file
+ *  has no innerHTML-from-markdown pipeline) ready to drop straight into el()'s children. */
+function renderMarkdown(md) {
+  const frag = document.createDocumentFragment();
+  (md || "").split("\n").forEach((rawLine, idx) => {
+    if (idx > 0) frag.appendChild(document.createElement("br"));
+    let line = rawLine;
+    let prefixText = "";
+    let big = false;
+    if (line.startsWith("## ")) { big = "sub"; line = line.slice(3); }
+    else if (line.startsWith("# ")) { big = "main"; line = line.slice(2); }
+    else if (line.startsWith("- ")) { prefixText = "• "; line = line.slice(2); }
+    else {
+      const numMatch = line.match(/^\d+\. /);
+      if (numMatch) { prefixText = numMatch[0]; line = line.slice(numMatch[0].length); }
+    }
+    const lineSpan = document.createElement("span");
+    if (big) { lineSpan.style.fontWeight = "700"; lineSpan.style.fontSize = big === "main" ? "1.25em" : "1.1em"; }
+    if (prefixText) lineSpan.appendChild(document.createTextNode(prefixText));
+    appendInlineMarkdown(lineSpan, line);
+    frag.appendChild(lineSpan);
+  });
+  return frag;
+}
+
+/** Plain-text equivalent — mirrors stripMarkdown() in MarkdownParser.kt, used where a
+ *  full render isn't wanted (short previews, list headers). */
+function stripMarkdownText(md) {
+  let s = (md || "")
+    .replace(/^#{1,2} /gm, "")
+    .replace(/^- /gm, "")
+    .replace(/^\d+\. /gm, "");
+  const inlinePatterns = [/\*\*(.*?)\*\*/g, /~~(.*?)~~/g, /__(.*?)__/g, /\*(.*?)\*/g, /`(.*?)`/g];
+  for (let pass = 0; pass < 3; pass++) {
+    inlinePatterns.forEach((p) => { s = s.replace(p, "$1"); });
+  }
+  return s;
+}
+
 // Official 4-color Google "G" — same colors as LoginScreen.kt's GoogleGLogo
 // (#EA4335 red, #FBBC05 yellow, #34A853 green, #4285F4 blue).
 const GOOGLE_G_SVG = `
@@ -898,7 +982,7 @@ function renderQuiz() {
 
   if (q.type === "POLL") {
     const questionArea = el("div", { class: "screen no-pad-top", style: "flex:1" }, [
-      el("div", { class: "card" }, [el("p", { class: "question-text" }, [q.text])]),
+      el("div", { class: "card" }, [el("p", { class: "question-text" }, [renderMarkdown(q.text)])]),
     ]);
     if (!state.pollState) {
       questionArea.appendChild(el("p", { class: "muted" }, ["Loading…"]));
@@ -922,7 +1006,7 @@ function renderQuiz() {
   const showTitleCard = q.type !== "FILL_BLANK" || fillBlankTitle;
   const questionArea = el("div", { class: "screen no-pad-top", style: "flex:1" },
     showTitleCard
-      ? [el("div", { class: "card" }, [el("p", { class: "question-text" }, [fillBlankTitle || q.text])])]
+      ? [el("div", { class: "card" }, [el("p", { class: "question-text" }, [renderMarkdown(fillBlankTitle || q.text)])])]
       : []
   );
 
@@ -1287,7 +1371,7 @@ function buildReviewCard(answer, index) {
   const header = el(
     "div",
     { class: "review-header", onclick: () => { expandedReviews.has(q.id) ? expandedReviews.delete(q.id) : expandedReviews.add(q.id); render(); } },
-    [accent, el("div", { style: "flex:1" }, [meta, el("div", { class: "review-question" }, [q.text])])]
+    [accent, el("div", { style: "flex:1" }, [meta, el("div", { class: "review-question" }, [stripMarkdownText(q.text)])])]
   );
   header.appendChild(html(CHEVRON_DOWN_SVG));
 
