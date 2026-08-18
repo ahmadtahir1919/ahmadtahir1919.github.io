@@ -1301,6 +1301,31 @@ function buildReviewCard(answer, index) {
       // marking, and revealing it before they've judged invites "but I wrote that" .
       if (!isPending) bodyEl.appendChild(reviewLine("CORRECT ANSWER", q.writtenAnswer || "", "#22C55E"));
       bodyEl.appendChild(reviewLine("YOUR ANSWER", given || "(no answer)", isPending ? "#B08900" : isCorrect ? "#22C55E" : "#EF4444"));
+    } else if (q.type === "FILL_BLANK") {
+      // This branch didn't exist at all before — FILL_BLANK has no q.options (that's
+      // WRITTEN/FILL_BLANK-only null per buildQuestionFromForm), so it fell into the
+      // "else" options branch below and rendered nothing on expand. Mirrors ResultScreen.kt's
+      // ReviewCard FILL_BLANK branch: one "correct answer"/"your answer" line pair per blank.
+      const content = q.fillBlankContent;
+      if (content) {
+        const ordered = FB.orderedBlanks(content);
+        const given = answer.givenAnswers || [];
+        ordered.forEach((blank, i) => {
+          const givenText = given[i] || "";
+          if (answer.needsManualMarking) {
+            // Manual: no accepted answer was ever recorded, so nothing to reveal — just
+            // the taker's own text, colored by the owner's whole-question verdict (or
+            // neutral while still pending).
+            const color = isPending ? "#B08900" : isCorrect ? "#22C55E" : "#EF4444";
+            bodyEl.appendChild(reviewLine(`BLANK ${i + 1} — YOUR ANSWER`, givenText || "(no answer)", color));
+          } else {
+            const blankCorrect = FB.fillBlankIsCorrect(blank, givenText, content.checking);
+            const correctText = (blank.acceptedAnswers || []).find((a) => a && a.trim()) || "";
+            bodyEl.appendChild(reviewLine(`BLANK ${i + 1} — CORRECT ANSWER`, correctText, "#22C55E"));
+            bodyEl.appendChild(reviewLine(`BLANK ${i + 1} — YOUR ANSWER`, givenText || "(no answer)", blankCorrect ? "#22C55E" : "#EF4444"));
+          }
+        });
+      }
     } else {
       (q.options || []).forEach((opt) => {
         const wasGiven = answer.givenAnswers.includes(opt);
