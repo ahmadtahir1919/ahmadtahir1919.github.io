@@ -115,6 +115,12 @@ function quizFromRow(row, questions) {
     showAnswers: row.show_answers,
     // Quiz-wide default for hand-marking; each question can override it.
     manualMarkingDefault: row.manual_marking_default ?? false,
+    // These three columns were only recently added to the schema — ?? false/true (not ||)
+    // so an explicit false from the DB is never overridden, only a genuinely missing
+    // column (an unmigrated project) falls back to the client default.
+    showCorrectnessInstantly: row.show_correctness_instantly ?? false,
+    showQuestionNumbers: row.show_question_numbers ?? true,
+    showTimers: row.show_timers ?? true,
     themeColorName: row.theme_color_name,
     createdAt: row.created_at,
     questions: questions.sort((a, b) => a.orderIndex - b.orderIndex),
