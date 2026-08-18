@@ -129,6 +129,18 @@ function effectiveStatus(quiz, now) {
   return "ACTIVE";
 }
 
+/** Same "Starts in 2h 15m" style label as countdownUntil() in Models.kt — shared by
+ *  every screen that shows a Scheduled quiz's countdown. */
+function countdownUntil(targetMillis, now) {
+  now = now ?? Date.now();
+  const diffSec = Math.max(0, Math.floor((targetMillis - now) / 1000));
+  const h = Math.floor(diffSec / 3600);
+  const m = Math.floor((diffSec % 3600) / 60);
+  const s = diffSec % 60;
+  const remaining = h > 0 ? `${h}h ${m}m` : m > 0 ? `${m}m ${s}s` : `${s}s`;
+  return `Starts in ${remaining}`;
+}
+
 async function fetchQuizByShareCode(code) {
   const { data: quizRow, error } = await supabaseClient
     .from("quizzes")
@@ -293,6 +305,7 @@ window.SupabaseClient = {
   confirmDisplayName,
   fetchQuizByShareCode,
   effectiveStatus,
+  countdownUntil,
   fetchExistingAttempt,
   submitAttempt,
   ensurePollOpen,

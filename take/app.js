@@ -76,9 +76,17 @@ const state = {
   questionTimings: {}, // questionId -> seconds
   instantFeedback: null,
   result: null, // { score, total, answers }
+  landingTickerHandle: null, // ticks the Scheduled-quiz countdown on the landing card
 };
 
 function render() {
+  // The landing countdown ticker only makes sense while its own card is on screen —
+  // torn down the moment anything else renders, so it can never re-render (and wipe)
+  // an unrelated screen the user has since navigated to (e.g. mid-typing in the quiz).
+  if (state.screen !== "landing" && state.landingTickerHandle) {
+    clearInterval(state.landingTickerHandle);
+    state.landingTickerHandle = null;
+  }
   app.innerHTML = "";
   switch (state.screen) {
     case "loading": return renderLoading();
@@ -194,12 +202,20 @@ function renderLanding() {
     return;
   }
 
+  if (status === "SCHEDULED") {
+    // Ticks every second so a Scheduled quiz flips to Active on its own the moment the
+    // start time arrives — same as JoinViewModel.startStatusTicker on Android — instead
+    // of leaving the visitor stuck on a stale "hasn't started yet" until they reload.
+    if (!state.landingTickerHandle) {
+      state.landingTickerHandle = setInterval(render, 1000);
+    }
+    body.push(el("p", { class: "muted" }, [SC.countdownUntil(quiz.startAt)]));
+    app.appendChild(el("div", { class: "screen" }, [el("div", { class: "card" }, body)]));
+    return;
+  }
+
   if (status !== "ACTIVE") {
-    body.push(
-      el("p", { class: "muted" }, [
-        status === "SCHEDULED" ? "This quiz hasn't started yet." : "This quiz has ended.",
-      ])
-    );
+    body.push(el("p", { class: "muted" }, ["This quiz has ended."]));
     app.appendChild(el("div", { class: "screen" }, [el("div", { class: "card" }, body)]));
     return;
   }
