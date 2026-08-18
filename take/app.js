@@ -694,6 +694,19 @@ async function finishQuiz() {
   state.screen = "finishing";
   render();
 
+  // Mirrors QuizPreviewViewModel.finishPreview on Android — the landing/Start-Quiz status
+  // check only ever ran once, when this taker opened the quiz; it has no way to know the
+  // owner ended it (manually, or its own schedule ran out) sometime after that, while this
+  // taker was still mid-quiz answering. Re-fetch fresh here, right before the submission
+  // would otherwise land, instead of trusting the possibly-stale state.quiz already in memory.
+  const liveStatus = await SC.fetchQuizStatus(state.quiz.id);
+  if (liveStatus && (liveStatus.isArchived || SC.effectiveStatus(liveStatus) !== "ACTIVE")) {
+    state.errorMessage = "The owner closed this quiz, or its scheduled time ran out, while you were still answering — so this submission can no longer go through.";
+    state.screen = "error";
+    render();
+    return;
+  }
+
   // Mirrors QuizPreviewViewModel.finishPreview on Android — an owner's remove-participant
   // action deletes this taker's joined_quizzes row remotely at any point during the quiz,
   // and nothing earlier in this flow would know. `=== false` specifically (not `!== true`):

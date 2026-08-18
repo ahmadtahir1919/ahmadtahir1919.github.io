@@ -164,6 +164,22 @@ async function fetchQuizByShareCode(code) {
   return quizFromRow(quizRow, (questionRows || []).map(questionFromRow));
 }
 
+/** Checked right before a real submission lands — mirrors QuizPreviewViewModel.
+ *  finishPreview's own re-check on Android. The landing/Start-Quiz screen's status check
+ *  only ever ran once, when the taker opened the quiz; it has no way to know the owner
+ *  ended it (manually, or its own schedule ran out) sometime after that, while this
+ *  taker was still mid-quiz. Null on failure/offline — a network hiccup here must never
+ *  itself block a legitimate submission. */
+async function fetchQuizStatus(quizId) {
+  const { data, error } = await supabaseClient
+    .from("quizzes")
+    .select("start_at, end_at, is_archived")
+    .eq("id", quizId)
+    .maybeSingle();
+  if (error || !data) return null;
+  return { startAt: data.start_at, endAt: data.end_at, isArchived: data.is_archived };
+}
+
 /** Latest real (non-preview) attempt this user already has for a quiz, or null.
  *  Mirrors JoinViewModel.kt's existing-attempt lookup — used to decide whether
  *  "Start Quiz" should be offered when the quiz doesn't allow retakes. */
@@ -339,6 +355,7 @@ window.SupabaseClient = {
   fetchNameConfirmed,
   confirmDisplayName,
   fetchQuizByShareCode,
+  fetchQuizStatus,
   effectiveStatus,
   countdownUntil,
   joinQuiz,
