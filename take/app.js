@@ -244,7 +244,7 @@ function renderLanding() {
     // Same rule as JoinScreen.kt's alreadyDoneAndLocked — a completed attempt
     // already exists and this quiz doesn't allow retakes, so don't offer Start.
     body.push(
-      el("p", { class: "muted" }, [`Signed in as ${SC.resolveDisplayName(state.user)}`]),
+      signedInLine(state.user),
       el("p", { class: "muted" }, ["You've already completed this quiz. Retakes aren't allowed."]),
       el("p", { class: "quiz-meta" }, [`Your score: ${state.existingAttempt.score} / ${state.existingAttempt.total}`])
     );
@@ -254,7 +254,7 @@ function renderLanding() {
     // same as joining by code in the app, rather than only once they actually finish
     // answering something.
     body.push(
-      el("p", { class: "muted" }, [`Signed in as ${SC.resolveDisplayName(state.user)}`]),
+      signedInLine(state.user),
       el("button", { class: "primary", onclick: joinQuizAction }, [state.joining ? "Joining…" : "Join"])
     );
     if (state.joinError) {
@@ -262,7 +262,7 @@ function renderLanding() {
     }
   } else {
     body.push(
-      el("p", { class: "muted" }, [`Signed in as ${SC.resolveDisplayName(state.user)}`]),
+      signedInLine(state.user),
       el("button", { class: "primary", onclick: startQuiz }, ["Start Quiz"])
     );
   }
@@ -337,6 +337,27 @@ async function submitConfirmedName() {
 
 function currentQuestion() {
   return state.quiz.questions[state.currentIndex];
+}
+
+/** The "Signed in as X" line shown across the landing card's post-sign-in branches,
+ *  with a small "Sign out" escape hatch right next to it — wrong Google account picked,
+ *  or just wants to switch, shouldn't mean reloading the tab and hunting for a way out. */
+function signedInLine(user) {
+  return el("div", { class: "signed-in-row" }, [
+    el("span", { class: "muted" }, [`Signed in as ${SC.resolveDisplayName(user)}`]),
+    el("button", { class: "skip-link", style: "padding:2px 0", onclick: signOutAction }, ["Not you? Sign out"]),
+  ]);
+}
+
+async function signOutAction() {
+  await SC.signOut();
+  // Back to square one on this same landing card — sign-in button reappears, and any
+  // in-progress Join/Start state for the account that just signed out no longer applies.
+  state.user = null;
+  state.hasJoined = false;
+  state.joinError = null;
+  state.existingAttempt = null;
+  render();
 }
 
 async function joinQuizAction() {

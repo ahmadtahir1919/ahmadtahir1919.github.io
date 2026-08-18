@@ -511,3 +511,5 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
 
 .error-text { color: var(--error); font-size: 13px; }
 .muted { color: var(--text-secondary); font-size: 13px; }
+.signed-in-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.signed-in-row .skip-link { font-size: 13px; text-decoration: underline; }
