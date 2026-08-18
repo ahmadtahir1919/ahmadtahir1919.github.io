@@ -369,6 +369,14 @@ async function signOutAction() {
 
 async function joinQuizAction() {
   if (state.joining) return;
+  // The landing card was rendered once when the quiz was still Active and doesn't
+  // re-render on its own while sitting open (only a Scheduled countdown ticks) — so a
+  // tab left open past the deadline could still fire this write. Re-check live, right
+  // before the write, instead of trusting whatever status the button was drawn under.
+  if (SC.effectiveStatus(state.quiz) !== "ACTIVE") {
+    render();
+    return;
+  }
   state.joining = true;
   state.joinError = null;
   render();
@@ -383,6 +391,13 @@ async function joinQuizAction() {
 }
 
 function startQuiz() {
+  // Same re-check as joinQuizAction, for the same reason — a tab left open past the
+  // deadline must not be able to start (and then submit) a quiz that's since ended,
+  // just because the button was drawn while it was still Active.
+  if (SC.effectiveStatus(state.quiz) !== "ACTIVE") {
+    render();
+    return;
+  }
   state.currentIndex = 0;
   state.screen = "quiz";
   render();
