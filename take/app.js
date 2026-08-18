@@ -75,6 +75,8 @@ const state = {
   questionAnswers: {}, // questionId -> raw keys (index-strings / written text)
   questionTimings: {}, // questionId -> seconds
   instantFeedback: null,
+  hintVisible: false, // current question's hint panel open/closed
+  hintUsed: {}, // questionId -> true once its hint was opened (sticky, unlike hintVisible)
   result: null, // { score, total, answers }
   landingTickerHandle: null, // ticks the Scheduled-quiz countdown on the landing card
   hasJoined: false, // Join clicked (and joined_quizzes recorded) this session — gates Start Quiz
@@ -421,6 +423,7 @@ function prepareCurrentQuestion() {
     ? new Array(FB.orderedBlanks(q.fillBlankContent).length).fill("")
     : [];
   state.instantFeedback = null;
+  state.hintVisible = false;
   state.questionStartSec = Math.floor(Date.now() / 1000);
   if (q.type === "POLL") {
     state.pollState = null;
@@ -750,6 +753,7 @@ async function finishQuiz() {
       // marks now (full points when right, none when wrong).
       awardedPoints: isManual ? null : (isCorrect ? q.points : 0),
       maxPoints: q.points,
+      usedHint: state.hintUsed[q.id] === true,
     };
   });
 
@@ -826,8 +830,45 @@ function buildBottomBar(q, isLastQuestion, onSkipFn, onNextFn) {
   const skipBtn = el("button", { class: "skip-link", onclick: onSkipFn }, ["Skip"]);
   if (disabled) skipBtn.disabled = true;
 
-  rows.push(el("div", { class: "bar-row" }, [skipBtn, nextBtn]));
+  // Hint — only shown when this question actually has one (mirrors PreviewBottomBar's
+  // hasHint gate on Android). Left slot always reserved so Skip/Next don't shift when a
+  // question without a hint follows one that had it.
+  const barRow = el("div", { class: "bar-row" }, []);
+  if (q.hint) {
+    const hintBtn = el("button", { class: "hint-btn", onclick: showHintAction }, ["💡 Hint"]);
+    if (disabled) hintBtn.disabled = true;
+    barRow.appendChild(hintBtn);
+  } else {
+    barRow.appendChild(el("div", { style: "width:56px" }, []));
+  }
+  barRow.appendChild(skipBtn);
+  barRow.appendChild(nextBtn);
+  rows.push(barRow);
   return el("div", { class: "quiz-bottombar" }, rows);
+}
+
+/** Mirrors QuizPreviewViewModel.onShowHint — marks this question's hint as used the
+ *  moment it's opened (not only if the taker reads all the way through), and reveals it
+ *  inline (see renderQuiz's hint-box, right below the question) rather than a popup, to
+ *  keep this file's plain-DOM approach — no modal/bottom-sheet primitive exists here. */
+function showHintAction() {
+  if (state.instantFeedback) return;
+  const q = currentQuestion();
+  state.hintVisible = true;
+  state.hintUsed[q.id] = true;
+  render();
+}
+
+/** Inline hint reveal — mirrors HintSheetContent's "Got it" dismiss, just inline instead
+ *  of a bottom sheet (see showHintAction's doc for why). */
+function buildHintBox(hint) {
+  return el("div", { class: "hint-box" }, [
+    el("div", { class: "hint-box-header" }, [
+      el("span", { class: "hint-box-title" }, ["💡 Hint"]),
+      el("button", { class: "skip-link", onclick: () => { state.hintVisible = false; render(); } }, ["Got it"]),
+    ]),
+    el("p", { class: "hint-box-text" }, [hint]),
+  ]);
 }
 
 function renderQuiz() {
@@ -871,6 +912,10 @@ function renderQuiz() {
       ? [el("div", { class: "card" }, [el("p", { class: "question-text" }, [fillBlankTitle || q.text])])]
       : []
   );
+
+  if (q.hint && state.hintVisible) {
+    questionArea.appendChild(buildHintBox(q.hint));
+  }
 
   if (q.type === "FILL_BLANK") {
     // Unlike WRITTEN/options (which swap their whole input away for a banner
@@ -1225,6 +1270,7 @@ function buildReviewCard(answer, index) {
     el("span", { class: "muted" }, [`⏱ ${answer.timeTakenSec}s`]),
   ]);
   if (isPending) meta.appendChild(el("span", { class: "pending-tag" }, ["Awaiting marking"]));
+  if (answer.usedHint) meta.appendChild(el("span", { class: "hint-used-tag" }, ["💡 Hint"]));
   const header = el(
     "div",
     { class: "review-header", onclick: () => { expandedReviews.has(q.id) ? expandedReviews.delete(q.id) : expandedReviews.add(q.id); render(); } },

@@ -240,7 +240,7 @@ async function submitAttempt(quizId, userId, score, total, answers) {
     is_correct: a.isCorrect,
     given_answer: a.givenAnswers,
     time_taken_sec: a.timeTakenSec,
-    used_hint: false,
+    used_hint: a.usedHint === true,
     // Manual marking — must be written here, not left to defaults: an answer that
     // silently landed with needs_manual_marking = false would never appear in the
     // owner's marking queue, and the taker would get an auto-graded verdict for a
