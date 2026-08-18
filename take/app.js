@@ -583,11 +583,10 @@ function proceedPastQuestion() {
   prepareCurrentQuestion();
 }
 
-/** Mirrors Grading.kt's requiresManualMarking: the question's own override wins, else
- *  the quiz-wide default. Polls are never hand-marked — nothing to be right about. */
+/** Mirrors Grading.kt's requiresManualMarking: all-or-nothing at the quiz level, no
+ *  per-question override. Polls are never hand-marked — nothing to be right about. */
 function requiresManualMarking(q, quiz) {
-  if (q.type === "POLL") return false;
-  return q.manualMarking != null ? q.manualMarking === true : quiz.manualMarkingDefault === true;
+  return q.type !== "POLL" && quiz.manualMarkingDefault === true;
 }
 
 function finishQuiz() {
