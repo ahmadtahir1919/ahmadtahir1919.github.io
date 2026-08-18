@@ -39,7 +39,14 @@ body {
 #app {
   max-width: 480px;
   margin: 0 auto;
+  /* 100vh on mobile Chrome/Safari is measured against the LARGEST possible viewport
+     (toolbar collapsed) even on first paint, while the toolbar is still expanded — so
+     the actual visible area starts shorter than #app claims, cutting the top of the
+     landing card off until the page is scrolled and the browser recalculates. 100dvh
+     tracks the real, current viewport instead; vh stays as the fallback for browsers
+     that don't support dvh yet. */
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--background);
   display: flex;
   flex-direction: column;
@@ -62,7 +69,7 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 22px 20px 28px;
+  padding: 32px 20px 28px;
   gap: 18px;
 }
 .screen.centered { align-items: center; justify-content: center; text-align: center; }
