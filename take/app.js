@@ -1399,6 +1399,56 @@ function buildFillBlankInput(orderIndex, isLast, inputRefs) {
 
 const expandedReviews = new Set();
 
+/** Mirrors Grading.kt's List&lt;AnswerResult&gt;.scoreBreakdown() — splits answers into two
+ *  tracks that never get blended into one number: questions carrying points (maxPoints
+ *  &gt; 0) are scored as marksAwarded/marksTotal, everything else as plain
+ *  correctCount/total right-or-wrong. Was entirely missing on web before — the result
+ *  screen only ever showed the correctness-track count (via buildScoreCard), so a quiz
+ *  where questions carry real points (e.g. "20/40") never showed that anywhere. */
+function computeScoreBreakdown(answers) {
+  const marksTrack = answers.filter((a) => a.maxPoints > 0);
+  const correctnessTrack = answers.filter((a) => !(a.maxPoints > 0));
+  const isPendingAnswer = (a) => a.needsManualMarking === true && a.awardedPoints == null;
+
+  const marksAwarded = marksTrack.reduce((sum, a) => sum + (a.awardedPoints ?? 0), 0);
+  const marksTotal = marksTrack.reduce((sum, a) => sum + a.maxPoints, 0);
+  const marksPending = marksTrack.filter(isPendingAnswer).length;
+
+  const correctCount = correctnessTrack.filter((a) => !isPendingAnswer(a) && a.isCorrect).length;
+  const correctnessTotal = correctnessTrack.length;
+  const correctnessPending = correctnessTrack.filter(isPendingAnswer).length;
+
+  return {
+    hasMarks: marksTrack.length > 0,
+    hasCorrectness: correctnessTrack.length > 0,
+    marksAwarded,
+    marksTotal,
+    marksPending,
+    marksPercent: marksTotal > 0 ? Math.floor((marksAwarded * 100) / marksTotal) : null,
+    correctCount,
+    correctnessTotal,
+    correctnessPending,
+    correctnessPercent: correctnessTotal > 0 ? Math.floor((correctCount * 100) / correctnessTotal) : null,
+  };
+}
+
+/** Mirrors ResultScreen.kt's ScoreSectionCard — title/subtitle on the left, "N / Total"
+ *  and percent (suppressed while anything in this track is still pending marking, same
+ *  as Android) on the right. */
+function buildScoreSectionCard(title, subtitle, value, percent, pending) {
+  const right = [el("div", { class: "score-section-value" }, [value])];
+  if (percent != null && pending === 0) {
+    right.push(el("div", { class: "score-section-percent" }, [`${percent}%`]));
+  }
+  return el("div", { class: "score-section-card" }, [
+    el("div", { class: "score-section-left" }, [
+      el("div", { class: "score-section-title" }, [title]),
+      el("div", { class: "score-section-subtitle" }, [subtitle]),
+    ]),
+    el("div", { class: "score-section-right" }, right),
+  ]);
+}
+
 /** Mirrors ResultScreen.kt's ScoreCard — same gradient, trophy badge, big score +
  *  accuracy%, and progress track. accuracy/passed use the same formula as
  *  ResultUiState (accuracy = floor(score*100/total), passed = accuracy >= 60). */
@@ -1468,6 +1518,12 @@ function buildReviewCard(answer, index) {
     el("span", { class: "q-pill " + stateClass }, [`Q${index + 1}`]),
     el("span", { class: "muted" }, [`⏱ ${answer.timeTakenSec}s`]),
   ]);
+  // Mirrors ResultScreen.kt's per-row marks badge ("X/Y") for a points-carrying question —
+  // was missing on web entirely, so a marks-based quiz's review list gave no indication
+  // of how many marks each question actually earned, just a green/red accent color.
+  if (q.type !== "POLL" && answer.maxPoints > 0) {
+    meta.appendChild(el("span", { class: "marks-badge " + stateClass }, [`${answer.awardedPoints ?? 0}/${answer.maxPoints}`]));
+  }
   if (isPending) meta.appendChild(el("span", { class: "pending-tag" }, ["Awaiting marking"]));
   if (answer.usedHint) meta.appendChild(el("span", { class: "hint-used-tag" }, ["💡 Hint"]));
   const header = el(
@@ -1607,6 +1663,29 @@ function renderResult() {
     // Some questions were app-checked and some weren't: the score above is real but not
     // final, and saying so is the difference between trusting it and being surprised.
     content.appendChild(buildPendingCard(pending, score, gradedCount));
+  }
+
+  // Marks vs plain correctness — two different currencies, shown as their own labelled
+  // sections (see computeScoreBreakdown's doc). Most quizzes only ever populate one
+  // track, so the other simply doesn't render.
+  const breakdown = computeScoreBreakdown(answers);
+  if (breakdown.hasMarks) {
+    content.appendChild(buildScoreSectionCard(
+      "Marks",
+      "Questions that carry marks, scored out of their total.",
+      `${breakdown.marksAwarded} / ${breakdown.marksTotal}`,
+      breakdown.marksPercent,
+      breakdown.marksPending
+    ));
+  }
+  if (breakdown.hasCorrectness) {
+    content.appendChild(buildScoreSectionCard(
+      "Correct answers",
+      "Questions that carry no marks — just counted right or wrong.",
+      `${breakdown.correctCount} / ${breakdown.correctnessTotal}`,
+      breakdown.correctnessPercent,
+      breakdown.correctnessPending
+    ));
   }
 
   if (!quiz.showResult) {
