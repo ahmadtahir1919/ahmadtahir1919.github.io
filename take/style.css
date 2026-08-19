@@ -205,7 +205,12 @@ button.text-link {
 .progress-fill {
   height: 100%;
   background: var(--accent);
-  transition: width 0.3s ease;
+  /* Matches the 1s tick interval this is mutated on (updateTimerDisplay, in-place — not
+     a full re-render, so this transition actually fires). `linear`, not `ease`: an eased
+     curve replayed every single tick decelerates-then-reaccelerates each second, which
+     reads as jerky/stepped instead of one continuous drain — linear across the same 1s
+     window as the tick makes each step pick up exactly where the last one left off. */
+  transition: width 1s linear;
 }
 
 /* One segment per question (Stories-style), used for the top question-progress
@@ -229,11 +234,13 @@ button.text-link {
 .progress-segment-fill {
   height: 100%;
   background: var(--accent);
-  /* `transition` never plays here — render() rebuilds this element from scratch on every
-     state change (see this file's header comment), so there's no prior DOM state for a
-     transition to animate FROM; it just appears at its final width. The "filling" class
-     below (added once, in app.js's buildQuestionProgressBar) uses a real @keyframes
-     animation instead, which plays regardless of the element being freshly created. */
+  /* Only actually animates for the current TIMED question's segment (id=current-progress-
+     fill), which updateTimerDisplay mutates in place every tick — same reasoning as
+     .progress-fill above (1s linear, matching the tick interval exactly). For every other
+     segment this is inert: they're either static (already-passed, always 100%) or handled
+     by the one-shot .filling keyframe below instead (untimed "just arrived" case, where a
+     fresh element every render has nothing to transition FROM). */
+  transition: width 1s linear;
 }
 .progress-segment-fill.filling {
   animation: progressSegmentFill 0.35s ease forwards;
