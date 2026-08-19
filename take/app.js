@@ -575,7 +575,8 @@ async function loadPollForCurrentQuestion(q) {
       : Array.from({ length: optionCount }, (_, i) => i);
     // This taker's own countdown, starting now — the same per-question timer every other
     // question type gets. When it runs out it just advances them; it never closes the poll.
-    const pollTimeSec = settings.noTimeLimit ? 0 : (q.timeSec || 0);
+    // Same quiz-wide "Show Timer" gate as startTimer() — was missing here too.
+    const pollTimeSec = (!state.quiz.showTimers || settings.noTimeLimit) ? 0 : (q.timeSec || 0);
     if (pollTimeSec > 0) {
       state.totalTimeSec = pollTimeSec;
       state.secondsRemaining = pollTimeSec;
@@ -599,7 +600,11 @@ async function loadPollForCurrentQuestion(q) {
 function startTimer() {
   clearInterval(state.timerHandle);
   const q = currentQuestion();
-  const timeSec = q.timeSec;
+  // Mirrors QuizPreviewViewModel.prepareCurrentQuestion: `if (s0.quizShowTimers && ...)
+  // question.timeSec else 0` — quiz-wide, no per-question override. This was never
+  // checked here at all before, so turning "Show Timer" off on the quiz had no effect
+  // on web: every question still ran its own timeSec countdown regardless.
+  const timeSec = state.quiz.showTimers ? q.timeSec : 0;
   if (!timeSec || timeSec <= 0) {
     state.totalTimeSec = 0;
     state.secondsRemaining = 0;
@@ -901,8 +906,10 @@ function buildQuizTopBar(quiz, q) {
   closeBtn.appendChild(html(CLOSE_X_SVG));
 
   // Reserved-width slot either way, so the title stays centered whether or not
-  // this question has a timer.
-  const right = q.timeSec > 0
+  // this question has a timer. Gated on quiz.showTimers too, not just q.timeSec — an
+  // empty timer-chip pill was rendering (and reserving layout space) even with the
+  // quiz-wide "Show Timer" setting off, since this check ignored it entirely.
+  const right = quiz.showTimers && q.timeSec > 0
     ? el("div", { id: "timer-chip", class: "timer-chip" }, [])
     : el("div", { style: "width:36px" }, []);
 
@@ -965,7 +972,10 @@ function buildQuestionProgressBar(quiz) {
  *  QuizPreviewScreen's PreviewBottomBar. */
 function buildBottomBar(q, isLastQuestion, onSkipFn, onNextFn) {
   const rows = [];
-  if (q.timeSec > 0) {
+  // state.totalTimeSec, not q.timeSec — it's already the single source of truth computed
+  // at question-load time (startTimer/loadPollForCurrentQuestion), correctly folding in
+  // quiz.showTimers and a poll's own noTimeLimit; q.timeSec alone ignores both.
+  if (state.totalTimeSec > 0) {
     rows.push(
       el("div", { class: "progress-track" }, [
         el("div", { id: "timer-fill", class: "progress-fill", style: `width:${(state.secondsRemaining / state.totalTimeSec) * 100}%` }),
