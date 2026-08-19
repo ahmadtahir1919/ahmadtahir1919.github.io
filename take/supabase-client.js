@@ -209,6 +209,33 @@ async function fetchExistingAttempt(quizId, userId) {
   return { id: data.id, score: data.score, total: data.total, finishedAt: data.finished_at };
 }
 
+/** Full per-question answers for an already-completed attempt — same shape finishQuiz's
+ *  own `answers` array carries, so it can be handed straight to renderResult. Used when a
+ *  taker without retake access reopens the quiz link: they should land on the real result
+ *  screen (score breakdown, review cards) exactly like right after finishing, not just a
+ *  one-line "you've already completed this" blurb with no way to actually see it again. */
+async function fetchAttemptAnswers(attemptId) {
+  const { data, error } = await supabaseClient
+    .from("attempt_answers")
+    .select("*")
+    .eq("attempt_id", attemptId);
+  if (error || !data) return [];
+  return data.map((row) => ({
+    questionId: row.question_id,
+    isCorrect: row.is_correct,
+    givenAnswers: row.given_answer ?? [],
+    timeTakenSec: row.time_taken_sec,
+    usedHint: row.used_hint === true,
+    needsManualMarking: row.needs_manual_marking === true,
+    awardedPoints: row.awarded_points,
+    maxPoints: row.max_points,
+    // Not persisted anywhere (see finishQuiz's own comment on this same field) — a
+    // reopened result just won't have the word-by-word WRITTEN breakdown, same
+    // limitation as reloading the page right after finishing would already have.
+    evaluationResult: null,
+  }));
+}
+
 // ── Attempt submission (mirrors pushAttempt) ──────────────────────────────
 
 /** Writes directly into the real attempts/attempt_answers tables — the web
@@ -373,6 +400,7 @@ window.SupabaseClient = {
   joinQuiz,
   isJoined,
   fetchExistingAttempt,
+  fetchAttemptAnswers,
   submitAttempt,
   ensurePollOpen,
   fetchPollVotes,

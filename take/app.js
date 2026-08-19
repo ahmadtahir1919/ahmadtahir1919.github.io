@@ -1730,6 +1730,20 @@ async function boot() {
       state.existingAttempt = await SC.fetchExistingAttempt(quiz.id, state.user.id);
     }
 
+    // No retake and already completed: land straight on the real result screen (score
+    // breakdown, review cards) instead of a one-line "you've already completed this"
+    // blurb with no way to actually see it — mirrors what re-opening a finished attempt
+    // in the Android app shows. Only takes this path when there's genuinely nothing left
+    // to do here (retake off); when retake IS allowed, the landing screen's own Start
+    // button still offers a fresh attempt as before.
+    if (state.user && state.existingAttempt && quiz.allowRetake === false) {
+      const answers = await SC.fetchAttemptAnswers(state.existingAttempt.id);
+      state.result = { score: state.existingAttempt.score, total: state.existingAttempt.total, answers };
+      state.screen = "result";
+      render();
+      return;
+    }
+
     // The Google sign-in redirect leaves an extra "in transit" history entry
     // (this page -> Google -> back here) and a #access_token=... fragment in
     // the address bar. Now that the session has definitely been read out of
