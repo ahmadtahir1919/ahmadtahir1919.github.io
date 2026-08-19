@@ -1450,22 +1450,24 @@ function buildScoreSectionCard(title, subtitle, value, percent, pending) {
 }
 
 /** Mirrors ResultScreen.kt's ScoreCard — same gradient, trophy badge, big score +
- *  accuracy%, and progress track. accuracy/passed use the same formula as
- *  ResultUiState (accuracy = floor(score*100/total), passed = accuracy >= 60). */
+ *  accuracy%, and progress track. No "Passed"/"Not passed" status label anymore (a 60%-
+ *  threshold pass/fail read as needlessly harsh on an otherwise-decent score) — only a
+ *  genuine zero-correct result gets called out as "Failed", same as Android. */
 function buildScoreCard(score, total) {
   const accuracy = total > 0 ? Math.floor((score * 100) / total) : 0;
-  const passed = accuracy >= 60;
 
   const badge = el("div", { class: "badge" }, []);
   badge.appendChild(html(TROPHY_SVG));
 
+  const labelColumn = [el("div", { class: "label" }, ["YOUR SCORE"])];
+  if (score === 0) {
+    labelColumn.push(el("div", { class: "status" }, ["Failed"]));
+  }
+
   const card = el("div", { class: "score-card" }, [
     el("div", { class: "row-top" }, [
       badge,
-      el("div", {}, [
-        el("div", { class: "label" }, ["YOUR SCORE"]),
-        el("div", { class: "status" }, [passed ? "Passed" : "Not passed"]),
-      ]),
+      el("div", {}, labelColumn),
     ]),
     el("div", { class: "numbers" }, [
       el("div", { style: "display:flex;align-items:flex-end" }, [
