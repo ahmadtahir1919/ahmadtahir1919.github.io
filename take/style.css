@@ -134,6 +134,27 @@ button.primary {
 button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
 button.primary:active:not(:disabled) { transform: scale(0.98); }
 
+/* Paired with .primary when a landing card offers two actions (e.g. "See Result" /
+   "Retake Exam") — same shape, outlined instead of filled so it reads as secondary. */
+button.secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: transparent;
+  color: var(--accent);
+  border: 1.5px solid var(--accent);
+  border-radius: 100px;
+  padding: 12.5px 20px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 10px;
+}
+button.secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+button.secondary:active:not(:disabled) { transform: scale(0.98); }
+
 /* Real-app treatment (LoginScreen.kt's GoogleSignInButton): white surface, soft
    border+shadow, official 4-color "G" glyph — not a plain grey text button. */
 button.google {

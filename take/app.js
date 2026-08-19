@@ -344,6 +344,21 @@ function renderLanding() {
       el("p", { class: "quiz-meta" }, [`Your score: ${state.existingAttempt.score} / ${state.existingAttempt.total}`]),
       signOutRow()
     );
+  } else if (state.existingAttempt && quiz.allowRetake) {
+    // Retake is allowed AND this account already has a result — offer both instead of
+    // forcing straight into a fresh attempt. Mirrors JoinScreen.kt's "Your Quizzes" row:
+    // the default action there is opening the past RESULT (onOpenJoinedQuiz), with
+    // Retake as its own separate, explicit action — not the other way around.
+    body.push(
+      signedInLine(state.user),
+      el("p", { class: "quiz-meta" }, [`Your score: ${state.existingAttempt.score} / ${state.existingAttempt.total}`]),
+      el("button", { class: "primary", onclick: goToExistingResult }, ["See Result"]),
+      el("button", { class: "secondary", onclick: retakeQuizAction }, [state.joining ? "Joining…" : "Retake Exam"])
+    );
+    if (state.joinError) {
+      body.push(el("p", { class: "muted", style: "color:var(--error)" }, [state.joinError]));
+    }
+    body.push(signOutRow());
   } else if (!state.hasJoined) {
     // Join is its own step, separate from Start — records membership (joined_quizzes)
     // right away so the owner's Participants tab sees this person the moment they join,
@@ -503,6 +518,28 @@ async function joinQuizAction() {
   }
   state.joining = false;
   render();
+}
+
+/** Fetches the existing attempt's full answers and switches straight to the result
+ *  screen — shared by boot()'s no-retake auto-redirect and the "See Result" button
+ *  offered alongside "Retake Exam" when retake is allowed (see renderLanding). */
+async function goToExistingResult() {
+  const answers = await SC.fetchAttemptAnswers(state.existingAttempt.id);
+  state.result = { score: state.existingAttempt.score, total: state.existingAttempt.total, answers };
+  state.screen = "result";
+  render();
+}
+
+/** "Retake Exam" when retake is allowed and this account already has a result — joins
+ *  first if this session somehow doesn't already show as joined (e.g. a fresh browser/
+ *  device that never loaded the join state for this quiz before), same as a first-time
+ *  Join would, then starts a fresh attempt exactly like the ordinary Start Quiz button. */
+async function retakeQuizAction() {
+  if (!state.hasJoined) {
+    await joinQuizAction();
+    if (!state.hasJoined) return; // join failed — joinQuizAction already surfaced why
+  }
+  startQuiz();
 }
 
 function startQuiz() {
@@ -1751,14 +1788,11 @@ async function boot() {
     // No retake and already completed: land straight on the real result screen (score
     // breakdown, review cards) instead of a one-line "you've already completed this"
     // blurb with no way to actually see it — mirrors what re-opening a finished attempt
-    // in the Android app shows. Only takes this path when there's genuinely nothing left
-    // to do here (retake off); when retake IS allowed, the landing screen's own Start
-    // button still offers a fresh attempt as before.
+    // in the Android app shows. Only auto-redirects when there's genuinely nothing left
+    // to do here (retake off); when retake IS allowed, the landing screen offers both
+    // "See Result" and "Retake Exam" instead (see renderLanding).
     if (state.user && state.existingAttempt && quiz.allowRetake === false) {
-      const answers = await SC.fetchAttemptAnswers(state.existingAttempt.id);
-      state.result = { score: state.existingAttempt.score, total: state.existingAttempt.total, answers };
-      state.screen = "result";
-      render();
+      await goToExistingResult();
       return;
     }
 
