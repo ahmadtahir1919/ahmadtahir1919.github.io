@@ -17,7 +17,19 @@ let supabaseClient = null;
 let initError = null;
 try {
   if (!window.supabase) throw new Error("Supabase library failed to load from CDN.");
-  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: {
+      // Every read here (quiz settings, questions, existing attempt, poll state...) needs
+      // to reflect what the owner just changed — a participant who was removed and rejoins,
+      // or a quiz whose settings were edited seconds ago, must never see a browser-cached
+      // response. Without this, GET requests to PostgREST are ordinary HTTP GETs and can be
+      // served from the browser's disk cache under normal navigation — even a hard reload
+      // (Ctrl+Shift+R) only guarantees static <script>/<link> subresources revalidate, not
+      // every fetch() a script issues afterward. `cache: "no-store"` forces every Supabase
+      // request to hit the network fresh, every time, no exceptions.
+      fetch: (url, options = {}) => fetch(url, { ...options, cache: "no-store" }),
+    },
+  });
 } catch (e) {
   initError = e;
 }
