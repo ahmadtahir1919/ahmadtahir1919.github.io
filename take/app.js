@@ -1458,10 +1458,16 @@ const expandedReviews = new Set();
  *  correctCount/total right-or-wrong. Was entirely missing on web before — the result
  *  screen only ever showed the correctness-track count (via buildScoreCard), so a quiz
  *  where questions carry real points (e.g. "20/40") never showed that anywhere. */
+/** True while an answer is still waiting on the owner's manual mark — shared by
+ *  computeScoreBreakdown, the headline score recompute in renderResult, and the review
+ *  card's own pending styling, so all three always agree on what "not graded yet" means. */
+function isPendingAnswer(a) {
+  return a.needsManualMarking === true && a.awardedPoints == null;
+}
+
 function computeScoreBreakdown(answers) {
   const marksTrack = answers.filter((a) => a.maxPoints > 0);
   const correctnessTrack = answers.filter((a) => !(a.maxPoints > 0));
-  const isPendingAnswer = (a) => a.needsManualMarking === true && a.awardedPoints == null;
 
   const marksAwarded = marksTrack.reduce((sum, a) => sum + (a.awardedPoints ?? 0), 0);
   const marksTotal = marksTrack.reduce((sum, a) => sum + a.maxPoints, 0);
@@ -1700,9 +1706,23 @@ function renderResult() {
   const quiz = state.quiz;
   const accent = themeColorFromName(quiz.themeColorName);
   document.documentElement.style.setProperty("--accent", accent);
-  const { score, total, answers } = state.result;
+  const { answers } = state.result;
+  const total = answers.length;
 
-  const pending = answers.filter((a) => a.needsManualMarking && a.awardedPoints == null).length;
+  // Recomputed fresh from the current answers, NOT state.result.score — that field can
+  // come straight from the attempts.score column (goToExistingResult, viewing a result
+  // some time after it was graded), which pushGrades() DOES update, but only when
+  // grading actually recomputed AnswerResult.isCorrect correctly, and every write here
+  // is best-effort with no guaranteed consistency check. Answers, by contrast, are
+  // fetched fresh every time and are what the Marks/Correctness sections below are
+  // already computed from — deriving the headline from the same source they use keeps
+  // the top of the screen from ever contradicting its own breakdown (e.g. showing
+  // "Failed, 0/2" while Marks says "11/20"). Mirrors ResultViewModel.kt's own
+  // score = gradedReviews.count { it.answer.isCorrect } — recomputed from re-evaluated
+  // answers, not trusted from a stored field, for exactly this reason.
+  const score = answers.filter((a) => !isPendingAnswer(a) && a.isCorrect).length;
+
+  const pending = answers.filter(isPendingAnswer).length;
   const gradedCount = answers.length - pending;
 
   const content = el("div", { class: "screen" }, [
