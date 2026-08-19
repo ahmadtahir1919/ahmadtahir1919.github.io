@@ -525,7 +525,8 @@ async function joinQuizAction() {
  *  offered alongside "Retake Exam" when retake is allowed (see renderLanding). */
 async function goToExistingResult() {
   const answers = await SC.fetchAttemptAnswers(state.existingAttempt.id);
-  state.result = { score: state.existingAttempt.score, total: state.existingAttempt.total, answers };
+  const pollItems = await buildResultPollItems(state.quiz, state.user);
+  state.result = { score: state.existingAttempt.score, total: state.existingAttempt.total, answers, pollItems };
   state.screen = "result";
   render();
 }
@@ -941,8 +942,9 @@ async function finishQuiz() {
   const score = answers.filter((a) => a.isCorrect && !a.needsManualMarking).length;
 
   SC.submitAttempt(state.quiz.id, state.user.id, score, scored.length, answers)
-    .then(() => {
-      state.result = { score, total: scored.length, answers };
+    .then(async () => {
+      const pollItems = await buildResultPollItems(state.quiz, state.user);
+      state.result = { score, total: scored.length, answers, pollItems };
       state.screen = "result";
       render();
     })
@@ -1307,6 +1309,69 @@ function buildPollResults(q) {
   }
 
   return container;
+}
+
+/** Fetches every Poll question's votes for the finished/already-taken quiz and builds
+ *  the result-screen item for each — mirrors ResultViewModel.kt's loadFromAttempt poll
+ *  block: live tally regardless of open/closed status (no more "wait for the poll to
+ *  close" gate on this screen), and "my vote" matched by voterKey (this account's own
+ *  id, always known to itself) rather than participantId (which is nulled out for an
+ *  anonymous poll to hide it from OTHER voters/the owner) — so a voter's own choice is
+ *  always visible to them even on an anonymous poll. */
+async function buildResultPollItems(quiz, user) {
+  const pollQuestions = quiz.questions.filter((q) => q.type === "POLL");
+  if (pollQuestions.length === 0) return [];
+  const results = await Promise.all(
+    pollQuestions.map((q) => SC.fetchPollVotes(q.id).catch(() => []))
+  );
+  return pollQuestions.map((q, i) => {
+    const votes = results[i] || [];
+    const myVote = user ? votes.find((v) => v.voterKey === user.id) || null : null;
+    const distribution = PL.computePollDistribution(q.options || [], votes);
+    return { question: q, distribution, myVote };
+  });
+}
+
+const expandedPollReviews = new Set();
+
+/** Mirrors ResultScreen.kt's PollReviewCard — same review-card shell buildReviewCard
+ *  uses (accent bar, Q# pill, expand/collapse), swapping the body for the live vote
+ *  distribution instead of correct/incorrect. */
+function buildPollReviewCard(item, index) {
+  const q = item.question;
+  const expanded = expandedPollReviews.has(q.id);
+
+  const accent = el("div", { class: "review-accent poll" }, []);
+  const meta = el("div", { class: "review-meta" }, [
+    el("span", { class: "q-pill poll" }, [`Q${index + 1}`]),
+    el("span", { class: "poll-tag-badge" }, ["POLL"]),
+  ]);
+  const header = el(
+    "div",
+    { class: "review-header", onclick: () => { expandedPollReviews.has(q.id) ? expandedPollReviews.delete(q.id) : expandedPollReviews.add(q.id); render(); } },
+    [accent, el("div", { style: "flex:1" }, [meta, el("div", { class: "review-question" }, [stripMarkdownText(q.text)])])]
+  );
+  header.appendChild(html(CHEVRON_DOWN_SVG));
+
+  const card = el("div", { class: "review-card" }, [header]);
+
+  if (expanded) {
+    const dist = item.distribution;
+    const consensus = PL.computePollConsensus(dist);
+    const myVoteIndices = new Set(item.myVote?.selectedOptionIndices || []);
+    const bodyEl = el("div", { class: "review-body" }, [
+      el("p", { class: "poll-note" }, [`${dist.voterCount} participant${dist.voterCount === 1 ? "" : "s"}`]),
+    ]);
+    if (consensus) bodyEl.appendChild(el("div", { class: "poll-consensus" }, [consensusText(consensus)]));
+    dist.options.forEach((opt) => {
+      bodyEl.appendChild(buildPollResultRow(opt, myVoteIndices.has(opt.optionIndex)));
+    });
+    if (dist.other.count > 0) {
+      bodyEl.appendChild(buildPollResultRow(dist.other, myVoteIndices.has(PL.POLL_OTHER_INDEX), dist.otherEntries));
+    }
+    card.appendChild(bodyEl);
+  }
+  return card;
 }
 
 function buildPollResultRow(opt, mine, otherEntries) {
@@ -1763,9 +1828,23 @@ function renderResult() {
     content.appendChild(el("p", { class: "muted", style: "text-align:center" }, ["Results are hidden for this quiz — check with the quiz creator."]));
   } else if (quiz.showAnswers) {
     content.appendChild(el("p", { class: "muted", style: "font-weight:700;letter-spacing:0.6px" }, ["ANSWER REVIEW"]));
-    answers.forEach((a, i) => {
-      const card = buildReviewCard(a, i);
-      if (card) content.appendChild(card);
+    // Poll questions interleaved at their original position in the quiz, same as
+    // ResultScreen.kt's resultItems (Scored + PollItem, sortedBy index) — a poll
+    // sitting between two scored questions shows up between them here too, not
+    // dumped at the end.
+    const answerByQid = new Map(answers.map((a) => [a.questionId, a]));
+    const pollByQid = new Map((state.result.pollItems || []).map((p) => [p.question.id, p]));
+    quiz.questions.forEach((q, idx) => {
+      if (q.type === "POLL") {
+        const item = pollByQid.get(q.id);
+        if (item) content.appendChild(buildPollReviewCard(item, idx));
+      } else {
+        const a = answerByQid.get(q.id);
+        if (a) {
+          const card = buildReviewCard(a, idx);
+          if (card) content.appendChild(card);
+        }
+      }
     });
   }
 

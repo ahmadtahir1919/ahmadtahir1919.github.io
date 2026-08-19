@@ -684,11 +684,17 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
 .review-accent.correct { background: var(--success); }
 .review-accent.wrong { background: var(--error); }
 .review-accent.pending { background: var(--pending); }
+.review-accent.poll { background: var(--accent); }
 .review-meta { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
 .q-pill { font-size: 11px; font-weight: 700; border-radius: 4px; padding: 2px 6px; }
 .q-pill.correct { background: var(--success-bg); color: var(--success); }
 .q-pill.wrong { background: var(--error-bg); color: var(--error); }
 .q-pill.pending { background: var(--pending-bg); color: var(--pending); }
+.q-pill.poll { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+.poll-tag-badge {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.4px; border-radius: 4px; padding: 2px 6px;
+  background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent);
+}
 .pending-tag {
   font-size: 11px; font-weight: 500; border-radius: 4px; padding: 2px 5px;
   background: var(--pending-bg); color: var(--pending);
