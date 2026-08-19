@@ -260,6 +260,29 @@ button.text-link {
 
 /* ── Question + options ──────────────────────────────────────────────── */
 
+/* Mirrors QuizPreviewScreen.kt's QuestionLabel — "QUESTION X OF N" + the MULTIPLE_CORRECT
+   "Select all that apply" pill, shown above the question card when showQuestionNumbers
+   is on. */
+.question-number-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.question-number-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  color: var(--accent);
+}
+.select-all-badge {
+  font-size: 11px;
+  color: var(--accent);
+  background: var(--primary-container);
+  border-radius: 20px;
+  padding: 3px 8px;
+}
+
 .question-text {
   font-size: 19px;
   font-weight: 700;

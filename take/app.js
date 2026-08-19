@@ -1052,6 +1052,20 @@ function buildHintBox(hint) {
   ]);
 }
 
+/** Mirrors QuizPreviewScreen.kt's QuestionLabel — "QUESTION X OF N" plus a "Select all
+ *  that apply" pill for MULTIPLE_CORRECT — gated by quiz.showQuestionNumbers. Was never
+ *  implemented on web at all before (the setting synced to Supabase but had zero effect
+ *  here, unlike Android where it's genuinely wired), so toggling it never did anything. */
+function buildQuestionNumberLabel(quiz, q) {
+  const children = [
+    el("span", { class: "question-number-label" }, [`QUESTION ${state.currentIndex + 1} OF ${quiz.questions.length}`]),
+  ];
+  if (q.type === "MULTIPLE_CORRECT") {
+    children.push(el("span", { class: "select-all-badge" }, ["Select all that apply"]));
+  }
+  return el("div", { class: "question-number-row" }, children);
+}
+
 function renderQuiz() {
   const q = currentQuestion();
   const quiz = state.quiz;
@@ -1066,6 +1080,7 @@ function renderQuiz() {
 
   if (q.type === "POLL") {
     const questionArea = el("div", { class: "screen no-pad-top", style: "flex:1" }, [
+      ...(quiz.showQuestionNumbers ? [buildQuestionNumberLabel(quiz, q)] : []),
       el("div", { class: "card" }, [el("p", { class: "question-text" }, [renderMarkdown(q.text)])]),
     ]);
     if (!state.pollState) {
@@ -1088,11 +1103,12 @@ function renderQuiz() {
   // in the sentence card itself). Mirrors QuizPreviewScreen.kt's same condition.
   const fillBlankTitle = q.type === "FILL_BLANK" ? (q.fillBlankContent?.title || "").trim() : "";
   const showTitleCard = q.type !== "FILL_BLANK" || fillBlankTitle;
-  const questionArea = el("div", { class: "screen no-pad-top", style: "flex:1" },
-    showTitleCard
+  const questionArea = el("div", { class: "screen no-pad-top", style: "flex:1" }, [
+    ...(quiz.showQuestionNumbers ? [buildQuestionNumberLabel(quiz, q)] : []),
+    ...(showTitleCard
       ? [el("div", { class: "card" }, [el("p", { class: "question-text" }, [renderMarkdown(fillBlankTitle || q.text)])])]
-      : []
-  );
+      : []),
+  ]);
 
   if (q.hint && state.hintVisible) {
     questionArea.appendChild(buildHintBox(q.hint));
