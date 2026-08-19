@@ -1112,7 +1112,12 @@ function renderQuiz() {
   document.documentElement.style.setProperty("--accent", accent);
   const isLastQuestion = state.currentIndex === quiz.questions.length - 1;
 
-  const wrapper = el("div", { style: "display:flex;flex-direction:column;min-height:100%" }, [
+  // flex:1 + min-height:0 (not just min-height:100%): this is #app's sole child now
+  // that #app is a fixed-height, overflow:hidden frame (see style.css) — it has to
+  // actually fill and be clipped to that frame, not just grow to at-least its size,
+  // for .screen's own overflow-y:auto below to become the only scrolling region and
+  // keep the bottom bar permanently on-screen.
+  const wrapper = el("div", { style: "display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden" }, [
     buildQuizTopBar(quiz, q),
     buildQuestionProgressBar(quiz),
   ]);

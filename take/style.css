@@ -30,7 +30,14 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   background: var(--background);
   color: var(--text-primary);
-  min-height: 100vh;
+  /* Fixed to the viewport, not just a minimum — see #app's comment below. Paired
+     with overflow:hidden so the PAGE itself never scrolls; #app's own children
+     (.screen / quiz-bottombar) own scrolling instead. That's what makes the
+     Skip/Next bar (and every other bottom action bar) a real layout sibling that
+     can never end up below the fold, instead of a scroll-position hack. */
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
 }
 
 /* Mobile: a single edge-to-edge column, same as the app. Desktop (see media query
@@ -44,12 +51,16 @@ body {
      the actual visible area starts shorter than #app claims, cutting the top of the
      landing card off until the page is scrolled and the browser recalculates. 100dvh
      tracks the real, current viewport instead; vh stays as the fallback for browsers
-     that don't support dvh yet. */
-  min-height: 100vh;
-  min-height: 100dvh;
+     that don't support dvh yet. A fixed height (not min-height) is what lets .screen's
+     own overflow-y:auto below become the ONLY scrolling region — the outer frame
+     never grows past the viewport, so a bottom bar placed as its sibling never needs
+     scrolling to reach. */
+  height: 100vh;
+  height: 100dvh;
   background: var(--background);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 @media (min-width: 640px) {
@@ -58,15 +69,25 @@ body {
     padding: 40px 16px;
   }
   #app {
-    min-height: min(860px, calc(100vh - 80px));
+    height: min(860px, calc(100vh - 80px));
     border-radius: 28px;
     box-shadow: 0 30px 80px rgba(17, 24, 39, 0.18), 0 2px 8px rgba(17, 24, 39, 0.06);
     overflow: hidden;
   }
 }
 
+/* The one scrolling region inside #app's fixed-height frame — every screen's
+   content lives in here (see app.js: every render* function's outermost node
+   is `.screen`, appended either directly to #app or via the quiz screen's
+   topbar/bottombar wrapper). min-height:0 is required for a flex child to be
+   allowed to shrink below its content size at all; without it, overflow-y:auto
+   never actually engages and .screen just grows #app past the viewport instead
+   — the same silent flexbox trap that caused the original bug. */
 .screen {
   flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
   padding: 32px 20px 28px;
@@ -193,6 +214,7 @@ button.text-link {
   align-items: center;
   justify-content: space-between;
   padding: 14px 18px;
+  flex-shrink: 0;
 }
 .icon-btn {
   width: 36px;
@@ -230,6 +252,7 @@ button.text-link {
 .progress-track {
   height: 4px;
   background: #D9D7F5;
+  flex-shrink: 0;
 }
 .progress-fill {
   height: 100%;
@@ -559,6 +582,10 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
 .quiz-bottombar {
   background: var(--surface);
   box-shadow: 0 -4px 16px rgba(17, 24, 39, 0.06);
+  /* A real flex sibling of the scrollable .screen above it (see #app/.screen's
+     comments) — never shrunk by flex layout, and never something the page has
+     to scroll past to reach. */
+  flex-shrink: 0;
 }
 .quiz-bottombar .bar-row {
   display: flex;
