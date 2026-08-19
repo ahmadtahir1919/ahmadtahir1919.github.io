@@ -371,15 +371,19 @@ function renderLanding() {
 /** Small, clean version label under the Join card — mirrors the Android app's own
  *  drawer version text (BuildConfig.VERSION_NAME), just visible without digging into a
  *  menu since this page has no drawer. Bump WEB_VERSION by hand alongside meaningful
- *  releases; unrelated to the per-file `?v=N` cache-buster in index.html, which is a
- *  deployment-mechanics concern, not a user-facing version. */
+ *  releases. BUILD_NUMBER is read straight off this very file's own `?v=N` cache-buster
+ *  (index.html's <script src="app.js?v=N">) via import.meta.url — no separate constant
+ *  to remember to bump, it just always matches whatever was last deployed, so seeing it
+ *  change on screen is a real, unfakeable confirmation that a fresh deploy actually
+ *  landed (as opposed to the browser still running a cached copy of this file). */
 const WEB_VERSION = "1.0";
+const BUILD_NUMBER = new URL(import.meta.url).searchParams.get("v") || "?";
 
 function appendLandingScreen(body) {
   app.appendChild(
     el("div", { class: "screen" }, [
       el("div", { class: "card" }, body),
-      el("p", { class: "app-version" }, [`v${WEB_VERSION}`]),
+      el("p", { class: "app-version" }, [`v${WEB_VERSION} (build ${BUILD_NUMBER})`]),
     ])
   );
 }
