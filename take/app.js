@@ -295,7 +295,6 @@ function renderLanding() {
   // ArchivedQuizStatusAction — the creator deliberately took this quiz out of
   // circulation, distinct from it simply having expired on its own schedule.
   if (quiz.isArchived) {
-    console.log("[QuizApp] renderLanding: showing ARCHIVED screen — quiz.isArchived was true as of the last fetch (see boot() log above for when).");
     body.push(el("p", { class: "muted" }, ["This quiz has been archived by its creator and is no longer accepting responses."]));
     appendLandingScreen(body);
     return;
@@ -1646,18 +1645,6 @@ async function boot() {
       render();
       return;
     }
-    // Debug aid — open devtools console to see exactly what this page fetched (and when),
-    // since this page has no live polling: it only ever knows what it fetched at load time.
-    console.log("[QuizApp] boot() fetched quiz", {
-      id: quiz.id,
-      title: quiz.title,
-      isArchived: quiz.isArchived,
-      isDraft: quiz.isDraft,
-      startAt: quiz.startAt,
-      endAt: quiz.endAt,
-      shareCode: quiz.shareCode,
-      fetchedAt: new Date().toISOString(),
-    });
     state.quiz = quiz;
     state.user = await SC.getCurrentUser();
     if (state.user) {
