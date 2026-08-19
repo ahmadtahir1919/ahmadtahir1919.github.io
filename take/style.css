@@ -229,7 +229,18 @@ button.text-link {
 .progress-segment-fill {
   height: 100%;
   background: var(--accent);
-  transition: width 0.3s ease;
+  /* `transition` never plays here — render() rebuilds this element from scratch on every
+     state change (see this file's header comment), so there's no prior DOM state for a
+     transition to animate FROM; it just appears at its final width. The "filling" class
+     below (added once, in app.js's buildQuestionProgressBar) uses a real @keyframes
+     animation instead, which plays regardless of the element being freshly created. */
+}
+.progress-segment-fill.filling {
+  animation: progressSegmentFill 0.35s ease forwards;
+}
+@keyframes progressSegmentFill {
+  from { width: 0%; }
+  to { width: 100%; }
 }
 
 /* ── Question + options ──────────────────────────────────────────────── */

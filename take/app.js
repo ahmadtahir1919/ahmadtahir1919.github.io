@@ -905,16 +905,37 @@ function buildQuizTopBar(quiz, q) {
 /** One segment per question (Stories-style) rather than a single continuous bar —
  *  answered questions read as fully filled, the current one mid-fill, upcoming
  *  ones empty, so progress through the quiz is legible at a glance. */
+// Tracks which question index last actually played its fill animation — renderQuiz()
+// re-runs (and so re-calls this) on EVERY state change while a question is on screen
+// (picking an option, typing, revealing a hint), not just on advancing to a new one.
+// Without this guard, every full-DOM rebuild (see this file's render() doc) would
+// recreate the current segment's fill element from scratch and replay its animation on
+// every incidental click, instead of playing once when the question is actually reached.
+let lastAnimatedProgressIndex = -1;
+
 function buildQuestionProgressBar(quiz) {
   const total = quiz.questions.length;
+  const isNewQuestion = lastAnimatedProgressIndex !== state.currentIndex;
+  lastAnimatedProgressIndex = state.currentIndex;
   const segments = [];
   for (let i = 0; i < total; i++) {
     let fillPct = 0;
+    let animate = false;
     if (i < state.currentIndex) fillPct = 100;
-    else if (i === state.currentIndex) fillPct = 100; // this question's own segment reads as "in progress" (filled) once reached
+    else if (i === state.currentIndex) {
+      // This question's own segment reads as "in progress" (filled) once reached — CSS
+      // `transition` can't animate this (a fresh element every render has nothing to
+      // transition FROM, see the hint-box/instant-correctness fix earlier this session),
+      // so it plays a real @keyframes animation instead, exactly once per question.
+      fillPct = 100;
+      animate = isNewQuestion;
+    }
     segments.push(
       el("div", { class: "progress-segment" }, [
-        el("div", { class: "progress-segment-fill", style: `width:${fillPct}%` }),
+        el("div", {
+          class: "progress-segment-fill" + (animate ? " filling" : ""),
+          style: `width:${fillPct}%`,
+        }),
       ])
     );
   }
