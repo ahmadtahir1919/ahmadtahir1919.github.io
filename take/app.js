@@ -296,7 +296,7 @@ function renderLanding() {
   // circulation, distinct from it simply having expired on its own schedule.
   if (quiz.isArchived) {
     body.push(el("p", { class: "muted" }, ["This quiz has been archived by its creator and is no longer accepting responses."]));
-    app.appendChild(el("div", { class: "screen" }, [el("div", { class: "card" }, body)]));
+    appendLandingScreen(body);
     return;
   }
 
@@ -308,13 +308,13 @@ function renderLanding() {
       state.landingTickerHandle = setInterval(render, 1000);
     }
     body.push(el("p", { class: "muted" }, [SC.countdownUntil(quiz.startAt)]));
-    app.appendChild(el("div", { class: "screen" }, [el("div", { class: "card" }, body)]));
+    appendLandingScreen(body);
     return;
   }
 
   if (status !== "ACTIVE") {
     body.push(el("p", { class: "muted" }, ["This quiz has ended."]));
-    app.appendChild(el("div", { class: "screen" }, [el("div", { class: "card" }, body)]));
+    appendLandingScreen(body);
     return;
   }
 
@@ -365,7 +365,23 @@ function renderLanding() {
     );
   }
 
-  app.appendChild(el("div", { class: "screen" }, [el("div", { class: "card" }, body)]));
+  appendLandingScreen(body);
+}
+
+/** Small, clean version label under the Join card — mirrors the Android app's own
+ *  drawer version text (BuildConfig.VERSION_NAME), just visible without digging into a
+ *  menu since this page has no drawer. Bump WEB_VERSION by hand alongside meaningful
+ *  releases; unrelated to the per-file `?v=N` cache-buster in index.html, which is a
+ *  deployment-mechanics concern, not a user-facing version. */
+const WEB_VERSION = "1.0";
+
+function appendLandingScreen(body) {
+  app.appendChild(
+    el("div", { class: "screen" }, [
+      el("div", { class: "card" }, body),
+      el("p", { class: "app-version" }, [`v${WEB_VERSION}`]),
+    ])
+  );
 }
 
 /** One-time gate right after a brand-new signup (profiles.name_confirmed = false) —

@@ -104,6 +104,14 @@ body {
 .quiz-title { font-size: 22px; font-weight: 800; margin: 10px 0 4px; letter-spacing: -0.2px; }
 .quiz-meta { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
 
+.app-version {
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-secondary);
+  opacity: 0.6;
+  margin: 14px 0 0;
+}
+
 /* ── Buttons ──────────────────────────────────────────────────────────── */
 
 button { font-family: inherit; }
