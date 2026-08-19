@@ -1109,7 +1109,7 @@ function renderQuiz() {
     if (state.instantFeedback) {
       const fb = state.instantFeedback;
       questionArea.appendChild(
-        el("div", { class: "feedback-banner " + (fb.isCorrect ? "correct" : "wrong") }, [fb.isCorrect ? "✓ Correct!" : "✗ Not quite"])
+        el("div", { class: "feedback-banner " + (fb.isCorrect ? "correct" : "wrong") }, [fb.isCorrect ? "✓ Correct!" : "✗ Wrong"])
       );
       const ordered = q.fillBlankContent ? FB.orderedBlanks(q.fillBlankContent) : [];
       ordered.forEach((blank, i) => {
@@ -1126,7 +1126,7 @@ function renderQuiz() {
   } else if (state.instantFeedback) {
     const fb = state.instantFeedback;
     questionArea.appendChild(
-      el("div", { class: "feedback-banner " + (fb.isCorrect ? "correct" : "wrong") }, [fb.isCorrect ? "✓ Correct!" : "✗ Not quite"])
+      el("div", { class: "feedback-banner " + (fb.isCorrect ? "correct" : "wrong") }, [fb.isCorrect ? "✓ Correct!" : "✗ Wrong"])
     );
     if (!fb.isCorrect && fb.correctWrittenAnswer) {
       questionArea.appendChild(el("p", { class: "muted" }, [`Correct answer: ${fb.correctWrittenAnswer}`]));
