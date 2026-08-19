@@ -1512,9 +1512,10 @@ function buildScoreSectionCard(title, subtitle, value, percent, pending) {
  *  accuracy%, and progress track. No "Passed"/"Not passed" status label anymore (a 60%-
  *  threshold pass/fail read as needlessly harsh on an otherwise-decent score) — only a
  *  genuine zero-correct result gets called out as "Failed", same as Android. */
+// No accuracy%/progress bar here anymore — the score itself (and the Marks/
+// Correctness sections below, for a graded quiz) already say everything a
+// percentage would, without implying a pass/fail-style judgment on top of it.
 function buildScoreCard(score, total) {
-  const accuracy = total > 0 ? Math.floor((score * 100) / total) : 0;
-
   const badge = el("div", { class: "badge" }, []);
   badge.appendChild(html(TROPHY_SVG));
 
@@ -1533,12 +1534,7 @@ function buildScoreCard(score, total) {
         el("span", { class: "score-big" }, [String(score)]),
         el("span", { class: "score-total" }, [` / ${total}`]),
       ]),
-      el("div", {}, [
-        el("div", { class: "accuracy-num" }, [`${accuracy}%`]),
-        el("div", { class: "accuracy-label" }, ["ACCURACY"]),
-      ]),
     ]),
-    el("div", { class: "track" }, [el("div", { class: "fill", style: `width:${accuracy}%` })]),
   ]);
   return card;
 }
