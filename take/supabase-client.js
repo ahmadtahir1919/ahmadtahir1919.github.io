@@ -185,13 +185,27 @@ async function fetchQuizByShareCode(code) {
  *  taker was still mid-quiz. Null on failure/offline — a network hiccup here must never
  *  itself block a legitimate submission. */
 async function fetchQuizStatus(quizId) {
+  // Also carries every setting finishQuiz() actually scores with (manual marking,
+  // split-points, time-weightage, show-timers) — state.quiz itself is only ever fetched
+  // once at page load (boot()) and never refreshed, so without re-fetching these here too,
+  // an owner flipping one of these settings mid-quiz would silently score a submission
+  // under whatever was current when the tab first loaded, not the live value. Mirrors
+  // QuizPreviewViewModel.finishPreview's identical re-fetch on Android.
   const { data, error } = await supabaseClient
     .from("quizzes")
-    .select("start_at, end_at, is_archived")
+    .select("start_at, end_at, is_archived, manual_marking_default, split_points_across_choices, time_weightage_enabled, show_timers")
     .eq("id", quizId)
     .maybeSingle();
   if (error || !data) return null;
-  return { startAt: data.start_at, endAt: data.end_at, isArchived: data.is_archived };
+  return {
+    startAt: data.start_at,
+    endAt: data.end_at,
+    isArchived: data.is_archived,
+    manualMarkingDefault: data.manual_marking_default ?? false,
+    splitPointsAcrossChoices: data.split_points_across_choices ?? false,
+    timeWeightageEnabled: data.time_weightage_enabled ?? false,
+    showTimers: data.show_timers ?? true,
+  };
 }
 
 /** Latest real (non-preview) attempt this user already has for a quiz, or null.

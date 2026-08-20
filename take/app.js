@@ -873,6 +873,17 @@ async function finishQuiz() {
     render();
     return;
   }
+  // Same staleness concern as the status check above: state.quiz was only ever fetched once,
+  // at page load (boot()), and never refreshed — an owner flipping manual marking, split-points,
+  // time-weightage, or show-timers mid-quiz would otherwise silently score this submission
+  // under whatever was current when the tab first loaded. fetchQuizStatus's select() already
+  // carries these too, so this reuses that same round-trip rather than firing a second one.
+  if (liveStatus) {
+    state.quiz.manualMarkingDefault = liveStatus.manualMarkingDefault;
+    state.quiz.splitPointsAcrossChoices = liveStatus.splitPointsAcrossChoices;
+    state.quiz.timeWeightageEnabled = liveStatus.timeWeightageEnabled;
+    state.quiz.showTimers = liveStatus.showTimers;
+  }
 
   // Mirrors QuizPreviewViewModel.finishPreview on Android — an owner's remove-participant
   // action deletes this taker's joined_quizzes row remotely at any point during the quiz,
