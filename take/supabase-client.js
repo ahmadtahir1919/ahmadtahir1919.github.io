@@ -133,6 +133,8 @@ function quizFromRow(row, questions) {
     showCorrectnessInstantly: row.show_correctness_instantly ?? false,
     showQuestionNumbers: row.show_question_numbers ?? true,
     showTimers: row.show_timers ?? true,
+    splitPointsAcrossChoices: row.split_points_across_choices ?? false,
+    timeWeightageEnabled: row.time_weightage_enabled ?? false,
     themeColorName: row.theme_color_name,
     createdAt: row.created_at,
     questions: questions.sort((a, b) => a.orderIndex - b.orderIndex),

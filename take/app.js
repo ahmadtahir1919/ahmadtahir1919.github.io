@@ -720,8 +720,18 @@ function toggleAnswer(optionIndex) {
   const q = currentQuestion();
   const key = String(optionIndex);
   if (q.type === "MULTIPLE_CORRECT") {
-    if (state.selectedAnswers.has(key)) state.selectedAnswers.delete(key);
-    else state.selectedAnswers.add(key);
+    if (state.selectedAnswers.has(key)) {
+      state.selectedAnswers.delete(key);
+    } else {
+      // Split-points caps selection at the number of correct options (mirrors
+      // QuizPreviewViewModel.onToggleAnswer) — a tap past the cap is a no-op, blocked
+      // rather than evicting an earlier pick, so the taker never loses a choice they
+      // didn't ask to lose.
+      const cap = state.quiz.splitPointsAcrossChoices
+        ? (q.correctAnswers || []).length
+        : Infinity;
+      if (state.selectedAnswers.size < cap) state.selectedAnswers.add(key);
+    }
   } else {
     if (state.selectedAnswers.has(key)) state.selectedAnswers.clear();
     else { state.selectedAnswers.clear(); state.selectedAnswers.add(key); }
@@ -890,6 +900,10 @@ async function finishQuiz() {
     const isManual = requiresManualMarking(q, state.quiz);
 
     let isCorrect = false;
+    // rawPoints mirrors exactly what awardedPoints was before split-points/time-weightage
+    // existed for every type except a split-points-enabled MULTIPLE_CORRECT — see
+    // QuizPreviewViewModel.finishPreview's identical comment on the Android side.
+    let rawPoints = 0;
     // Populated only for an auto-graded WRITTEN answer with something on both sides to
     // actually compare — mirrors Android's evalResult, which is likewise null for the
     // trivial blank-input/blank-expected-answer cases. Used by the review card to show
@@ -912,23 +926,38 @@ async function finishQuiz() {
           // question (points = 0) would grade every answer as wrong no matter what.
           isCorrect = evaluator.computeScore(evaluationResult, Math.max(q.points, 1), rule) > 0;
         }
+        rawPoints = isCorrect ? q.points : 0;
       } else if (q.type === "FILL_BLANK") {
         isCorrect = q.fillBlankContent ? FB.fillBlankIsQuestionCorrect(q.fillBlankContent, given) : false;
+        rawPoints = isCorrect ? q.points : 0;
+      } else if (q.type === "MULTIPLE_CORRECT" && state.quiz.splitPointsAcrossChoices) {
+        const options = q.options || [];
+        const correctIdx = options.map((_, i) => i).filter((i) => (q.correctAnswers || []).includes(options[i]));
+        const shares = evaluator.splitCorrectOptionPoints(q.points, correctIdx.length);
+        const pickedIdx = new Set(rawKeys.map(Number));
+        rawPoints = correctIdx.reduce((sum, idx, i) => sum + (pickedIdx.has(idx) ? shares[i] : 0), 0);
+        isCorrect = rawPoints === q.points;
       } else {
         const a = new Set(given), b = new Set(q.correctAnswers || []);
         isCorrect = a.size === b.size && [...a].every((x) => b.has(x));
+        rawPoints = isCorrect ? q.points : 0;
       }
     }
+
+    // Uniform across every scored type — no-op when the toggle is off or this question
+    // has no active timer (see applyTimeWeightage's doc in evaluator.js).
+    const elapsedSec = state.questionTimings[q.id] || 0;
+    const effectiveTimeLimitSec = state.quiz.showTimers ? q.timeSec : 0;
+    const finalPoints = evaluator.applyTimeWeightage(rawPoints, elapsedSec, effectiveTimeLimitSec, state.quiz.timeWeightageEnabled);
 
     return {
       questionId: q.id,
       isCorrect,
       givenAnswers: given,
-      timeTakenSec: state.questionTimings[q.id] || 0,
+      timeTakenSec: elapsedSec,
       needsManualMarking: isManual,
-      // null on a manual answer is what marks it pending; an auto-graded one banks its
-      // marks now (full points when right, none when wrong).
-      awardedPoints: isManual ? null : (isCorrect ? q.points : 0),
+      // null on a manual answer is what marks it pending.
+      awardedPoints: isManual ? null : finalPoints,
       maxPoints: q.points,
       usedHint: state.hintUsed[q.id] === true,
       // In-memory only for this same-session review — attempt_answers has no column for

@@ -178,6 +178,30 @@ function computeScore(result, points, rule) {
   return Math.trunc(raw * 100) / 100; // truncate to 2dp, matches (raw*100).toLong()/100f
 }
 
+// ── Grading.kt's splitCorrectOptionPoints / applyTimeWeightage ─────────────
+// Mirrors the Kotlin functions of the same name exactly — see Grading.kt for the
+// full rationale (largest-remainder split, 50%-floor linear time factor).
+
+function splitCorrectOptionPoints(totalPoints, correctCount) {
+  if (correctCount <= 0) return [];
+  const base = Math.floor(totalPoints / correctCount);
+  const remainder = totalPoints - base * correctCount;
+  return Array.from({ length: correctCount }, (_, i) => (i < remainder ? base + 1 : base));
+}
+
+function timeWeightageFactor(elapsedSec, timeLimitSec) {
+  if (timeLimitSec <= 0) return 1.0;
+  const remaining = clamp(timeLimitSec - elapsedSec, 0, timeLimitSec);
+  const fraction = remaining / timeLimitSec;
+  return clamp(0.5 + 0.5 * fraction, 0.5, 1.0);
+}
+
+function applyTimeWeightage(rawPoints, elapsedSec, timeLimitSec, enabled) {
+  if (!enabled || timeLimitSec <= 0) return rawPoints;
+  const factor = timeWeightageFactor(elapsedSec, timeLimitSec);
+  return clamp(Math.round(rawPoints * factor), 0, rawPoints);
+}
+
 // ── AnswerEvaluator.kt ────────────────────────────────────────────────────
 
 function applyAliasPairs(input, pairs) {
@@ -325,4 +349,7 @@ window.Evaluator = {
   computeScore,
   defaultAnswerRule,
   TextNormalizer,
+  splitCorrectOptionPoints,
+  timeWeightageFactor,
+  applyTimeWeightage,
 };
