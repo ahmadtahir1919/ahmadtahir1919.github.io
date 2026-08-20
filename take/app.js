@@ -723,13 +723,16 @@ function toggleAnswer(optionIndex) {
     if (state.selectedAnswers.has(key)) {
       state.selectedAnswers.delete(key);
     } else {
-      // Split-points caps selection at the number of correct options (mirrors
-      // QuizPreviewViewModel.onToggleAnswer) — a tap past the cap is a no-op, blocked
-      // rather than evicting an earlier pick, so the taker never loses a choice they
-      // didn't ask to lose.
-      const cap = state.quiz.splitPointsAcrossChoices
-        ? (q.correctAnswers || []).length
-        : Infinity;
+      // Always capped at the number of correct options, regardless of
+      // splitPointsAcrossChoices (mirrors QuizPreviewViewModel.onToggleAnswer) —
+      // selecting more than that is guaranteed wrong under all-or-nothing scoring
+      // too, so this is a pure UX guard with no scoring effect either way. A tap
+      // past the cap is a no-op, blocked rather than evicting an earlier pick, so
+      // the taker never loses a choice they didn't ask to lose. Skipped when
+      // correctAnswers is empty — a manual-marking question genuinely has none
+      // marked, and a cap of 0 would block every selection outright.
+      const correctCount = (q.correctAnswers || []).length;
+      const cap = correctCount > 0 ? correctCount : Infinity;
       if (state.selectedAnswers.size < cap) state.selectedAnswers.add(key);
     }
   } else {
