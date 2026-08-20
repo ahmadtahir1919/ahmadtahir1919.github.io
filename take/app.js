@@ -1623,7 +1623,13 @@ function buildScoreSectionCard(title, subtitle, value, percent, pending) {
 // No accuracy%/progress bar here anymore — the score itself (and the Marks/
 // Correctness sections below, for a graded quiz) already say everything a
 // percentage would, without implying a pass/fail-style judgment on top of it.
-function buildScoreCard(score, total) {
+/**
+ * @param marks Optional { awarded, total, percent } — when a marks-carrying quiz is fully
+ *   graded (never while anything in that track is still pending), its breakdown is folded
+ *   into this card instead of living only in the separate white section below, so the
+ *   headline card isn't just one lonely number on a big gradient background.
+ */
+function buildScoreCard(score, total, marks) {
   const badge = el("div", { class: "badge" }, []);
   badge.appendChild(html(TROPHY_SVG));
 
@@ -1632,7 +1638,7 @@ function buildScoreCard(score, total) {
     labelColumn.push(el("div", { class: "status" }, ["Failed"]));
   }
 
-  const card = el("div", { class: "score-card" }, [
+  const children = [
     el("div", { class: "row-top" }, [
       badge,
       el("div", {}, labelColumn),
@@ -1643,8 +1649,22 @@ function buildScoreCard(score, total) {
         el("span", { class: "score-total" }, [` / ${total}`]),
       ]),
     ]),
-  ]);
-  return card;
+  ];
+
+  if (marks) {
+    children.push(
+      el("div", { class: "score-card-divider" }, []),
+      el("div", { class: "score-card-marks" }, [
+        el("div", { class: "score-card-marks-row" }, [
+          el("span", { class: "score-card-marks-label" }, ["Marks"]),
+          el("span", { class: "score-card-marks-value" }, [`${marks.awarded} / ${marks.total} · ${marks.percent}%`]),
+        ]),
+        el("div", { class: "track" }, [el("div", { class: "fill", style: `width:${marks.percent}%` })]),
+      ])
+    );
+  }
+
+  return el("div", { class: "score-card" }, children);
 }
 
 /**
@@ -1829,13 +1849,24 @@ function renderResult() {
   const pending = answers.filter(isPendingAnswer).length;
   const gradedCount = answers.length - pending;
 
+  // Marks vs plain correctness — two different currencies (see computeScoreBreakdown's
+  // doc). Computed before the score card so a fully-graded marks track can be folded
+  // straight into it below instead of only ever living in its own separate card.
+  const breakdown = computeScoreBreakdown(answers);
+  // Only once nothing in that track is still pending — a percentage that could still
+  // move (or a 0/40 line while everything's unmarked) belongs in the plain white
+  // section below, same as before, not baked into the headline card.
+  const marksForScoreCard = breakdown.hasMarks && breakdown.marksPending === 0
+    ? { awarded: breakdown.marksAwarded, total: breakdown.marksTotal, percent: breakdown.marksPercent }
+    : null;
+
   const content = el("div", { class: "screen" }, [
     el("h2", { class: "quiz-title", style: "text-align:center;margin:4px 0 0" }, [quiz.title]),
     // Nothing marked yet means there is no score — not a zero, not a partial one — so the
     // score card is replaced outright rather than showing 0/N (mirrors PendingReviewCard).
     pending > 0 && gradedCount === 0
       ? buildPendingCard(pending, 0, 0)
-      : buildScoreCard(score, total),
+      : buildScoreCard(score, total, marksForScoreCard),
   ]);
 
   if (pending > 0 && gradedCount > 0) {
@@ -1844,11 +1875,9 @@ function renderResult() {
     content.appendChild(buildPendingCard(pending, score, gradedCount));
   }
 
-  // Marks vs plain correctness — two different currencies, shown as their own labelled
-  // sections (see computeScoreBreakdown's doc). Most quizzes only ever populate one
-  // track, so the other simply doesn't render.
-  const breakdown = computeScoreBreakdown(answers);
-  if (breakdown.hasMarks) {
+  // Shown separately only when it wasn't already folded into the score card above
+  // (still pending, or the score card itself was replaced by the pending card).
+  if (breakdown.hasMarks && !marksForScoreCard) {
     content.appendChild(buildScoreSectionCard(
       "Marks",
       "Questions that carry marks, scored out of their total.",
