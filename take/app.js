@@ -1625,9 +1625,11 @@ function buildScoreSectionCard(title, subtitle, value, percent, pending) {
 // percentage would, without implying a pass/fail-style judgment on top of it.
 /**
  * @param marks Optional { awarded, total, percent } — when a marks-carrying quiz is fully
- *   graded (never while anything in that track is still pending), its breakdown is folded
- *   into this card instead of living only in the separate white section below, so the
- *   headline card isn't just one lonely number on a big gradient background.
+ *   graded (never while anything in that track is still pending), its percent fills the
+ *   empty right side of the numbers row instead of leaving it blank (this row used to be a
+ *   two-sided layout back when it also showed an overall accuracy% — see accuracy-num/
+ *   accuracy-label in style.css, reused here rather than adding a whole new section that
+ *   would just make the card taller).
  */
 function buildScoreCard(score, total, marks) {
   const badge = el("div", { class: "badge" }, []);
@@ -1638,33 +1640,28 @@ function buildScoreCard(score, total, marks) {
     labelColumn.push(el("div", { class: "status" }, ["Failed"]));
   }
 
-  const children = [
-    el("div", { class: "row-top" }, [
-      badge,
-      el("div", {}, labelColumn),
-    ]),
-    el("div", { class: "numbers" }, [
-      el("div", { style: "display:flex;align-items:flex-end" }, [
-        el("span", { class: "score-big" }, [String(score)]),
-        el("span", { class: "score-total" }, [` / ${total}`]),
-      ]),
+  const numbersRow = [
+    el("div", { style: "display:flex;align-items:flex-end" }, [
+      el("span", { class: "score-big" }, [String(score)]),
+      el("span", { class: "score-total" }, [` / ${total}`]),
     ]),
   ];
-
   if (marks) {
-    children.push(
-      el("div", { class: "score-card-divider" }, []),
-      el("div", { class: "score-card-marks" }, [
-        el("div", { class: "score-card-marks-row" }, [
-          el("span", { class: "score-card-marks-label" }, ["Marks"]),
-          el("span", { class: "score-card-marks-value" }, [`${marks.awarded} / ${marks.total} · ${marks.percent}%`]),
-        ]),
-        el("div", { class: "track" }, [el("div", { class: "fill", style: `width:${marks.percent}%` })]),
+    numbersRow.push(
+      el("div", {}, [
+        el("div", { class: "accuracy-num" }, [`${marks.percent}%`]),
+        el("div", { class: "accuracy-label" }, [`MARKS ${marks.awarded}/${marks.total}`]),
       ])
     );
   }
 
-  return el("div", { class: "score-card" }, children);
+  return el("div", { class: "score-card" }, [
+    el("div", { class: "row-top" }, [
+      badge,
+      el("div", {}, labelColumn),
+    ]),
+    el("div", { class: "numbers" }, numbersRow),
+  ]);
 }
 
 /**

@@ -637,14 +637,6 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
 .score-card .track { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.22); margin-top: 14px; overflow: hidden; }
 .score-card .fill { height: 100%; background: #fff; border-radius: 3px; transition: width 0.9s ease; }
 
-/* Folds a fully-graded Marks breakdown into the headline card (see buildScoreCard's
-   `marks` param) instead of leaving it a lone number over a big gradient background. */
-.score-card-divider { height: 1px; background: rgba(255,255,255,0.18); margin-top: 20px; }
-.score-card-marks { margin-top: 16px; }
-.score-card-marks-row { display: flex; align-items: baseline; justify-content: space-between; }
-.score-card-marks-label { font-size: 11px; letter-spacing: 0.8px; color: rgba(255,255,255,0.7); text-transform: uppercase; }
-.score-card-marks-value { font-size: 15px; font-weight: 700; color: #fff; }
-
 /* Mirrors ResultScreen.kt's ScoreSectionCard — the Marks / Correct-answers breakdown
    shown below the main score card. */
 .score-section-card {
