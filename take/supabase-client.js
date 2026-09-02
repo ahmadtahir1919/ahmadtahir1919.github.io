@@ -16,7 +16,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_wD6qD3zEVnyYV1-TROtMgQ_XlQK9uT9";
 let supabaseClient = null;
 let initError = null;
 try {
-  if (!window.supabase) throw new Error("Supabase library failed to load from CDN.");
+  if (!window.supabase) throw new Error(window.S.ERR_SUPABASE_CDN);
   supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     global: {
       // Every read here (quiz settings, questions, existing attempt, poll state...) needs

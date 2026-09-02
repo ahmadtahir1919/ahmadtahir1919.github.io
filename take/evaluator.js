@@ -12,18 +12,33 @@ const TextNormalizer = {
   _punct: /[^\p{L}\p{N} ]/gu,
   _space: /\s+/g,
 
-  normalize(input) {
-    return input
-      .toLowerCase()
-      .trim()
-      .replace(this._space, " ")
-      .replace(this._punct, "")
-      .trim();
+  /** Shared cleaning pipeline. The collapse-strip-collapse ordering is deliberate and
+   *  both collapses are load-bearing:
+   *   - Collapsing FIRST turns tabs/newlines into plain spaces. _punct whitelists only
+   *     a literal space, so stripping first would delete a tab outright and glue the
+   *     words on either side of it together.
+   *   - Collapsing AGAIN afterwards stops a space-surrounded mark leaving a double
+   *     space: "New York , USA" would normalize to "new york  usa" and never equal
+   *     "New York, USA" -> "new york usa". evaluateExact compares these strings
+   *     directly, so an identical answer was being marked wrong. */
+  _clean(input, dropPunctuation) {
+    const collapsed = input.replace(this._space, " ");
+    const stripped = dropPunctuation
+      ? collapsed.replace(this._punct, "").replace(this._space, " ")
+      : collapsed;
+    return stripped.trim();
   },
 
+  normalize(input) {
+    return this._clean(input.toLowerCase(), true);
+  },
+
+  /** Case-sensitive mode preserves punctuation too — that is the documented contract
+   *  of MatchMode.CASE_SENSITIVE_EXACT ("punctuation is kept") and the entire point of
+   *  FillBlankChecking.STRICT. Stripping it here quietly reduced Strict to a case-only
+   *  check, accepting "dont" for "don't". */
   normalizeForExact(input, caseSensitive) {
-    const base = input.trim().replace(this._space, " ").replace(this._punct, "").trim();
-    return caseSensitive ? base : base.toLowerCase();
+    return caseSensitive ? this._clean(input, false) : this._clean(input.toLowerCase(), true);
   },
 
   tokenize(input) {
@@ -40,20 +55,26 @@ const ONES = {
 const TENS = { twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90 };
 
 function wordToNumber(input) {
-  const tokens = input.toLowerCase().trim().replace(/-/g, " ").split(/\s+/).filter((t) => t.length > 0);
+  // Split on any non-letter run so "twenty-three", "twenty three" and "twenty three."
+  // all tokenize identically.
+  const tokens = input.toLowerCase().replace(/[^a-z]+/g, " ").trim().split(" ").filter((t) => t.length > 0);
   if (tokens.length === 0) return null;
   let total = 0;
   let current = 0;
+  // Guards the multiplier words: a bare "hundred" used to multiply a current of 0 and
+  // yield 0, so it compared equal to "0" and was marked correct. A multiplier is only a
+  // number when something precedes it to multiply.
+  let sawValue = false;
   for (const token of tokens) {
-    if (token in ONES) current += ONES[token];
-    else if (token in TENS) current += TENS[token];
-    else if (token === "hundred") current *= 100;
-    else if (token === "thousand") { current *= 1000; total += current; current = 0; }
-    else if (token === "million") { current *= 1000000; total += current; current = 0; }
+    if (token in ONES) { current += ONES[token]; sawValue = true; }
+    else if (token in TENS) { current += TENS[token]; sawValue = true; }
+    else if (token === "hundred") { if (current === 0) return null; current *= 100; }
+    else if (token === "thousand") { if (current === 0) return null; current *= 1000; total += current; current = 0; }
+    else if (token === "million") { if (current === 0) return null; current *= 1000000; total += current; current = 0; }
     else return null; // unrecognised word
   }
-  const result = total + current;
-  return result >= 0 ? result : null;
+  if (!sawValue) return null;
+  return total + current;
 }
 
 // ── SimilarityAlgorithms.kt ──────────────────────────────────────────────
@@ -122,11 +143,23 @@ function keywordCoverage(input, keywords) {
   return matched / keywords.length;
 }
 
+/** Everything that can't be part of a written number. This KEEPS "." and "-":
+ *  running normalize() here instead stripped the decimal point and turned "3.14" into
+ *  "314", which then compared equal to a literal 314. */
+const NON_NUMERIC = /[^0-9.\-]/g;
+
+/** [text] must NOT be pre-normalized — it needs its decimal point intact. Currency
+ *  symbols, thousands separators and stray punctuation are dropped here instead, so
+ *  "$1,000.50" still parses. */
 function parseNumeric(text) {
-  const trimmed = text.trim();
-  const asNum = Number(trimmed);
-  if (trimmed !== "" && !Number.isNaN(asNum)) return asNum;
-  return wordToNumber(trimmed);
+  const digits = text.replace(NON_NUMERIC, "");
+  // Requiring an actual digit stops a lone "-" or "." being considered. Number() only
+  // ever sees this cleaned form, so it can't accept JS-only spellings like "0x10".
+  if (/[0-9]/.test(digits)) {
+    const asNum = Number(digits);
+    if (!Number.isNaN(asNum)) return asNum;
+  }
+  return wordToNumber(text);
 }
 
 function numericEquivalent(a, b) {
@@ -189,10 +222,34 @@ function splitCorrectOptionPoints(totalPoints, correctCount) {
   return Array.from({ length: correctCount }, (_, i) => (i < remainder ? base + 1 : base));
 }
 
+/** Scores a MULTIPLE_CORRECT question when splitPointsAcrossChoices is on — mirrors
+ *  scoreSplitMultipleCorrect() in Grading.kt. Correctness is a SET COMPARISON, never a
+ *  comparison of points earned against the question total: on a no-marks question
+ *  (totalPoints 0) every award is 0, so "earned === total" was trivially true and
+ *  marked EVERY taker correct, including one who selected nothing. It also wrongly
+ *  passed a taker who picked every correct option plus a wrong one. */
+function scoreSplitMultipleCorrect(correctIndices, pickedIndices, totalPoints) {
+  const shares = splitCorrectOptionPoints(totalPoints, correctIndices.length);
+  const rawPoints = correctIndices.reduce(
+    (sum, idx, i) => sum + (pickedIndices.has(idx) ? shares[i] : 0),
+    0
+  );
+  const isCorrect =
+    correctIndices.length > 0 &&
+    pickedIndices.size === correctIndices.length &&
+    correctIndices.every((idx) => pickedIndices.has(idx));
+  return { isCorrect, rawPoints };
+}
+
+const TIME_WEIGHTAGE_GRACE_SEC = 5;
+
 function timeWeightageFactor(elapsedSec, timeLimitSec) {
-  if (timeLimitSec <= 0) return 1.0;
-  const remaining = clamp(timeLimitSec - elapsedSec, 0, timeLimitSec);
-  const fraction = remaining / timeLimitSec;
+  if (timeLimitSec <= TIME_WEIGHTAGE_GRACE_SEC) return 1.0;
+  if (elapsedSec <= TIME_WEIGHTAGE_GRACE_SEC) return 1.0;
+  const scalableWindow = timeLimitSec - TIME_WEIGHTAGE_GRACE_SEC;
+  const elapsedInWindow = clamp(elapsedSec - TIME_WEIGHTAGE_GRACE_SEC, 0, scalableWindow);
+  const remaining = scalableWindow - elapsedInWindow;
+  const fraction = remaining / scalableWindow;
   return clamp(0.5 + 0.5 * fraction, 0.5, 1.0);
 }
 
@@ -228,19 +285,19 @@ function evaluateExact(normInput, normCandidate, rawCandidate) {
   if (normInput === normCandidate) {
     return {
       status: "EXACT_MATCH", similarityScore: 1, matchedAgainst: rawCandidate,
-      feedbackMessage: "Correct!", wordDetails: buildWordDetails(normInput, normCandidate, 1),
+      feedbackMessage: window.S.EVAL_CORRECT, wordDetails: buildWordDetails(normInput, normCandidate, 1),
     };
   }
   return {
     status: "INCORRECT", similarityScore: 0, matchedAgainst: rawCandidate,
-    feedbackMessage: "Incorrect answer.", wordDetails: buildWordDetails(normInput, normCandidate, 1),
+    feedbackMessage: window.S.EVAL_INCORRECT, wordDetails: buildWordDetails(normInput, normCandidate, 1),
   };
 }
 
 function evaluateFuzzy(normInput, normCandidate, rawCandidate, rule) {
   if (normInput === normCandidate) {
     return {
-      status: "EXACT_MATCH", similarityScore: 1, matchedAgainst: rawCandidate, feedbackMessage: "Correct!",
+      status: "EXACT_MATCH", similarityScore: 1, matchedAgainst: rawCandidate, feedbackMessage: window.S.EVAL_CORRECT,
       wordDetails: buildWordDetails(normInput, normCandidate, rule.minSimilarity),
     };
   }
@@ -248,7 +305,7 @@ function evaluateFuzzy(normInput, normCandidate, rawCandidate, rule) {
     return {
       status: "INCORRECT",
       similarityScore: levenshteinSimilarity(normInput, normCandidate),
-      matchedAgainst: rawCandidate, feedbackMessage: "Incorrect answer.", wordDetails: [],
+      matchedAgainst: rawCandidate, feedbackMessage: window.S.EVAL_INCORRECT, wordDetails: [],
     };
   }
   const inputTokens = TextNormalizer.tokenize(normInput);
@@ -256,12 +313,12 @@ function evaluateFuzzy(normInput, normCandidate, rawCandidate, rule) {
   const details = wordLevelMatch(inputTokens, expectedTokens, rule.minSimilarity);
   const similarity = wordLevelSimilarity(inputTokens, expectedTokens, rule.minSimilarity);
   if (similarity >= rule.minSimilarity) {
-    return { status: "ACCEPTED_WITH_TYPO", similarityScore: similarity, matchedAgainst: rawCandidate, feedbackMessage: "Accepted — small typo.", wordDetails: details };
+    return { status: "ACCEPTED_WITH_TYPO", similarityScore: similarity, matchedAgainst: rawCandidate, feedbackMessage: window.S.EVAL_TYPO, wordDetails: details };
   }
   if (similarity >= 0.4) {
-    return { status: "PARTIAL_MATCH", similarityScore: similarity, matchedAgainst: rawCandidate, feedbackMessage: "Partial match — some words correct.", wordDetails: details };
+    return { status: "PARTIAL_MATCH", similarityScore: similarity, matchedAgainst: rawCandidate, feedbackMessage: window.S.EVAL_PARTIAL, wordDetails: details };
   }
-  return { status: "INCORRECT", similarityScore: similarity, matchedAgainst: rawCandidate, feedbackMessage: "Incorrect answer.", wordDetails: details };
+  return { status: "INCORRECT", similarityScore: similarity, matchedAgainst: rawCandidate, feedbackMessage: window.S.EVAL_INCORRECT, wordDetails: details };
 }
 
 function evaluateKeywords(normInput, rawCandidate, rule) {
@@ -270,17 +327,17 @@ function evaluateKeywords(normInput, rawCandidate, rule) {
   }
   const coverage = keywordCoverage(normInput, rule.keywords);
   const threshold = KEYWORD_COVERAGE_THRESHOLD[rule.keywordCoverage] ?? 1.0;
-  if (coverage >= 1.0) return { status: "EXACT_MATCH", similarityScore: 1, matchedAgainst: rawCandidate, feedbackMessage: "Correct! All keywords found.", wordDetails: [] };
-  if (coverage >= threshold) return { status: "ACCEPTED_WITH_TYPO", similarityScore: coverage, matchedAgainst: rawCandidate, feedbackMessage: `Accepted — ${Math.trunc(coverage * 100)}% keywords found.`, wordDetails: [] };
-  if (coverage >= 0.3) return { status: "PARTIAL_MATCH", similarityScore: coverage, matchedAgainst: rawCandidate, feedbackMessage: `Partial — ${Math.trunc(coverage * 100)}% keywords found.`, wordDetails: [] };
-  return { status: "INCORRECT", similarityScore: coverage, matchedAgainst: rawCandidate, feedbackMessage: "Incorrect — missing required keywords.", wordDetails: [] };
+  if (coverage >= 1.0) return { status: "EXACT_MATCH", similarityScore: 1, matchedAgainst: rawCandidate, feedbackMessage: window.S.EVAL_KEYWORDS_ALL, wordDetails: [] };
+  if (coverage >= threshold) return { status: "ACCEPTED_WITH_TYPO", similarityScore: coverage, matchedAgainst: rawCandidate, feedbackMessage: window.S.evalKeywordsAccepted(Math.trunc(coverage * 100)), wordDetails: [] };
+  if (coverage >= 0.3) return { status: "PARTIAL_MATCH", similarityScore: coverage, matchedAgainst: rawCandidate, feedbackMessage: window.S.evalKeywordsPartial(Math.trunc(coverage * 100)), wordDetails: [] };
+  return { status: "INCORRECT", similarityScore: coverage, matchedAgainst: rawCandidate, feedbackMessage: window.S.EVAL_KEYWORDS_MISSING, wordDetails: [] };
 }
 
 function evaluateNumeric(normInput, normCandidate, rawCandidate) {
   if (numericEquivalent(normInput, normCandidate)) {
-    return { status: "EXACT_MATCH", similarityScore: 1, matchedAgainst: rawCandidate, feedbackMessage: "Correct!", wordDetails: [] };
+    return { status: "EXACT_MATCH", similarityScore: 1, matchedAgainst: rawCandidate, feedbackMessage: window.S.EVAL_CORRECT, wordDetails: [] };
   }
-  return { status: "INCORRECT", similarityScore: 0, matchedAgainst: rawCandidate, feedbackMessage: "Incorrect number.", wordDetails: [] };
+  return { status: "INCORRECT", similarityScore: 0, matchedAgainst: rawCandidate, feedbackMessage: window.S.EVAL_INCORRECT_NUMBER, wordDetails: [] };
 }
 
 function evaluateAgainstCandidateWithMode(userInput, candidate, mode, rule) {
@@ -294,7 +351,11 @@ function evaluateAgainstCandidateWithMode(userInput, candidate, mode, rule) {
     case "KEYWORD_MATCH":
       return evaluateKeywords(TextNormalizer.normalize(userInput), candidate, rule);
     case "NUMERIC_EQUIVALENT":
-      return evaluateNumeric(TextNormalizer.normalize(userInput), TextNormalizer.normalize(candidate), candidate);
+      // Raw, deliberately un-normalized: normalize() strips the decimal point as
+      // punctuation, which turned "7.0" into "70" (so the tip's own promised example
+      // failed to match "7") and made "314" equal "3.14". parseNumeric does its own
+      // numeric-safe cleaning instead.
+      return evaluateNumeric(userInput, candidate, candidate);
     default:
       return evaluateExact(TextNormalizer.normalize(userInput), TextNormalizer.normalize(candidate), candidate);
   }
@@ -306,7 +367,7 @@ function evaluateAgainstCandidateWithMode(userInput, candidate, mode, rule) {
 function evaluate(userInput, expected, rule) {
   rule = rule || defaultAnswerRule();
   if (!userInput || userInput.trim() === "") {
-    return { status: "INCORRECT", similarityScore: 0, matchedAgainst: expected, feedbackMessage: "No answer provided.", wordDetails: [] };
+    return { status: "INCORRECT", similarityScore: 0, matchedAgainst: expected, feedbackMessage: window.S.EVAL_NO_ANSWER, wordDetails: [] };
   }
 
   const substitutedInput = applyAliasPairs(userInput, rule.aliasPairs);
@@ -340,7 +401,7 @@ function evaluate(userInput, expected, rule) {
     }
   }
 
-  return bestPartial || bestIncorrect || { status: "INCORRECT", similarityScore: 0, matchedAgainst: expected, feedbackMessage: "Incorrect answer.", wordDetails: [] };
+  return bestPartial || bestIncorrect || { status: "INCORRECT", similarityScore: 0, matchedAgainst: expected, feedbackMessage: window.S.EVAL_INCORRECT, wordDetails: [] };
 }
 
 // Public API — mirrors the Kotlin package's exported surface.
@@ -350,6 +411,7 @@ window.Evaluator = {
   defaultAnswerRule,
   TextNormalizer,
   splitCorrectOptionPoints,
+  scoreSplitMultipleCorrect,
   timeWeightageFactor,
   applyTimeWeightage,
 };

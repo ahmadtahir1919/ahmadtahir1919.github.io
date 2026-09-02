@@ -34,8 +34,51 @@
     <p class="hint" style="margin-top:12px">Not showing up yet? The app is still in testing — ask the quiz creator directly.</p>
   </div>
   <script>
-    var code = new URLSearchParams(window.location.search).get('code');
-    if (code) {
+    // Two ways in:
+    //   ?code=XXXXXX — the plain code, used by the text share message.
+    //   ?t=<token>   — the encrypted token a QR carries (see QrCodePayloadCodec.kt).
+    // Same AES-GCM key and "1" + base64url(iv(12) ‖ ciphertext+tag) format as the app.
+    // NOTE: this key is obfuscation, not security — it ships in the APK and, right here,
+    // in public JavaScript. A share code was never a secret; this only keeps the QR/link
+    // from being casually readable. Keep in sync with QrCodePayloadCodec.kt.
+    var QR_KEY_HEX = '61c72cd0756eb7e72fdef2e9cbe597167a9fba6c6666436efcc9f4f745ddd44a';
+
+    function hexToBytes(hex) {
+      var out = new Uint8Array(hex.length / 2);
+      for (var i = 0; i < out.length; i++) out[i] = parseInt(hex.substr(i * 2, 2), 16);
+      return out;
+    }
+
+    function base64UrlToBytes(s) {
+      var b64 = s.replace(/-/g, '+').replace(/_/g, '/');
+      while (b64.length % 4) b64 += '=';
+      var bin = atob(b64);
+      var out = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+      return out;
+    }
+
+    // Resolves to the 6-char code, or null for anything malformed/tampered/foreign.
+    function decryptToken(token) {
+      if (!token || token.charAt(0) !== '1' || !window.crypto || !crypto.subtle) {
+        return Promise.resolve(null);
+      }
+      var raw;
+      try { raw = base64UrlToBytes(token.substring(1)); } catch (e) { return Promise.resolve(null); }
+      if (raw.length <= 12) return Promise.resolve(null);
+      var iv = raw.slice(0, 12);
+      var body = raw.slice(12);
+      return crypto.subtle.importKey('raw', hexToBytes(QR_KEY_HEX), 'AES-GCM', false, ['decrypt'])
+        .then(function (key) { return crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, key, body); })
+        .then(function (plain) {
+          var payload = JSON.parse(new TextDecoder().decode(plain));
+          return /^[A-Z0-9]{6}$/.test(payload.c) ? payload.c : null;
+        })
+        .catch(function () { return null; });
+    }
+
+    function showCode(code) {
+      if (!code) return;
       code = code.toUpperCase();
       document.getElementById('code').textContent = code;
       // Carries the code through to Play Store as a referrer, so once the app IS
@@ -44,6 +87,16 @@
       var link = document.getElementById('playStoreLink');
       link.href = link.href + '&referrer=' + encodeURIComponent('code=' + code);
       document.getElementById('takeInBrowserLink').href = '/take/?code=' + encodeURIComponent(code);
+    }
+
+    var params = new URLSearchParams(window.location.search);
+    var plainCode = params.get('code');
+    if (plainCode) {
+      showCode(plainCode);
+    } else {
+      // Leaves the "------" placeholder up if the token can't be read — the Play Store
+      // and browser links still work, the visitor just doesn't get a prefilled code.
+      decryptToken(params.get('t')).then(showCode);
     }
   </script>
 </body>

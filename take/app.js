@@ -22,14 +22,18 @@ const app = document.getElementById("app");
 // threw during init — e.g. the Supabase CDN script was blocked/slow) used to
 // throw right here and leave the whole page blank with nothing on screen and
 // no clue why. Show it instead of silently dying.
-if (!window.Evaluator || !window.SupabaseClient || !window.FillBlank || !window.Poll) {
+// strings.js is included in this guard too: every user-facing word on the page comes
+// from it, so a page that loaded without it would render blank labels everywhere. The
+// two failure messages below stay inline literals on purpose — they are the LAST
+// resort, shown precisely when the string table may be the thing that failed to load.
+if (!window.Evaluator || !window.SupabaseClient || !window.FillBlank || !window.Poll || !window.S) {
   app.innerHTML =
     '<div style="padding:24px;font-family:sans-serif;color:#DC2626">' +
     "<b>Couldn't load this page.</b><br><br>" +
     "A required script failed to load (often a slow/blocked connection to the Supabase library CDN). " +
     "Please check your connection and reload the page." +
     "</div>";
-  throw new Error("QuizCode web: required globals missing (Evaluator/SupabaseClient/FillBlank/Poll) — aborting boot.");
+  throw new Error("QuizCode web: required globals missing (Evaluator/SupabaseClient/FillBlank/Poll/S) — aborting boot.");
 }
 if (window.SupabaseClient.initError) {
   app.innerHTML =
@@ -41,6 +45,7 @@ if (window.SupabaseClient.initError) {
 }
 
 const { evaluate, computeScore, defaultAnswerRule } = window.Evaluator;
+const S = window.S;
 const SC = window.SupabaseClient;
 const FB = window.FillBlank;
 const PL = window.Poll;
@@ -98,7 +103,7 @@ function render() {
     case "landing": return renderLanding();
     case "confirmName": return renderConfirmName();
     case "quiz": return renderQuiz();
-    case "finishing": return renderLoading("Submitting…");
+    case "finishing": return renderLoading(S.SUBMITTING);
     case "result": return renderResult();
     case "closed": return renderClosed();
     case "error": return renderError();
@@ -127,12 +132,12 @@ function renderClosed() {
   // than no button, so it's only rendered when the heuristic says it'll work.
   const canClose = window.opener != null || window.history.length <= 1;
   const children = [
-    el("p", { style: "font-size:40px;margin:0" }, ["👋"]),
-    el("h2", { class: "quiz-title" }, [state.closedMessage || "Thanks!"]),
-    el("p", { class: "muted" }, ["You can close this tab now."]),
+    el("p", { style: "font-size:40px;margin:0" }, [S.CLOSED_WAVE]),
+    el("h2", { class: "quiz-title" }, [state.closedMessage || S.CLOSED_DEFAULT_TITLE]),
+    el("p", { class: "muted" }, [S.CLOSED_CAN_CLOSE]),
   ];
   if (canClose) {
-    children.push(el("button", { class: "primary", style: "margin-top:8px", onclick: () => window.close() }, ["Close tab"]));
+    children.push(el("button", { class: "primary", style: "margin-top:8px", onclick: () => window.close() }, [S.CLOSED_CLOSE_TAB]));
   }
   app.appendChild(
     el("div", { class: "screen centered" }, [
@@ -265,7 +270,7 @@ function renderLoading(label) {
   app.appendChild(
     el("div", { class: "screen centered" }, [
       el("div", { class: "spinner" }),
-      el("p", { class: "muted" }, [label || "Loading…"]),
+      el("p", { class: "muted" }, [label || S.LOADING]),
     ])
   );
 }
@@ -273,7 +278,7 @@ function renderLoading(label) {
 function renderError() {
   app.appendChild(
     el("div", { class: "screen centered" }, [
-      el("p", { class: "quiz-title" }, ["Oops, that didn't work"]),
+      el("p", { class: "quiz-title" }, [S.ERR_GENERIC_TITLE]),
       el("p", { class: "muted" }, [state.errorMessage]),
     ])
   );
@@ -286,16 +291,16 @@ function renderLanding() {
 
   const status = SC.effectiveStatus(quiz);
   const body = [
-    el("span", { class: "pill" }, ["QUICK JOIN"]),
+    el("span", { class: "pill" }, [S.LANDING_KICKER]),
     el("h2", { class: "quiz-title" }, [quiz.title]),
-    el("p", { class: "quiz-meta" }, [`${quiz.questions.length} question${quiz.questions.length === 1 ? "" : "s"}`]),
+    el("p", { class: "quiz-meta" }, [S.questionCount(quiz.questions.length)]),
   ];
 
   // Archived overrides schedule-based status entirely, same rule as the Android app's
   // ArchivedQuizStatusAction — the creator deliberately took this quiz out of
   // circulation, distinct from it simply having expired on its own schedule.
   if (quiz.isArchived) {
-    body.push(el("p", { class: "muted" }, ["This quiz has been archived by its creator and is no longer accepting responses."]));
+    body.push(el("p", { class: "muted" }, [S.LANDING_ARCHIVED]));
     appendLandingScreen(body);
     return;
   }
@@ -313,7 +318,7 @@ function renderLanding() {
   }
 
   if (status !== "ACTIVE") {
-    body.push(el("p", { class: "muted" }, ["This quiz has ended."]));
+    body.push(el("p", { class: "muted" }, [S.LANDING_ENDED]));
     appendLandingScreen(body);
     return;
   }
@@ -328,11 +333,11 @@ function renderLanding() {
           await SC.signInWithGoogle(redirectTo);
         },
       },
-      ["Sign in with Google"]
+      [S.SIGN_IN_GOOGLE]
     );
     googleBtn.prepend(html(GOOGLE_G_SVG));
     body.push(
-      el("p", { class: "muted" }, ["Sign in with Google to take this quiz — your result is saved to your account, same as the app."]),
+      el("p", { class: "muted" }, [S.SIGN_IN_BLURB]),
       googleBtn
     );
   } else if (state.existingAttempt && !quiz.allowRetake) {
@@ -340,8 +345,8 @@ function renderLanding() {
     // already exists and this quiz doesn't allow retakes, so don't offer Start.
     body.push(
       signedInLine(state.user),
-      el("p", { class: "muted" }, ["You've already completed this quiz. Retakes aren't allowed."]),
-      el("p", { class: "quiz-meta" }, [`Your score: ${state.existingAttempt.score} / ${state.existingAttempt.total}`]),
+      el("p", { class: "muted" }, [S.LANDING_ALREADY_DONE]),
+      el("p", { class: "quiz-meta" }, [S.yourScore(state.existingAttempt.score, state.existingAttempt.total)]),
       signOutRow()
     );
   } else if (state.existingAttempt && quiz.allowRetake) {
@@ -351,9 +356,9 @@ function renderLanding() {
     // Retake as its own separate, explicit action — not the other way around.
     body.push(
       signedInLine(state.user),
-      el("p", { class: "quiz-meta" }, [`Your score: ${state.existingAttempt.score} / ${state.existingAttempt.total}`]),
-      el("button", { class: "primary", onclick: goToExistingResult }, ["See Result"]),
-      el("button", { class: "secondary", onclick: retakeQuizAction }, [state.joining ? "Joining…" : "Retake Exam"])
+      el("p", { class: "quiz-meta" }, [S.yourScore(state.existingAttempt.score, state.existingAttempt.total)]),
+      el("button", { class: "primary", onclick: goToExistingResult }, [S.LANDING_SEE_RESULT]),
+      el("button", { class: "secondary", onclick: retakeQuizAction }, [state.joining ? S.JOINING : S.LANDING_RETAKE])
     );
     if (state.joinError) {
       body.push(el("p", { class: "muted", style: "color:var(--error)" }, [state.joinError]));
@@ -366,7 +371,7 @@ function renderLanding() {
     // answering something.
     body.push(
       signedInLine(state.user),
-      el("button", { class: "primary", onclick: joinQuizAction }, [state.joining ? "Joining…" : "Join"])
+      el("button", { class: "primary", onclick: joinQuizAction }, [state.joining ? S.JOINING : "Join"])
     );
     if (state.joinError) {
       body.push(el("p", { class: "muted", style: "color:var(--error)" }, [state.joinError]));
@@ -375,7 +380,7 @@ function renderLanding() {
   } else {
     body.push(
       signedInLine(state.user),
-      el("button", { class: "primary", onclick: startQuiz }, ["Start Quiz"]),
+      el("button", { class: "primary", onclick: startQuiz }, [S.LANDING_START]),
       signOutRow()
     );
   }
@@ -398,7 +403,7 @@ function appendLandingScreen(body) {
   app.appendChild(
     el("div", { class: "screen" }, [
       el("div", { class: "card" }, body),
-      el("p", { class: "app-version" }, [`v${WEB_VERSION} (build ${BUILD_NUMBER})`]),
+      el("p", { class: "app-version" }, [S.version(WEB_VERSION, BUILD_NUMBER)]),
     ])
   );
 }
@@ -416,7 +421,7 @@ function renderConfirmName() {
   const input = el("input", {
     type: "text",
     value: state.confirmNameDraft || "",
-    placeholder: "Your name",
+    placeholder: S.CONFIRM_NAME_PLACEHOLDER,
     autocomplete: "name",
     oninput: (e) => {
       state.confirmNameDraft = e.target.value;
@@ -427,15 +432,15 @@ function renderConfirmName() {
   const saveBtn = el(
     "button",
     { class: "primary", onclick: () => submitConfirmedName() },
-    [state.confirmNameSaving ? "Saving…" : "Confirm & Continue"]
+    [state.confirmNameSaving ? S.SAVING : S.CONFIRM_NAME_SUBMIT]
   );
   saveBtn.disabled = state.confirmNameSaving || trimmed.length === 0;
 
   const body = [
-    el("span", { class: "pill" }, ["ONE QUICK THING"]),
-    el("h2", { class: "quiz-title" }, ["Confirm your name"]),
+    el("span", { class: "pill" }, [S.CONFIRM_NAME_KICKER]),
+    el("h2", { class: "quiz-title" }, [S.CONFIRM_NAME_TITLE]),
     el("p", { class: "quiz-meta" }, [
-      "This is the name shown on your quizzes and results — some Google accounts have the wrong name attached, so fix it here if needed.",
+      S.CONFIRM_NAME_BLURB,
     ]),
     input,
   ];
@@ -473,7 +478,7 @@ function currentQuestion() {
 }
 
 function signedInLine(user) {
-  return el("p", { class: "muted" }, [`Signed in as ${SC.resolveDisplayName(user)}`]);
+  return el("p", { class: "muted" }, [S.signedInAs(SC.resolveDisplayName(user))]);
 }
 
 /** "Sign out" escape hatch — wrong Google account picked, or just wants to switch,
@@ -482,7 +487,7 @@ function signedInLine(user) {
  *  sitting right next to that button risked a mis-tap signing someone out by accident. */
 function signOutRow() {
   return el("div", { class: "sign-out-row" }, [
-    el("button", { class: "skip-link", onclick: signOutAction }, ["Not you? Sign out"]),
+    el("button", { class: "skip-link", onclick: signOutAction }, [S.SIGN_OUT]),
   ]);
 }
 
@@ -871,7 +876,7 @@ async function finishQuiz() {
   // would otherwise land, instead of trusting the possibly-stale state.quiz already in memory.
   const liveStatus = await SC.fetchQuizStatus(state.quiz.id);
   if (liveStatus && (liveStatus.isArchived || SC.effectiveStatus(liveStatus) !== "ACTIVE")) {
-    state.errorMessage = "The owner closed this quiz, or its scheduled time ran out, while you were still answering — so this submission can no longer go through.";
+    state.errorMessage = S.SUBMIT_QUIZ_CLOSED;
     state.screen = "error";
     render();
     return;
@@ -894,7 +899,7 @@ async function finishQuiz() {
   // null means the check itself failed (offline/error), which must never itself block a
   // legitimate submission — only a confirmed "no" does.
   if ((await SC.isJoined(state.quiz.id, state.user.id)) === false) {
-    state.errorMessage = "This quiz's owner removed you from it, so this submission can no longer go through.";
+    state.errorMessage = S.SUBMIT_REMOVED;
     state.screen = "error";
     render();
     return;
@@ -947,10 +952,13 @@ async function finishQuiz() {
       } else if (q.type === "MULTIPLE_CORRECT" && state.quiz.splitPointsAcrossChoices) {
         const options = q.options || [];
         const correctIdx = options.map((_, i) => i).filter((i) => (q.correctAnswers || []).includes(options[i]));
-        const shares = evaluator.splitCorrectOptionPoints(q.points, correctIdx.length);
         const pickedIdx = new Set(rawKeys.map(Number));
-        rawPoints = correctIdx.reduce((sum, idx, i) => sum + (pickedIdx.has(idx) ? shares[i] : 0), 0);
-        isCorrect = rawPoints === q.points;
+        // Correctness is a set comparison inside scoreSplitMultipleCorrect, not
+        // "rawPoints === q.points" as it used to be — see that function's doc in
+        // evaluator.js for the two ways that comparison marked wrong answers correct.
+        const scored = evaluator.scoreSplitMultipleCorrect(correctIdx, pickedIdx, q.points);
+        rawPoints = scored.rawPoints;
+        isCorrect = scored.isCorrect;
       } else {
         const a = new Set(given), b = new Set(q.correctAnswers || []);
         isCorrect = a.size === b.size && [...a].every((x) => b.has(x));
@@ -995,8 +1003,8 @@ async function finishQuiz() {
       // Backstop for a race (e.g. two tabs submitting at once) — the landing-page
       // check above normally catches this first, but the server is the real guard.
       state.errorMessage = err.message === "RETAKE_NOT_ALLOWED"
-        ? "This quiz doesn't allow retakes, and you've already completed it."
-        : "Couldn't save your result: " + (err.message || err);
+        ? S.SUBMIT_NO_RETAKE
+        : S.SUBMIT_SAVE_FAILED_PREFIX + (err.message || err);
       state.screen = "error";
       render();
     });
@@ -1004,7 +1012,7 @@ async function finishQuiz() {
 
 /** Top bar: X close, title, timer chip — mirrors QuizPreviewScreen's PreviewTopBar. */
 function buildQuizTopBar(quiz, q) {
-  const closeBtn = el("button", { class: "icon-btn", onclick: () => { if (confirm("Leave this quiz? Your progress won't be saved.")) leaveQuiz("Quiz closed"); } }, []);
+  const closeBtn = el("button", { class: "icon-btn", onclick: () => { if (confirm(S.LEAVE_CONFIRM)) leaveQuiz(S.QUIZ_CLOSED); } }, []);
   closeBtn.appendChild(html(CLOSE_X_SVG));
 
   // Reserved-width slot either way, so the title stays centered whether or not
@@ -1090,7 +1098,7 @@ function buildBottomBar(q, isLastQuestion, onSkipFn, onNextFn) {
   nextBtn.appendChild(document.createTextNode(isLastQuestion ? "Finish" : "Next"));
   nextBtn.appendChild(html(CHEVRON_RIGHT_SVG));
 
-  const skipBtn = el("button", { class: "skip-link", onclick: onSkipFn }, ["Skip"]);
+  const skipBtn = el("button", { class: "skip-link", onclick: onSkipFn }, [S.SKIP]);
   if (disabled) skipBtn.disabled = true;
 
   // Hint — only shown when this question actually has one (mirrors PreviewBottomBar's
@@ -1098,7 +1106,7 @@ function buildBottomBar(q, isLastQuestion, onSkipFn, onNextFn) {
   // question without a hint follows one that had it.
   const barRow = el("div", { class: "bar-row" }, []);
   if (q.hint) {
-    const hintBtn = el("button", { class: "hint-btn", onclick: showHintAction }, ["💡 Hint"]);
+    const hintBtn = el("button", { class: "hint-btn", onclick: showHintAction }, [S.HINT]);
     if (disabled) hintBtn.disabled = true;
     barRow.appendChild(hintBtn);
   } else {
@@ -1127,8 +1135,8 @@ function showHintAction() {
 function buildHintBox(hint) {
   return el("div", { class: "hint-box" }, [
     el("div", { class: "hint-box-header" }, [
-      el("span", { class: "hint-box-title" }, ["💡 Hint"]),
-      el("button", { class: "skip-link", onclick: () => { state.hintVisible = false; render(); } }, ["Got it"]),
+      el("span", { class: "hint-box-title" }, [S.HINT]),
+      el("button", { class: "skip-link", onclick: () => { state.hintVisible = false; render(); } }, [S.GOT_IT]),
     ]),
     el("p", { class: "hint-box-text" }, [hint]),
   ]);
@@ -1140,10 +1148,10 @@ function buildHintBox(hint) {
  *  here, unlike Android where it's genuinely wired), so toggling it never did anything. */
 function buildQuestionNumberLabel(quiz, q) {
   const children = [
-    el("span", { class: "question-number-label" }, [`QUESTION ${state.currentIndex + 1} OF ${quiz.questions.length}`]),
+    el("span", { class: "question-number-label" }, [S.questionXofN(state.currentIndex + 1, quiz.questions.length)]),
   ];
   if (q.type === "MULTIPLE_CORRECT") {
-    children.push(el("span", { class: "select-all-badge" }, ["Select all that apply"]));
+    children.push(el("span", { class: "select-all-badge" }, [S.SELECT_ALL_THAT_APPLY]));
   }
   return el("div", { class: "question-number-row" }, children);
 }
@@ -1166,7 +1174,7 @@ function renderQuiz() {
       el("div", { class: "card" }, [el("p", { class: "question-text" }, [renderMarkdown(q.text)])]),
     ]);
     if (!state.pollState) {
-      questionArea.appendChild(el("p", { class: "muted" }, ["Loading…"]));
+      questionArea.appendChild(el("p", { class: "muted" }, [S.LOADING]));
     } else if (state.pollDistribution) {
       questionArea.appendChild(buildPollResults(q));
     } else {
@@ -1215,7 +1223,7 @@ function renderQuiz() {
           const correctAnswer = (blank.acceptedAnswers || [])[0];
           if (correctAnswer) {
             questionArea.appendChild(
-              el("p", { class: "fb-answer-reveal" }, [`Blank ${i + 1} — Correct answer: ${correctAnswer}`])
+              el("p", { class: "fb-answer-reveal" }, [S.blankCorrectAnswer(i + 1, correctAnswer)])
             );
           }
         }
@@ -1227,7 +1235,7 @@ function renderQuiz() {
       el("div", { class: "feedback-banner " + (fb.isCorrect ? "correct" : "wrong") }, [fb.isCorrect ? "✓ Correct!" : "✗ Wrong"])
     );
     if (!fb.isCorrect && fb.correctWrittenAnswer) {
-      questionArea.appendChild(el("p", { class: "muted" }, [`Correct answer: ${fb.correctWrittenAnswer}`]));
+      questionArea.appendChild(el("p", { class: "muted" }, [S.correctAnswerIs(fb.correctWrittenAnswer)]));
     }
     // Also color the option rows themselves while feedback is showing.
     if (q.options && fb.correctOptionIndices) {
@@ -1246,7 +1254,7 @@ function renderQuiz() {
     questionArea.appendChild(
       el("textarea", {
         rows: "4",
-        placeholder: "Type your answer…",
+        placeholder: S.ANSWER_PLACEHOLDER,
         oninput: (e) => { state.writtenAnswer = e.target.value; },
       }, [])
     );
@@ -1279,7 +1287,7 @@ function buildPollVoting(q) {
   const container = el("div", { style: "display:flex;flex-direction:column;gap:10px" }, []);
 
   if (settings.allowMultiple && !locked) {
-    container.appendChild(el("p", { class: "poll-note" }, ["Select all that apply"]));
+    container.appendChild(el("p", { class: "poll-note" }, [S.SELECT_ALL_THAT_APPLY]));
   }
 
   const optionRow = (idx, label) => {
@@ -1301,11 +1309,11 @@ function buildPollVoting(q) {
 
   if (settings.allowOther) {
     const otherSelected = state.pollSelected.has(PL.POLL_OTHER_INDEX);
-    container.appendChild(optionRow(PL.POLL_OTHER_INDEX, "Other"));
+    container.appendChild(optionRow(PL.POLL_OTHER_INDEX, S.POLL_OTHER));
     if (otherSelected) {
       const otherProps = {
         type: "text",
-        placeholder: "Type your answer…",
+        placeholder: S.ANSWER_PLACEHOLDER,
         value: state.pollOtherText,
         oninput: (e) => { state.pollOtherText = e.target.value; },
       };
@@ -1317,7 +1325,7 @@ function buildPollVoting(q) {
   if (settings.askReason && state.pollSelected.size > 0) {
     const reasonProps = {
       rows: "2",
-      placeholder: "Why? (optional)",
+      placeholder: S.POLL_REASON_PLACEHOLDER,
       oninput: (e) => { state.pollReasonText = e.target.value; },
     };
     if (locked) reasonProps.disabled = "true";
@@ -1325,10 +1333,10 @@ function buildPollVoting(q) {
   }
 
   if (state.pollHasVoted) {
-    container.appendChild(el("p", { class: "poll-voted-check" }, ["✓ You voted"]));
-    if (locked) container.appendChild(el("p", { class: "poll-note" }, ["Results are shown once the poll closes."]));
+    container.appendChild(el("p", { class: "poll-voted-check" }, [S.POLL_VOTED]));
+    if (locked) container.appendChild(el("p", { class: "poll-note" }, [S.POLL_RESULTS_AFTER_CLOSE]));
   } else if (state.pollSelected.size > 0) {
-    container.appendChild(el("p", { class: "poll-note" }, ["Tap Next to cast your vote."]));
+    container.appendChild(el("p", { class: "poll-note" }, [S.POLL_TAP_NEXT]));
   }
 
   return container;
@@ -1337,7 +1345,7 @@ function buildPollVoting(q) {
 function buildPollResults(q) {
   const dist = state.pollDistribution;
   const container = el("div", { style: "display:flex;flex-direction:column;gap:10px" }, [
-    el("p", { class: "poll-note" }, [`${dist.voterCount} participant${dist.voterCount === 1 ? "" : "s"}`]),
+    el("p", { class: "poll-note" }, [S.participantCount(dist.voterCount)]),
   ]);
 
   if (state.pollConsensus) {
@@ -1386,8 +1394,8 @@ function buildPollReviewCard(item, index) {
 
   const accent = el("div", { class: "review-accent poll" }, []);
   const meta = el("div", { class: "review-meta" }, [
-    el("span", { class: "q-pill poll" }, [`Q${index + 1}`]),
-    el("span", { class: "poll-tag-badge" }, ["POLL"]),
+    el("span", { class: "q-pill poll" }, [S.questionPill(index + 1)]),
+    el("span", { class: "poll-tag-badge" }, [S.POLL]),
   ]);
   const header = el(
     "div",
@@ -1403,7 +1411,7 @@ function buildPollReviewCard(item, index) {
     const consensus = PL.computePollConsensus(dist);
     const myVoteIndices = new Set(item.myVote?.selectedOptionIndices || []);
     const bodyEl = el("div", { class: "review-body" }, [
-      el("p", { class: "poll-note" }, [`${dist.voterCount} participant${dist.voterCount === 1 ? "" : "s"}`]),
+      el("p", { class: "poll-note" }, [S.participantCount(dist.voterCount)]),
     ]);
     if (consensus) bodyEl.appendChild(el("div", { class: "poll-consensus" }, [consensusText(consensus)]));
     dist.options.forEach((opt) => {
@@ -1418,13 +1426,17 @@ function buildPollReviewCard(item, index) {
 }
 
 function buildPollResultRow(opt, mine, otherEntries) {
+  // poll.js labels the Other bucket with an internal English placeholder — it has no
+  // access to the string table — and documents that the UI must substitute its own
+  // text by keying off POLL_OTHER_INDEX rather than rendering that literal.
+  const label = opt.optionIndex === PL.POLL_OTHER_INDEX ? S.POLL_OTHER : opt.label;
   const children = [
     el("div", { class: "top" }, [
-      el("span", { class: "label" }, [opt.label]),
-      el("span", { class: "pct" }, [`${opt.percent}%`]),
+      el("span", { class: "label" }, [label]),
+      el("span", { class: "pct" }, [S.percent(opt.percent)]),
     ]),
     el("div", { class: "poll-result-bar" }, [el("div", { class: "poll-result-bar-fill", style: `width:${opt.percent}%` })]),
-    el("div", { class: "poll-result-count" }, [`${opt.count} vote${opt.count === 1 ? "" : "s"}`]),
+    el("div", { class: "poll-result-count" }, [S.voteCount(opt.count)]),
   ];
   // "Other" free-text entries — what people actually typed, grouped and counted by
   // computePollDistribution's otherEntries. Was collected and computed but never
@@ -1432,7 +1444,7 @@ function buildPollResultRow(opt, mine, otherEntries) {
   if (otherEntries && otherEntries.length > 0) {
     children.push(
       el("ul", { class: "poll-other-entries" }, otherEntries.map((entry) =>
-        el("li", {}, [`${entry.text} (${entry.count})`])
+        el("li", {}, [S.otherEntry(entry.text, entry.count)])
       ))
     );
   }
@@ -1440,7 +1452,7 @@ function buildPollResultRow(opt, mine, otherEntries) {
   // never shown on web.
   if (opt.reasons && opt.reasons.length > 0) {
     children.push(
-      el("ul", { class: "poll-reasons" }, opt.reasons.map((reason) => el("li", {}, [`“${reason}”`])))
+      el("ul", { class: "poll-reasons" }, opt.reasons.map((reason) => el("li", {}, [S.quotedReason(reason)])))
     );
   }
   return el("div", { class: "poll-result-row" + (mine ? " mine" : "") }, children);
@@ -1524,7 +1536,7 @@ function buildFillBlankSentence(q) {
  *  capped InlineBlankField. */
 function buildFillBlankInput(orderIndex, isLast, inputRefs) {
   const value = state.fillBlankDraft[orderIndex] || "";
-  const placeholder = "Your answer…";
+  const placeholder = S.BLANK_PLACEHOLDER;
 
   const mirror = el("span", { class: "fb-blank-mirror" }, [value || placeholder]);
   const input = el("input", {
@@ -1605,7 +1617,7 @@ function computeScoreBreakdown(answers) {
 function buildScoreSectionCard(title, subtitle, value, percent, pending) {
   const right = [el("div", { class: "score-section-value" }, [value])];
   if (percent != null && pending === 0) {
-    right.push(el("div", { class: "score-section-percent" }, [`${percent}%`]));
+    right.push(el("div", { class: "score-section-percent" }, [S.percent(percent)]));
   }
   return el("div", { class: "score-section-card" }, [
     el("div", { class: "score-section-left" }, [
@@ -1635,22 +1647,22 @@ function buildScoreCard(score, total, marks) {
   const badge = el("div", { class: "badge" }, []);
   badge.appendChild(html(TROPHY_SVG));
 
-  const labelColumn = [el("div", { class: "label" }, ["YOUR SCORE"])];
+  const labelColumn = [el("div", { class: "label" }, [S.RESULT_YOUR_SCORE])];
   if (score === 0) {
-    labelColumn.push(el("div", { class: "status" }, ["Failed"]));
+    labelColumn.push(el("div", { class: "status" }, [S.RESULT_FAILED]));
   }
 
   const numbersRow = [
     el("div", { style: "display:flex;align-items:flex-end" }, [
       el("span", { class: "score-big" }, [String(score)]),
-      el("span", { class: "score-total" }, [` / ${total}`]),
+      el("span", { class: "score-total" }, [S.outOf(total)]),
     ]),
   ];
   if (marks) {
     numbersRow.push(
       el("div", {}, [
-        el("div", { class: "accuracy-num" }, [`${marks.percent}%`]),
-        el("div", { class: "accuracy-label" }, [`MARKS ${marks.awarded}/${marks.total}`]),
+        el("div", { class: "accuracy-num" }, [S.percent(marks.percent)]),
+        el("div", { class: "accuracy-label" }, [S.marksBadge(marks.awarded, marks.total)]),
       ])
     );
   }
@@ -1674,10 +1686,10 @@ function buildScoreCard(score, total, marks) {
 function buildPendingCard(pending, score, gradedCount) {
   const body = gradedCount > 0
     ? `${score} of ${gradedCount} app-checked questions correct. The other ${pending} still need the quiz admin to mark them by hand, so this isn't your final result yet.`
-    : "Your answers have been submitted. The quiz admin still has to mark them by hand, so there's no result to show yet. Check back a little later.";
+    : S.RESULT_PENDING_BODY;
 
   return el("div", { class: "pending-card" }, [
-    el("div", { class: "pending-title" }, ["Waiting to be marked"]),
+    el("div", { class: "pending-title" }, [S.RESULT_PENDING_TITLE]),
     el("div", { class: "pending-body" }, [body]),
   ]);
 }
@@ -1697,17 +1709,17 @@ function buildReviewCard(answer, index) {
 
   const accent = el("div", { class: "review-accent " + stateClass }, []);
   const meta = el("div", { class: "review-meta" }, [
-    el("span", { class: "q-pill " + stateClass }, [`Q${index + 1}`]),
-    el("span", { class: "muted" }, [`⏱ ${answer.timeTakenSec}s`]),
+    el("span", { class: "q-pill " + stateClass }, [S.questionPill(index + 1)]),
+    el("span", { class: "muted" }, [S.timeTaken(answer.timeTakenSec)]),
   ]);
   // Mirrors ResultScreen.kt's per-row marks badge ("X/Y") for a points-carrying question —
   // was missing on web entirely, so a marks-based quiz's review list gave no indication
   // of how many marks each question actually earned, just a green/red accent color.
   if (q.type !== "POLL" && answer.maxPoints > 0) {
-    meta.appendChild(el("span", { class: "marks-badge " + stateClass }, [`${answer.awardedPoints ?? 0}/${answer.maxPoints}`]));
+    meta.appendChild(el("span", { class: "marks-badge " + stateClass }, [S.marksFraction(answer.awardedPoints ?? 0, answer.maxPoints)]));
   }
-  if (isPending) meta.appendChild(el("span", { class: "pending-tag" }, ["Awaiting marking"]));
-  if (answer.usedHint) meta.appendChild(el("span", { class: "hint-used-tag" }, ["💡 Hint"]));
+  if (isPending) meta.appendChild(el("span", { class: "pending-tag" }, [S.RESULT_AWAITING_MARKING]));
+  if (answer.usedHint) meta.appendChild(el("span", { class: "hint-used-tag" }, [S.HINT]));
   const header = el(
     "div",
     { class: "review-header", onclick: () => { expandedReviews.has(q.id) ? expandedReviews.delete(q.id) : expandedReviews.add(q.id); render(); } },
@@ -1723,7 +1735,7 @@ function buildReviewCard(answer, index) {
       const given = answer.givenAnswers[0] || "";
       // The expected answer stays hidden while pending: it's the owner's reference for
       // marking, and revealing it before they've judged invites "but I wrote that" .
-      if (!isPending) bodyEl.appendChild(reviewLine("CORRECT ANSWER", q.writtenAnswer || "", "#22C55E"));
+      if (!isPending) bodyEl.appendChild(reviewLine(S.RESULT_CORRECT_ANSWER, q.writtenAnswer || "", "#22C55E"));
       bodyEl.appendChild(reviewLine("YOUR ANSWER", given || "(no answer)", isPending ? "#B08900" : isCorrect ? "#22C55E" : "#EF4444"));
       // Mirrors ResultScreen.kt's WrittenEvalRow — status label, points-earned badge,
       // and per-word matched/unmatched chips from the evaluator's own breakdown. Was
@@ -1771,7 +1783,7 @@ function buildReviewCard(answer, index) {
         // and you picked it" from "correct, but you didn't" — both were a plain green
         // check, so a reader genuinely couldn't tell what the taker had actually chosen.
         const labelChildren = [el("span", {}, [opt])];
-        if (wasGiven) labelChildren.push(el("span", { class: "option-your-answer-tag" }, ["YOUR ANSWER"]));
+        if (wasGiven) labelChildren.push(el("span", { class: "option-your-answer-tag" }, [S.RESULT_YOUR_ANSWER]));
         bodyEl.appendChild(
           el("div", { class: "option-row" + (cls ? " " + cls : ""), style: "cursor:default" }, [
             el("div", { class: "option-marker" }, (isPending ? wasGiven : isCorrectOpt || wasGiven) ? [html(CHECK_SVG)] : []),
@@ -1794,9 +1806,9 @@ function reviewLine(label, text, color) {
 
 const WRITTEN_STATUS_LABELS = {
   EXACT_MATCH: "Correct",
-  ACCEPTED_WITH_TYPO: "Accepted — small typo",
-  PARTIAL_MATCH: "Partial match",
-  INCORRECT: "Incorrect",
+  ACCEPTED_WITH_TYPO: S.EVAL_LABEL_TYPO,
+  PARTIAL_MATCH: S.EVAL_LABEL_PARTIAL,
+  INCORRECT: S.EVAL_LABEL_INCORRECT,
 };
 
 /** Mirrors ResultScreen.kt's WrittenEvalRow: a status chip, a points-earned badge, and
@@ -1810,7 +1822,7 @@ function buildWrittenEvalDetail(evalResult, awardedPoints, maxPoints) {
       el("span", { class: "written-eval-status", style: `color:${statusColor}` }, [
         WRITTEN_STATUS_LABELS[evalResult.status] || evalResult.status,
       ]),
-      el("span", { class: "written-eval-points" }, [`${awardedPoints ?? 0}/${maxPoints} points`]),
+      el("span", { class: "written-eval-points" }, [S.pointsFraction(awardedPoints ?? 0, maxPoints)]),
     ]),
   ];
   if (evalResult.wordDetails && evalResult.wordDetails.length > 0) {
@@ -1877,7 +1889,7 @@ function renderResult() {
   if (breakdown.hasMarks && !marksForScoreCard) {
     content.appendChild(buildScoreSectionCard(
       "Marks",
-      "Questions that carry marks, scored out of their total.",
+      S.RESULT_MARKS_BLURB,
       `${breakdown.marksAwarded} / ${breakdown.marksTotal}`,
       breakdown.marksPercent,
       breakdown.marksPending
@@ -1885,8 +1897,8 @@ function renderResult() {
   }
   if (breakdown.hasCorrectness) {
     content.appendChild(buildScoreSectionCard(
-      "Correct answers",
-      "Questions that carry no marks — just counted right or wrong.",
+      S.RESULT_CORRECT_ANSWERS,
+      S.RESULT_CORRECTNESS_BLURB,
       `${breakdown.correctCount} / ${breakdown.correctnessTotal}`,
       breakdown.correctnessPercent,
       breakdown.correctnessPending
@@ -1894,9 +1906,9 @@ function renderResult() {
   }
 
   if (!quiz.showResult) {
-    content.appendChild(el("p", { class: "muted", style: "text-align:center" }, ["Results are hidden for this quiz — check with the quiz creator."]));
+    content.appendChild(el("p", { class: "muted", style: "text-align:center" }, [S.RESULT_HIDDEN]));
   } else if (quiz.showAnswers) {
-    content.appendChild(el("p", { class: "muted", style: "font-weight:700;letter-spacing:0.6px" }, ["ANSWER REVIEW"]));
+    content.appendChild(el("p", { class: "muted", style: "font-weight:700;letter-spacing:0.6px" }, [S.RESULT_ANSWER_REVIEW]));
     // Poll questions interleaved at their original position in the quiz, same as
     // ResultScreen.kt's resultItems (Scored + PollItem, sortedBy index) — a poll
     // sitting between two scored questions shows up between them here too, not
@@ -1918,7 +1930,7 @@ function renderResult() {
   }
 
   content.appendChild(
-    el("button", { class: "primary", style: "margin-top:8px", onclick: () => leaveQuiz("Thanks for taking the quiz!") }, ["Done"])
+    el("button", { class: "primary", style: "margin-top:8px", onclick: () => leaveQuiz(S.CLOSED_THANKS) }, [S.DONE])
   );
 
   app.appendChild(content);
@@ -1928,7 +1940,7 @@ function renderResult() {
 async function boot() {
   try {
     if (!shareCode) {
-      state.errorMessage = "No quiz code in the link.";
+      state.errorMessage = S.ERR_NO_CODE;
       state.screen = "error";
       render();
       return;
@@ -1938,7 +1950,7 @@ async function boot() {
 
     const quiz = await SC.fetchQuizByShareCode(shareCode);
     if (!quiz) {
-      state.errorMessage = "Quiz not found. Double-check the code.";
+      state.errorMessage = S.ERR_QUIZ_NOT_FOUND;
       state.screen = "error";
       render();
       return;
