@@ -48,6 +48,7 @@ const S = {
   LANDING_ALREADY_DONE: "You've already completed this quiz. Retakes aren't allowed.",
   LANDING_SEE_RESULT: "See Result",
   LANDING_RETAKE: "Retake Exam",
+  LANDING_JOIN: "Join",
   LANDING_START: "Start Quiz",
   questionCount: (n) => `${n} question${n === 1 ? "" : "s"}`,
   yourScore: (score, total) => `Your score: ${score} / ${total}`,
@@ -70,6 +71,8 @@ const S = {
 
   // ── Taking a quiz ──────────────────────────────────────────────────────
   SELECT_ALL_THAT_APPLY: "Select all that apply",
+  NAV_NEXT: "Next",
+  NAV_FINISH: "Finish",
   ANSWER_PLACEHOLDER: "Type your answer…",
   BLANK_PLACEHOLDER: "Your answer…",
   questionXofN: (current, total) => `QUESTION ${current} OF ${total}`,
@@ -83,6 +86,8 @@ const S = {
     "This quiz's owner removed you from it, so this submission can no longer go through.",
   SUBMIT_NO_RETAKE: "This quiz doesn't allow retakes, and you've already completed it.",
   SUBMIT_SAVE_FAILED_PREFIX: "Couldn't save your result: ",
+  SAVE_NAME_FAILED: "Couldn't save your name. Check your connection and try again.",
+  JOIN_FAILED: "Couldn't join — check your connection and try again.",
 
   // ── Poll ───────────────────────────────────────────────────────────────
   POLL: "POLL",
@@ -107,6 +112,11 @@ const S = {
   RESULT_ANSWER_REVIEW: "ANSWER REVIEW",
   RESULT_CORRECT_ANSWER: "CORRECT ANSWER",
   RESULT_YOUR_ANSWER: "YOUR ANSWER",
+  RESULT_NO_ANSWER: "(no answer)",
+  RESULT_MARKS: "Marks",
+  RESULT_CORRECT: "Correct",
+  FEEDBACK_CORRECT: "✓ Correct!",
+  FEEDBACK_WRONG: "✗ Wrong",
   RESULT_MARKS_BLURB: "Questions that carry marks, scored out of their total.",
   RESULT_CORRECT_ANSWERS: "Correct answers",
   RESULT_CORRECTNESS_BLURB: "Questions that carry no marks — just counted right or wrong.",

@@ -371,7 +371,7 @@ function renderLanding() {
     // answering something.
     body.push(
       signedInLine(state.user),
-      el("button", { class: "primary", onclick: joinQuizAction }, [state.joining ? S.JOINING : "Join"])
+      el("button", { class: "primary", onclick: joinQuizAction }, [state.joining ? S.JOINING : S.LANDING_JOIN])
     );
     if (state.joinError) {
       body.push(el("p", { class: "muted", style: "color:var(--error)" }, [state.joinError]));
@@ -468,7 +468,7 @@ async function submitConfirmedName() {
     render();
   } catch (e) {
     state.confirmNameSaving = false;
-    state.confirmNameError = "Couldn't save your name. Check your connection and try again.";
+    state.confirmNameError = S.SAVE_NAME_FAILED;
     render();
   }
 }
@@ -519,7 +519,7 @@ async function joinQuizAction() {
     await SC.joinQuiz(state.user.id, state.quiz.id);
     state.hasJoined = true;
   } catch (e) {
-    state.joinError = "Couldn't join — check your connection and try again.";
+    state.joinError = S.JOIN_FAILED;
   }
   state.joining = false;
   render();
@@ -1095,7 +1095,7 @@ function buildBottomBar(q, isLastQuestion, onSkipFn, onNextFn) {
   const disabled = !!state.instantFeedback;
   const nextBtn = el("button", { class: "next-btn", onclick: onNextFn }, []);
   if (disabled) nextBtn.disabled = true;
-  nextBtn.appendChild(document.createTextNode(isLastQuestion ? "Finish" : "Next"));
+  nextBtn.appendChild(document.createTextNode(isLastQuestion ? S.NAV_FINISH : S.NAV_NEXT));
   nextBtn.appendChild(html(CHEVRON_RIGHT_SVG));
 
   const skipBtn = el("button", { class: "skip-link", onclick: onSkipFn }, [S.SKIP]);
@@ -1215,7 +1215,7 @@ function renderQuiz() {
     if (state.instantFeedback) {
       const fb = state.instantFeedback;
       questionArea.appendChild(
-        el("div", { class: "feedback-banner " + (fb.isCorrect ? "correct" : "wrong") }, [fb.isCorrect ? "✓ Correct!" : "✗ Wrong"])
+        el("div", { class: "feedback-banner " + (fb.isCorrect ? "correct" : "wrong") }, [fb.isCorrect ? S.FEEDBACK_CORRECT : S.FEEDBACK_WRONG])
       );
       const ordered = q.fillBlankContent ? FB.orderedBlanks(q.fillBlankContent) : [];
       ordered.forEach((blank, i) => {
@@ -1232,7 +1232,7 @@ function renderQuiz() {
   } else if (state.instantFeedback) {
     const fb = state.instantFeedback;
     questionArea.appendChild(
-      el("div", { class: "feedback-banner " + (fb.isCorrect ? "correct" : "wrong") }, [fb.isCorrect ? "✓ Correct!" : "✗ Wrong"])
+      el("div", { class: "feedback-banner " + (fb.isCorrect ? "correct" : "wrong") }, [fb.isCorrect ? S.FEEDBACK_CORRECT : S.FEEDBACK_WRONG])
     );
     if (!fb.isCorrect && fb.correctWrittenAnswer) {
       questionArea.appendChild(el("p", { class: "muted" }, [S.correctAnswerIs(fb.correctWrittenAnswer)]));
@@ -1736,7 +1736,7 @@ function buildReviewCard(answer, index) {
       // The expected answer stays hidden while pending: it's the owner's reference for
       // marking, and revealing it before they've judged invites "but I wrote that" .
       if (!isPending) bodyEl.appendChild(reviewLine(S.RESULT_CORRECT_ANSWER, q.writtenAnswer || "", "#22C55E"));
-      bodyEl.appendChild(reviewLine("YOUR ANSWER", given || "(no answer)", isPending ? "#B08900" : isCorrect ? "#22C55E" : "#EF4444"));
+      bodyEl.appendChild(reviewLine(S.RESULT_YOUR_ANSWER, given || S.RESULT_NO_ANSWER, isPending ? "#B08900" : isCorrect ? "#22C55E" : "#EF4444"));
       // Mirrors ResultScreen.kt's WrittenEvalRow — status label, points-earned badge,
       // and per-word matched/unmatched chips from the evaluator's own breakdown. Was
       // previously discarded entirely on web (only isCorrect survived past evaluate()),
@@ -1762,12 +1762,12 @@ function buildReviewCard(answer, index) {
             // the taker's own text, colored by the owner's whole-question verdict (or
             // neutral while still pending).
             const color = isPending ? "#B08900" : isCorrect ? "#22C55E" : "#EF4444";
-            bodyEl.appendChild(reviewLine(`BLANK ${i + 1} — YOUR ANSWER`, givenText || "(no answer)", color));
+            bodyEl.appendChild(reviewLine(`BLANK ${i + 1} — YOUR ANSWER`, givenText || S.RESULT_NO_ANSWER, color));
           } else {
             const blankCorrect = FB.fillBlankIsCorrect(blank, givenText, content.checking);
             const correctText = (blank.acceptedAnswers || []).find((a) => a && a.trim()) || "";
             bodyEl.appendChild(reviewLine(`BLANK ${i + 1} — CORRECT ANSWER`, correctText, "#22C55E"));
-            bodyEl.appendChild(reviewLine(`BLANK ${i + 1} — YOUR ANSWER`, givenText || "(no answer)", blankCorrect ? "#22C55E" : "#EF4444"));
+            bodyEl.appendChild(reviewLine(`BLANK ${i + 1} — YOUR ANSWER`, givenText || S.RESULT_NO_ANSWER, blankCorrect ? "#22C55E" : "#EF4444"));
           }
         });
       }
@@ -1805,7 +1805,7 @@ function reviewLine(label, text, color) {
 }
 
 const WRITTEN_STATUS_LABELS = {
-  EXACT_MATCH: "Correct",
+  EXACT_MATCH: S.RESULT_CORRECT,
   ACCEPTED_WITH_TYPO: S.EVAL_LABEL_TYPO,
   PARTIAL_MATCH: S.EVAL_LABEL_PARTIAL,
   INCORRECT: S.EVAL_LABEL_INCORRECT,
@@ -1888,7 +1888,7 @@ function renderResult() {
   // (still pending, or the score card itself was replaced by the pending card).
   if (breakdown.hasMarks && !marksForScoreCard) {
     content.appendChild(buildScoreSectionCard(
-      "Marks",
+      S.RESULT_MARKS,
       S.RESULT_MARKS_BLURB,
       `${breakdown.marksAwarded} / ${breakdown.marksTotal}`,
       breakdown.marksPercent,
