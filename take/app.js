@@ -33,7 +33,7 @@ if (!window.Evaluator || !window.SupabaseClient || !window.FillBlank || !window.
     "A required script failed to load (often a slow/blocked connection to the Supabase library CDN). " +
     "Please check your connection and reload the page." +
     "</div>";
-  throw new Error("QuizCode web: required globals missing (Evaluator/SupabaseClient/FillBlank/Poll/S) — aborting boot.");
+  throw new Error("Testly web: required globals missing (Evaluator/SupabaseClient/FillBlank/Poll/S) — aborting boot.");
 }
 if (window.SupabaseClient.initError) {
   app.innerHTML =
@@ -41,7 +41,7 @@ if (window.SupabaseClient.initError) {
     "<b>Couldn't connect.</b><br><br>" +
     window.SupabaseClient.initError.message +
     "</div>";
-  throw new Error("QuizCode web: Supabase client failed to initialize — aborting boot.");
+  throw new Error("Testly web: Supabase client failed to initialize — aborting boot.");
 }
 
 const { evaluate, computeScore, defaultAnswerRule } = window.Evaluator;
@@ -89,7 +89,17 @@ const state = {
   joining: false,
 };
 
+// Fires window.Analytics.screen() once per genuine screen change, not once per
+// re-render (render() is called far more often than state.screen actually changes —
+// e.g. every keystroke while typing a written answer) — same "one event per
+// destination change" granularity as AppNavHost.kt on the Android side.
+let lastTrackedScreen = null;
+
 function render() {
+  if (state.screen !== lastTrackedScreen) {
+    lastTrackedScreen = state.screen;
+    window.Analytics.screen(state.screen);
+  }
   // The landing countdown ticker only makes sense while its own card is on screen —
   // torn down the moment anything else renders, so it can never re-render (and wipe)
   // an unrelated screen the user has since navigated to (e.g. mid-typing in the quiz).
@@ -492,6 +502,11 @@ function signOutRow() {
 }
 
 async function signOutAction() {
+  // Tracked (and reset) before signOut actually clears the session — reset() rotates
+  // the distinct id, so this must still land under the outgoing account, same ordering
+  // as SupabaseAuthRepository.signOut() on the Android side.
+  window.Analytics.track("signed_out");
+  window.Analytics.reset();
   await SC.signOut();
   // Back to square one on this same landing card — sign-in button reappears, and any
   // in-progress Join/Start state for the account that just signed out no longer applies.
@@ -518,6 +533,7 @@ async function joinQuizAction() {
   try {
     await SC.joinQuiz(state.user.id, state.quiz.id);
     state.hasJoined = true;
+    window.Analytics.track("quiz_joined", { quiz_id: state.quiz.id });
   } catch (e) {
     state.joinError = S.JOIN_FAILED;
   }
@@ -788,6 +804,7 @@ function advance(castPollVote) {
         participantId: settings.anonymous ? null : state.user.id,
       };
       SC.castPollVote(vote).catch(() => {}); // fire-and-forget, same as the app
+      window.Analytics.track("poll_voted", { question_id: q.id });
     }
     proceedPastQuestion();
     return;
@@ -994,6 +1011,11 @@ async function finishQuiz() {
 
   SC.submitAttempt(state.quiz.id, state.user.id, score, scored.length, answers)
     .then(async () => {
+      window.Analytics.track("attempt_submitted", {
+        quiz_id: state.quiz.id,
+        score: score,
+        total: scored.length
+      });
       const pollItems = await buildResultPollItems(state.quiz, state.user);
       state.result = { score, total: scored.length, answers, pollItems };
       state.screen = "result";
@@ -1958,6 +1980,7 @@ async function boot() {
     state.quiz = quiz;
     state.user = await SC.getCurrentUser();
     if (state.user) {
+      window.Analytics.identify(state.user.id, { email: state.user.email });
       state.existingAttempt = await SC.fetchExistingAttempt(quiz.id, state.user.id);
     }
 

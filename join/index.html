@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Join a Quiz — QuizCode</title>
+<title>Join a Quiz — Testly</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%235B4FE8'/%3E%3Cpath d='M9 21l4-4-4-4M15 21h8' stroke='white' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E">
 <style>
   body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:#4F46E5; color:#fff; margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; box-sizing:border-box; }
@@ -26,14 +26,39 @@
        "get the app, here's your code for after." -->
   <div class="card">
     <h1>You're invited to a quiz! 🎉</h1>
-    <p>Get the QuizCode app to join — then enter this code:</p>
+    <p>Get the Testly app to join — then enter this code:</p>
     <div class="code" id="code">------</div>
-    <a class="cta" id="playStoreLink" href="https://play.google.com/store/apps/details?id=com.craftbytestudio.quizcode.learning">📲 Get QuizCode on Google Play</a>
+    <a class="cta" id="playStoreLink" href="https://play.google.com/store/apps/details?id=com.craftbytestudio.quizcode.learning" onclick="window.Analytics.track('join_play_store_clicked')">📲 Get Testly on Google Play</a>
     <div class="divider">or</div>
-    <a class="cta secondary" id="takeInBrowserLink" href="/take/">🌐 Take it in your browser</a>
+    <a class="cta secondary" id="takeInBrowserLink" href="/take/" onclick="window.Analytics.track('join_take_in_browser_clicked')">🌐 Take it in your browser</a>
     <p class="hint" style="margin-top:12px">Not showing up yet? The app is still in testing — ask the quiz creator directly.</p>
   </div>
   <script>
+    // PostHog analytics — same window.Analytics.{track,screen} contract as
+    // take/analytics.js (kept inline here rather than a separate file, since this page's
+    // deploy step only ever copies this one index.html — see deploy/DEPLOY.md/deploy.sh).
+    // Left disabled (POSTHOG_API_KEY blank) until a PostHog project exists — every call
+    // below silently no-ops until then.
+    (function () {
+      var POSTHOG_API_KEY = ""; // fill in once a PostHog project exists
+      var POSTHOG_HOST = "https://us.i.posthog.com";
+      function noop() {}
+      window.Analytics = { track: noop, screen: noop };
+      if (!POSTHOG_API_KEY) return;
+      !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],Object.defineProperty(u,"toString",{configurable:!0,enumerable:!0,writable:!0,value:function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e}}),Object.defineProperty(u.people,"toString",{configurable:!0,enumerable:!0,writable:!0,value:function(){return u.toString(1)+".people (stub)"}}),o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagResult isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+      posthog.init(POSTHOG_API_KEY, { api_host: POSTHOG_HOST, defaults: "2026-05-30", capture_pageview: false });
+      // Super property — see take/analytics.js's registerPlatform() for why every
+      // page/platform registers its own, so events are never confused across them.
+      try { posthog.register({ platform: "web" }); } catch (e) {}
+      window.Analytics = {
+        track: function (event, props) { try { posthog.capture(event, props || {}); } catch (e) {} },
+        screen: function (name, props) {
+          try { posthog.capture("$pageview", Object.assign({ screen_name: name }, props || {})); } catch (e) {}
+        }
+      };
+    })();
+    window.Analytics.screen("JoinLanding");
+
     // Two ways in:
     //   ?code=XXXXXX — the plain code, used by the text share message.
     //   ?t=<token>   — the encrypted token a QR carries (see QrCodePayloadCodec.kt).

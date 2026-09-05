@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Take Quiz — QuizCode</title>
+<title>Take Quiz — Testly</title>
 <!-- Brand-colored favicon (Primary #5B4FE8) instead of the browser's blank
      default — an inline SVG data URI, no separate asset file to host. -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%235B4FE8'/%3E%3Cpath d='M9 21l4-4-4-4M15 21h8' stroke='white' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E">
@@ -13,24 +13,27 @@
      GitHub Pages/browsers otherwise happily serve a stale cached copy after an
      update (this cost real debugging time once already: fixes that were live on
      the server weren't showing up on-device because of exactly this). -->
-<link rel="stylesheet" href="style.css?v=56">
+<link rel="stylesheet" href="style.css?v=57">
 </head>
 <body>
   <div id="app"></div>
 
   <!-- Plain (non-module) — a UMD bundle that attaches itself as window.supabase. -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Plain (non-module), same as above — attaches itself as window.Analytics.
+       Loaded before every other script below so they can all call it unconditionally. -->
+  <script src="analytics.js?v=57"></script>
   <!-- type="module": each file gets its own isolated top-level scope, so nothing
        declared in these (evaluate, supabase, etc.) can ever collide with the
        library above or with each other — that's what caused the blank-page
        SyntaxError. They still communicate via window.X, same as before;
        modules just can't leak their own top-level names into the global scope. -->
   <!-- strings.js first: every other module reads its user-facing text from window.S. -->
-  <script type="module" src="strings.js?v=56"></script>
-  <script type="module" src="evaluator.js?v=56"></script>
-  <script type="module" src="fillblank.js?v=56"></script>
-  <script type="module" src="poll.js?v=56"></script>
-  <script type="module" src="supabase-client.js?v=56"></script>
-  <script type="module" src="app.js?v=56"></script>
+  <script type="module" src="strings.js?v=57"></script>
+  <script type="module" src="evaluator.js?v=57"></script>
+  <script type="module" src="fillblank.js?v=57"></script>
+  <script type="module" src="poll.js?v=57"></script>
+  <script type="module" src="supabase-client.js?v=57"></script>
+  <script type="module" src="app.js?v=57"></script>
 </body>
 </html>
