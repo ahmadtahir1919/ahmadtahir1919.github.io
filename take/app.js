@@ -71,8 +71,9 @@ const state = {
   pollOtherText: "",
   pollReasonText: "",
   pollHasVoted: false,
-  pollDistribution: null, // set once the poll is closed
+  pollDistribution: null, // set once closed OR once this voter has cast a vote
   pollConsensus: null,
+  pollEditingVote: false, // true while a "Change vote" tap has reopened voting (allowVoteChange)
   secondsRemaining: 0,
   totalTimeSec: 0,
   timerHandle: null,
@@ -597,6 +598,7 @@ function prepareCurrentQuestion() {
     state.pollHasVoted = false;
     state.pollDistribution = null;
     state.pollConsensus = null;
+    state.pollEditingVote = false;
     state.totalTimeSec = 0; // reset; loadPollForCurrentQuestion starts this taker's own
     state.secondsRemaining = 0; // countdown once the poll is known to be open
     render(); // loading state while ensurePollOpen/fetchPollVotes round-trip
@@ -637,17 +639,21 @@ async function loadPollForCurrentQuestion(q) {
   const votes = (await SC.fetchPollVotes(q.id).catch(() => [])) || [];
   const myVote = votes.find((v) => v.voterKey === state.user.id) || null;
   state.pollHasVoted = myVote != null;
+  state.pollEditingVote = false;
   if (myVote) {
     state.pollSelected = new Set(myVote.selectedOptionIndices || []);
     state.pollOtherText = myVote.otherText || "";
     state.pollReasonText = myVote.reason || "";
   }
 
-  if (effectiveClosed) {
+  // Not just CLOSED — re-entering a poll already voted on (e.g. resuming mid-quiz)
+  // reveals results immediately too, same as a fresh vote does (see advance()).
+  if (effectiveClosed || myVote) {
     const distribution = PL.computePollDistribution(q.options || [], votes);
     state.pollDistribution = distribution;
     state.pollConsensus = PL.computePollConsensus(distribution);
-  } else {
+  }
+  if (!effectiveClosed) {
     const optionCount = (q.options || []).length;
     state.pollDisplayOrder = settings.shuffleOptions
       ? PL.pollShuffledOrder(state.user.id, q.id, optionCount)
@@ -786,7 +792,7 @@ function togglePollOption(optionIndex) {
 function onNext() { advance(true); }
 function onSkip() { advance(false); }
 
-function advance(castPollVote) {
+async function advance(castPollVote) {
   if (state.instantFeedback) return; // already mid-feedback — ignore stray taps
   const q = currentQuestion();
   clearInterval(state.timerHandle);
@@ -794,7 +800,10 @@ function advance(castPollVote) {
   if (q.type === "POLL") {
     const settings = q.pollSettings || {};
     const locked = state.pollHasVoted && settings.allowVoteChange === false;
-    if (castPollVote && !locked && state.pollSelected.size > 0 && state.pollState) {
+    // Only actually cast on a fresh vote or a deliberate re-vote (pollEditingVote) — an
+    // ordinary "Next" tap after the reveal below already has nothing new to cast.
+    if (castPollVote && !locked && (!state.pollHasVoted || state.pollEditingVote) &&
+        state.pollSelected.size > 0 && state.pollState) {
       const vote = {
         questionId: q.id,
         voterKey: state.user.id,
@@ -803,8 +812,21 @@ function advance(castPollVote) {
         reason: state.pollReasonText || null,
         participantId: settings.anonymous ? null : state.user.id,
       };
-      SC.castPollVote(vote).catch(() => {}); // fire-and-forget, same as the app
+      // Awaited now (was fire-and-forget) — the results reveal right below needs the
+      // fresh vote list to actually include this vote.
+      await SC.castPollVote(vote).catch(() => {});
       window.Analytics.track("poll_voted", { question_id: q.id });
+      const votes = (await SC.fetchPollVotes(q.id).catch(() => [])) || [];
+      const distribution = PL.computePollDistribution(q.options || [], votes);
+      state.pollDistribution = distribution;
+      state.pollConsensus = PL.computePollConsensus(distribution);
+      state.pollHasVoted = true;
+      state.pollEditingVote = false;
+      // Reveal the just-cast results in place instead of snapping straight past them —
+      // same as a normal consumer poll. A second tap (button now reads Next/Finish, not
+      // Vote) actually advances.
+      render();
+      return;
     }
     proceedPastQuestion();
     return;
@@ -1117,7 +1139,13 @@ function buildBottomBar(q, isLastQuestion, onSkipFn, onNextFn) {
   const disabled = !!state.instantFeedback;
   const nextBtn = el("button", { class: "next-btn", onclick: onNextFn }, []);
   if (disabled) nextBtn.disabled = true;
-  nextBtn.appendChild(document.createTextNode(isLastQuestion ? S.NAV_FINISH : S.NAV_NEXT));
+  // "Vote" instead of Next/Finish while a poll still needs its vote-cast tap — even as
+  // the last question, since this tap casts and reveals in place rather than moving on
+  // (see advance()). Matches PreviewBottomBar's isPollQuestion label on Android.
+  const showVoteLabel = q.type === "POLL" && (!state.pollHasVoted || state.pollEditingVote);
+  nextBtn.appendChild(document.createTextNode(
+    showVoteLabel ? S.NAV_VOTE : (isLastQuestion ? S.NAV_FINISH : S.NAV_NEXT)
+  ));
   nextBtn.appendChild(html(CHEVRON_RIGHT_SVG));
 
   const skipBtn = el("button", { class: "skip-link", onclick: onSkipFn }, [S.SKIP]);
@@ -1197,7 +1225,7 @@ function renderQuiz() {
     ]);
     if (!state.pollState) {
       questionArea.appendChild(el("p", { class: "muted" }, [S.LOADING]));
-    } else if (state.pollDistribution) {
+    } else if (state.pollDistribution && !state.pollEditingVote) {
       questionArea.appendChild(buildPollResults(q));
     } else {
       questionArea.appendChild(buildPollVoting(q));
@@ -1379,6 +1407,13 @@ function buildPollResults(q) {
   });
   if (dist.other.count > 0) {
     container.appendChild(buildPollResultRow(dist.other, state.pollSelected.has(PL.POLL_OTHER_INDEX), dist.otherEntries));
+  }
+
+  const settings = q.pollSettings || {};
+  if (state.pollState?.status !== "CLOSED" && settings.allowVoteChange) {
+    container.appendChild(
+      el("p", { class: "poll-change-vote", onclick: () => { state.pollEditingVote = true; render(); } }, [S.POLL_CHANGE_VOTE])
+    );
   }
 
   return container;

@@ -456,6 +456,7 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
 
 .poll-note { font-size: 12px; color: var(--text-secondary); }
 .poll-voted-check { font-weight: 600; color: var(--success); font-size: 14px; }
+.poll-change-vote { font-size: 13px; font-weight: 600; color: var(--accent); cursor: pointer; width: fit-content; }
 
 .poll-consensus {
   border-radius: 14px;
