@@ -77,6 +77,7 @@ const state = {
   secondsRemaining: 0,
   totalTimeSec: 0,
   timerHandle: null,
+  autoFinishHandle: null, // setTimeout id — LAST question only, once it's been answered
   questionStartSec: 0,
   questionAnswers: {}, // questionId -> raw keys (index-strings / written text)
   questionTimings: {}, // questionId -> seconds
@@ -129,6 +130,7 @@ function render() {
  *  regular link tap don't qualify, so the button just doesn't render there). */
 function leaveQuiz(message) {
   clearInterval(state.timerHandle);
+  cancelLastQuestionAutoFinish();
   state.closedMessage = message;
   state.screen = "closed";
   render();
@@ -547,6 +549,9 @@ async function joinQuizAction() {
  *  offered alongside "Retake Exam" when retake is allowed (see renderLanding). */
 async function goToExistingResult() {
   const answers = await SC.fetchAttemptAnswers(state.existingAttempt.id);
+  // A poll this account skipped that has since closed is hidden from them here too — but one
+  // they voted on stays. Same rule as while taking (pruneHiddenPolls / QuizPreviewViewModel).
+  await pruneHiddenPolls();
   const pollItems = await buildResultPollItems(state.quiz, state.user);
   state.result = { score: state.existingAttempt.score, total: state.existingAttempt.total, answers, pollItems };
   state.screen = "result";
@@ -565,7 +570,7 @@ async function retakeQuizAction() {
   startQuiz();
 }
 
-function startQuiz() {
+async function startQuiz() {
   // Same re-check as joinQuizAction, for the same reason — a tab left open past the
   // deadline must not be able to start (and then submit) a quiz that's since ended,
   // just because the button was drawn while it was still Active.
@@ -573,10 +578,45 @@ function startQuiz() {
     render();
     return;
   }
+  // Drop any poll that's already closed and this person never voted on — nothing for them
+  // to do with it, and it shouldn't count in "Question X of N" / the progress bar. Mirrors
+  // QuizPreviewViewModel.loadQuiz's pre-filter. Spinner while its reads round-trip.
+  state.screen = "loading";
+  render();
+  await pruneHiddenPolls();
+  if (state.quiz.questions.length === 0) {
+    // Poll-only quiz whose every poll has already closed for this person — nothing to answer.
+    leaveQuiz(S.POLL_ALL_CLOSED);
+    return;
+  }
   state.currentIndex = 0;
   state.screen = "quiz";
   render();
   prepareCurrentQuestion();
+}
+
+/** Removes from state.quiz.questions every POLL that's already CLOSED and this user never
+ *  voted on — mirrors QuizPreviewViewModel.loadQuiz's pre-filter and the result screen's
+ *  own filter (a pruned poll never reaches buildResultPollItems either). Read-only; no-op
+ *  without a signed-in user. Fail-safe: a poll whose state we couldn't read counts as OPEN
+ *  and stays. */
+async function pruneHiddenPolls() {
+  if (!state.user) return;
+  const pollIds = state.quiz.questions.filter((q) => q.type === "POLL").map((q) => q.id);
+  if (pollIds.length === 0) return;
+  const [states, ...voteLists] = await Promise.all([
+    SC.fetchPollStates(pollIds).catch(() => ({})),
+    ...pollIds.map((id) => SC.fetchPollVotes(id).catch(() => [])),
+  ]);
+  const votedByMe = new Set();
+  pollIds.forEach((id, i) => {
+    if ((voteLists[i] || []).some((v) => v.voterKey === state.user.id)) votedByMe.add(id);
+  });
+  state.quiz.questions = state.quiz.questions.filter((q) => {
+    if (q.type !== "POLL") return true;
+    const status = (states[q.id] && states[q.id].status) || "OPEN";
+    return !PL.pollHiddenForNonVoter(status, votedByMe.has(q.id));
+  });
 }
 
 function prepareCurrentQuestion() {
@@ -638,6 +678,15 @@ async function loadPollForCurrentQuestion(q) {
 
   const votes = (await SC.fetchPollVotes(q.id).catch(() => [])) || [];
   const myVote = votes.find((v) => v.voterKey === state.user.id) || null;
+
+  if (PL.pollHiddenForNonVoter(effectiveClosed ? "CLOSED" : "OPEN", myVote != null)) {
+    // Closed while this taker was mid-quiz and they never voted — pruneHiddenPolls at Start
+    // couldn't have known. Move on like a normal Next (proceedPastQuestion finishes the quiz
+    // if this was the last, and re-runs prepareCurrentQuestion so a run of closed polls chains).
+    proceedPastQuestion();
+    return;
+  }
+
   state.pollHasVoted = myVote != null;
   state.pollEditingVote = false;
   if (myVote) {
@@ -766,6 +815,7 @@ function toggleAnswer(optionIndex) {
     if (state.selectedAnswers.has(key)) state.selectedAnswers.clear();
     else { state.selectedAnswers.clear(); state.selectedAnswers.add(key); }
   }
+  scheduleLastQuestionAutoFinish();
   render();
 }
 
@@ -792,8 +842,41 @@ function togglePollOption(optionIndex) {
 function onNext() { advance(true); }
 function onSkip() { advance(false); }
 
+/** Has the taker actually given an answer to the question they're on right now? For a poll
+ *  that means a cast vote whose reveal is showing (not one reopened for editing). Mirrors
+ *  QuizPreviewUiState.hasAnsweredCurrent. */
+function hasAnsweredCurrent() {
+  const q = currentQuestion();
+  if (!q) return false;
+  if (q.type === "POLL") return state.pollHasVoted && !state.pollEditingVote;
+  if (q.type === "WRITTEN") return state.writtenAnswer.trim().length > 0;
+  if (q.type === "FILL_BLANK") return state.fillBlankDraft.some((v) => (v || "").trim().length > 0);
+  return state.selectedAnswers.size > 0;
+}
+
+/** LAST question only: once it's actually answered, submit the quiz after a short grace
+ *  period so the taker never has to hunt for "Finish" — the tail end of an answered mid-quiz
+ *  question rolling on when its timer ends. Re-armed on every answer change; cancelled by a
+ *  manual Finish/Skip, reopening a vote, or leaving. Never armed while the last question is
+ *  still unanswered (its own countdown + the Finish button stay as-is). Mirrors
+ *  QuizPreviewViewModel.scheduleLastQuestionAutoFinish. */
+function scheduleLastQuestionAutoFinish() {
+  clearTimeout(state.autoFinishHandle);
+  state.autoFinishHandle = null;
+  const isLast = state.currentIndex === state.quiz.questions.length - 1;
+  if (!isLast || state.instantFeedback || !hasAnsweredCurrent()) return;
+  state.autoFinishHandle = setTimeout(() => { onNext(); }, 3000);
+}
+
+function cancelLastQuestionAutoFinish() {
+  clearTimeout(state.autoFinishHandle);
+  state.autoFinishHandle = null;
+}
+
 async function advance(castPollVote) {
   if (state.instantFeedback) return; // already mid-feedback — ignore stray taps
+  // A real Finish/Skip tap (or the auto-finish firing) takes over from here.
+  cancelLastQuestionAutoFinish();
   const q = currentQuestion();
   clearInterval(state.timerHandle);
 
@@ -826,6 +909,9 @@ async function advance(castPollVote) {
       // same as a normal consumer poll. A second tap (button now reads Next/Finish, not
       // Vote) actually advances.
       render();
+      // Last question: the vote's in and its results are showing — start the grace period
+      // so the taker doesn't have to tap Finish.
+      scheduleLastQuestionAutoFinish();
       return;
     }
     proceedPastQuestion();
@@ -890,6 +976,7 @@ function buildInstantFeedback(q, rawKeys) {
 }
 
 function proceedPastQuestion() {
+  cancelLastQuestionAutoFinish();
   if (state.currentIndex === state.quiz.questions.length - 1) {
     finishQuiz();
     return;
@@ -1305,7 +1392,7 @@ function renderQuiz() {
       el("textarea", {
         rows: "4",
         placeholder: S.ANSWER_PLACEHOLDER,
-        oninput: (e) => { state.writtenAnswer = e.target.value; },
+        oninput: (e) => { state.writtenAnswer = e.target.value; scheduleLastQuestionAutoFinish(); },
       }, [])
     );
   } else {
@@ -1412,7 +1499,7 @@ function buildPollResults(q) {
   const settings = q.pollSettings || {};
   if (state.pollState?.status !== "CLOSED" && settings.allowVoteChange) {
     container.appendChild(
-      el("p", { class: "poll-change-vote", onclick: () => { state.pollEditingVote = true; render(); } }, [S.POLL_CHANGE_VOTE])
+      el("p", { class: "poll-change-vote", onclick: () => { state.pollEditingVote = true; cancelLastQuestionAutoFinish(); render(); } }, [S.POLL_CHANGE_VOTE])
     );
   }
 
@@ -1608,6 +1695,7 @@ function buildFillBlankInput(orderIndex, isLast, inputRefs) {
     oninput: (e) => {
       const v = e.target.value;
       state.fillBlankDraft[orderIndex] = v;
+      scheduleLastQuestionAutoFinish();
       mirror.textContent = v || placeholder;
       input.classList.toggle("filled", v.trim().length > 0);
       // mirror.offsetWidth forces a synchronous reflow of the (out-of-flow,

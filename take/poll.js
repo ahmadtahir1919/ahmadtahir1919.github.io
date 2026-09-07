@@ -98,9 +98,17 @@ function pollShuffledOrder(voterKey, questionId, optionCount) {
   return order;
 }
 
+/** A poll the person never voted on that's already closed is invisible to them — nothing
+ *  for them to do with it, no part of theirs in the result. Same rule applied while taking
+ *  the quiz and on the result screen. Mirrors PollModels.kt's pollHiddenForNonVoter. */
+function pollHiddenForNonVoter(status, hasVoted) {
+  return status === "CLOSED" && !hasVoted;
+}
+
 window.Poll = {
   POLL_OTHER_INDEX,
   computePollDistribution,
   computePollConsensus,
   pollShuffledOrder,
+  pollHiddenForNonVoter,
 };

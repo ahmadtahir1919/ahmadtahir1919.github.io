@@ -372,6 +372,22 @@ async function ensurePollOpen(questionId) {
   return row;
 }
 
+/** Read-only batch fetch of poll_states — mirrors SupabaseSyncRepository.fetchPollStates.
+ *  Unlike ensurePollOpen it never creates a row, so it's safe to call before deciding
+ *  whether to even show a poll. Returns { [questionId]: { status, opened_at, closes_at } };
+ *  an empty object on any error or when nothing is passed (fail-safe → caller treats a
+ *  missing entry as OPEN). */
+async function fetchPollStates(questionIds) {
+  if (!questionIds || questionIds.length === 0) return {};
+  const { data, error } = await supabaseClient.from("poll_states").select("*").in("question_id", questionIds);
+  if (error) return {};
+  const map = {};
+  (data || []).forEach((r) => {
+    map[r.question_id] = { status: r.status, opened_at: r.opened_at, closes_at: r.closes_at };
+  });
+  return map;
+}
+
 async function fetchPollVotes(questionId) {
   const { data, error } = await supabaseClient.from("poll_votes").select("*").eq("question_id", questionId);
   if (error) return [];
@@ -419,6 +435,7 @@ window.SupabaseClient = {
   fetchAttemptAnswers,
   submitAttempt,
   ensurePollOpen,
+  fetchPollStates,
   fetchPollVotes,
   castPollVote,
 };

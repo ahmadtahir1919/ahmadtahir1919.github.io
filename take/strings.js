@@ -39,6 +39,7 @@ const S = {
   CLOSED_CLOSE_TAB: "Close tab",
   LEAVE_CONFIRM: "Leave this quiz? Your progress won't be saved.",
   QUIZ_CLOSED: "Quiz closed",
+  POLL_ALL_CLOSED: "This poll has already closed, so there's nothing here for you to answer.",
 
   // ── Landing ────────────────────────────────────────────────────────────
   LANDING_KICKER: "QUICK JOIN",
