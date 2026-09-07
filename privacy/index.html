@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy Policy — Testly</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%235B4FE8'/%3E%3Cpath d='M9 21l4-4-4-4M15 21h8' stroke='white' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E">
+<style>
+  body { font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif; color:#1f2430; line-height:1.6; max-width:760px; margin:0 auto; padding:32px 20px 64px; }
+  h1 { font-size:26px; margin:0 0 4px; }
+  h2 { font-size:19px; margin:32px 0 8px; }
+  .meta { color:#777; font-size:14px; margin-bottom:24px; }
+  table { border-collapse:collapse; width:100%; margin:12px 0; font-size:14px; }
+  th,td { border:1px solid #e3e6ec; padding:8px 10px; text-align:left; vertical-align:top; }
+  th { background:#f5f6fa; }
+  code { background:#f2f3f7; padding:1px 5px; border-radius:4px; font-size:13px; }
+  a { color:#4F46E5; }
+  .note { background:#FFF7ED; border:1px solid #FED7AA; border-radius:8px; padding:12px 14px; font-size:13px; color:#9A3412; }
+</style>
+</head>
+<body>
+  <h1>Testly — Privacy Policy</h1>
+  <p class="meta">Effective date: <strong>[EFFECTIVE DATE]</strong> · Operated by <strong>[COMPANY / DEVELOPER NAME]</strong> ("we", "us"). Contact: <a href="mailto:[CONTACT EMAIL]">[CONTACT EMAIL]</a>.</p>
+
+  <p class="note">Draft — fill in the bracketed placeholders, have it reviewed, and publish it at
+  <code>https://ahmadtahir1919.github.io/privacy/</code> (or your final domain) before submitting to Google Play.</p>
+
+  <p>Testly ("the app") lets people create quizzes and polls and lets others take them. This policy explains what we collect, why, and your choices.</p>
+
+  <h2>1. What we collect</h2>
+  <table>
+    <tr><th>Data</th><th>Why</th><th>Where it goes</th></tr>
+    <tr><td>Google account <strong>email address</strong> and <strong>display name</strong> (via Google Sign-In)</td><td>To create and identify your account, show your name to people you share a quiz with, and let you sign in again.</td><td>Our backend (Supabase). Not sold or shared for advertising.</td></tr>
+    <tr><td><strong>Content you create</strong> — quizzes, questions, answers, poll options, group names</td><td>To store and deliver your quizzes.</td><td>Our backend (Supabase).</td></tr>
+    <tr><td><strong>Quiz activity</strong> — attempts, answers you submit, scores, poll votes and optional free-text reasons, feedback messages you send us</td><td>To show results to you and to the quiz owner, and to respond to feedback.</td><td>Our backend (Supabase).</td></tr>
+    <tr><td><strong>Push notification token</strong> (Firebase Cloud Messaging)</td><td>To send you notifications about your quizzes (a join, a submission, a result, an announcement).</td><td>Google (Firebase) and our backend, linked to your account.</td></tr>
+    <tr><td><strong>Usage &amp; diagnostics</strong> — screens viewed, in-app events (e.g. "quiz created"), app version, device model, OS version, coarse region (from IP), crash reports</td><td>To understand how the app is used and to fix crashes.</td><td>PostHog (product analytics) and Google Firebase (Analytics &amp; Crashlytics), keyed to a pseudonymous account identifier.</td></tr>
+  </table>
+  <p>We do <strong>not</strong> collect your location, contacts, photos, files, microphone or SMS. The camera is used only, and only while that screen is open, to scan a quiz QR code on your device; QR images are not uploaded.</p>
+
+  <h2>2. Advertising ID</h2>
+  <p>Google's Analytics SDK may collect an Advertising ID. We do not use it for advertising or cross-app tracking. [If you disable AD_ID collection in the build, delete this section.]</p>
+
+  <h2>3. Legal basis (EEA/UK users)</h2>
+  <p>We process account data and content to perform our contract with you (providing the app), and usage/diagnostics data under our legitimate interest in improving and securing the app. You can object to analytics — see section 6.</p>
+
+  <h2>4. Sharing</h2>
+  <p>Your display name and quiz activity are visible to the owner of a quiz you take, and a quiz owner's name is visible to participants. We use the processors named above (Supabase, Google/Firebase, PostHog) to run the service. We do not sell personal data. We may disclose data if required by law.</p>
+
+  <h2>5. Retention</h2>
+  <p>Account data and content are kept until you delete your account. Deleting your account removes your account and the data tied to it (quizzes, questions, attempts, answers, feedback, device tokens). Poll votes you cast in other people's polls are kept but disassociated from your account (anonymised). Analytics/crash records held by our processors are retained according to their own retention windows and are keyed only to a pseudonymous identifier after deletion.</p>
+
+  <h2>6. Your choices &amp; rights</h2>
+  <ul>
+    <li><strong>Delete your account</strong> in the app: menu → Delete Account. Or request deletion at <a href="/delete-account/">/delete-account/</a>.</li>
+    <li><strong>Access, correction, export, objection</strong>: email <a href="mailto:[CONTACT EMAIL]">[CONTACT EMAIL]</a>.</li>
+    <li><strong>Notifications</strong>: turn them off in your device settings or in the app's Settings screen.</li>
+  </ul>
+
+  <h2>7. Children</h2>
+  <p>Testly is not directed to children under 13 (or the minimum age in your country). Google Sign-In requires an eligible Google account. If you believe a child has provided us personal data, contact us and we will delete it.</p>
+
+  <h2>8. Security</h2>
+  <p>Data in transit is encrypted with HTTPS/TLS. Access to backend data is restricted by row-level security so users can only reach their own data and data shared with them.</p>
+
+  <h2>9. Changes</h2>
+  <p>We'll update this page and change the effective date if this policy changes materially.</p>
+
+  <h2>10. Contact</h2>
+  <p><a href="mailto:[CONTACT EMAIL]">[CONTACT EMAIL]</a></p>
+</body>
+</html>

@@ -104,7 +104,11 @@
 
     function showCode(code) {
       if (!code) return;
-      code = code.toUpperCase();
+      code = String(code).toUpperCase();
+      // The ?t= path already charset-checks inside decryptToken; the plain ?code= path
+      // did not. Reject anything that isn't a share code so a long/odd string can't be
+      // reflected into the page or the Play/browser links.
+      if (!/^[A-Z0-9]{4,8}$/.test(code)) return;
       document.getElementById('code').textContent = code;
       // Carries the code through to Play Store as a referrer, so once the app IS
       // installed from here it can pick this same code back up automatically
