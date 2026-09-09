@@ -161,18 +161,28 @@ function countdownUntil(targetMillis, now) {
   return `Starts in ${remaining}`;
 }
 
+/**
+ * Loads a quiz from its share code.
+ *
+ * Goes through the quiz_by_share_code / questions_by_share_code RPCs rather than reading
+ * the tables directly: the quizzes/questions tables are only selectable for quizzes you
+ * own or have already joined, so a plain `.from("quizzes").eq("share_code", …)` returns
+ * nothing for a visitor arriving on a share link. (It used to work because every
+ * published quiz was readable by anyone holding the anon key — which also meant the whole
+ * table, answer keys included, could be downloaded. See schema.sql's quiz_is_visible.)
+ *
+ * The RPCs return exactly one quiz for an exact code, and are granted to anon so this
+ * still works before the visitor signs in.
+ */
 async function fetchQuizByShareCode(code) {
-  const { data: quizRow, error } = await supabaseClient
-    .from("quizzes")
-    .select("*")
-    .eq("share_code", code)
-    .maybeSingle();
-  if (error || !quizRow) return null;
+  const { data: quizRows, error } = await supabaseClient
+    .rpc("quiz_by_share_code", { p_code: code });
+  if (error) return null;
+  const quizRow = Array.isArray(quizRows) ? quizRows[0] : quizRows;
+  if (!quizRow) return null;
 
   const { data: questionRows, error: qErr } = await supabaseClient
-    .from("questions")
-    .select("*")
-    .eq("quiz_id", quizRow.id);
+    .rpc("questions_by_share_code", { p_code: code });
   if (qErr) return null;
 
   return quizFromRow(quizRow, (questionRows || []).map(questionFromRow));
@@ -191,12 +201,14 @@ async function fetchQuizStatus(quizId) {
   // an owner flipping one of these settings mid-quiz would silently score a submission
   // under whatever was current when the tab first loaded, not the live value. Mirrors
   // QuizPreviewViewModel.finishPreview's identical re-fetch on Android.
-  const { data, error } = await supabaseClient
-    .from("quizzes")
-    .select("start_at, end_at, is_archived, manual_marking_default, split_points_across_choices, time_weightage_enabled, show_timers")
-    .eq("id", quizId)
-    .maybeSingle();
-  if (error || !data) return null;
+  // Via RPC for the same reason as fetchQuizByShareCode above: a taker who has not joined
+  // yet cannot select this quiz's row directly. quiz_status_by_id returns only the
+  // scoring/schedule flags — never questions, never answers.
+  const { data: rows, error } = await supabaseClient
+    .rpc("quiz_status_by_id", { p_quiz_id: quizId });
+  if (error) return null;
+  const data = Array.isArray(rows) ? rows[0] : rows;
+  if (!data) return null;
   return {
     startAt: data.start_at,
     endAt: data.end_at,
