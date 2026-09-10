@@ -409,6 +409,20 @@ function renderLanding() {
  *  to remember to bump, it just always matches whatever was last deployed, so seeing it
  *  change on screen is a real, unfakeable confirmation that a fresh deploy actually
  *  landed (as opposed to the browser still running a cached copy of this file). */
+// Character caps for everything a participant types here. Mirrors AppLimits.DEFAULT's
+// maxResponseChars in the Android app.
+//
+// Hardcoded rather than fetched: this page never calls my_limits(), and it does not need
+// to. The REAL enforcement is the server's own RLS check (see attempt_answers_insert_own
+// and poll_votes_write_own in supabase/schema.sql) — this number only stops the browser
+// before a rejection. Do NOT turn this into a fetched value and a second source of truth;
+// if an admin lowers the cap, the server still refuses, which is the behaviour that matters.
+const RESPONSE_MAX_CHARS = 500;
+
+// Mirrors FixedTextLimits.DISPLAY_NAME, and the literal in profiles_update_own's check —
+// without it this page could write a name the server would simply refuse.
+const DISPLAY_NAME_MAX_CHARS = 32;
+
 const WEB_VERSION = "1.0";
 const BUILD_NUMBER = new URL(import.meta.url).searchParams.get("v") || "?";
 
@@ -434,6 +448,7 @@ function renderConfirmName() {
   const input = el("input", {
     type: "text",
     value: state.confirmNameDraft || "",
+    maxlength: String(DISPLAY_NAME_MAX_CHARS),
     placeholder: S.CONFIRM_NAME_PLACEHOLDER,
     autocomplete: "name",
     oninput: (e) => {
@@ -1391,6 +1406,7 @@ function renderQuiz() {
     questionArea.appendChild(
       el("textarea", {
         rows: "4",
+        maxlength: String(RESPONSE_MAX_CHARS),
         placeholder: S.ANSWER_PLACEHOLDER,
         oninput: (e) => { state.writtenAnswer = e.target.value; scheduleLastQuestionAutoFinish(); },
       }, [])
@@ -1450,6 +1466,7 @@ function buildPollVoting(q) {
     if (otherSelected) {
       const otherProps = {
         type: "text",
+        maxlength: String(RESPONSE_MAX_CHARS),
         placeholder: S.ANSWER_PLACEHOLDER,
         value: state.pollOtherText,
         oninput: (e) => { state.pollOtherText = e.target.value; },
@@ -1462,6 +1479,7 @@ function buildPollVoting(q) {
   if (settings.askReason && state.pollSelected.size > 0) {
     const reasonProps = {
       rows: "2",
+      maxlength: String(RESPONSE_MAX_CHARS),
       placeholder: S.POLL_REASON_PLACEHOLDER,
       oninput: (e) => { state.pollReasonText = e.target.value; },
     };
@@ -1687,6 +1705,7 @@ function buildFillBlankInput(orderIndex, isLast, inputRefs) {
     type: "text",
     class: "fb-blank-input" + (value.trim() ? " filled" : ""),
     value,
+    maxlength: String(RESPONSE_MAX_CHARS),
     placeholder,
     autocomplete: "off",
     autocapitalize: "off",
