@@ -87,6 +87,9 @@ const state = {
   result: null, // { score, total, answers }
   landingTickerHandle: null, // ticks the Scheduled-quiz countdown on the landing card
   hasJoined: false, // Join clicked (and joined_quizzes recorded) this session — gates Start Quiz
+  // joined_quizzes.last_started_at for this account (epoch ms) or null. With no
+  // existingAttempt it means "started, left without submitting" — see renderLanding.
+  lastStartedAt: null,
   joinError: null,
   joining: false,
 };
@@ -135,6 +138,24 @@ function leaveQuiz(message) {
   state.screen = "closed";
   render();
 }
+
+/** The mid-quiz "are you sure" — mirrors QuizPreviewScreen exit ConfirmActionDialog (the
+ *  browser confirm() is this page own dialog pattern; no modal primitive exists here, see
+ *  renderQuiz). The wording spells out what leaving costs: nothing is submitted, and with
+ *  retakes off there is no way back in. */
+function confirmLeave() {
+  const msg = state.quiz && state.quiz.allowRetake === false ? S.LEAVE_CONFIRM_NO_RETAKE : S.LEAVE_CONFIRM_RETAKE;
+  return confirm(msg);
+}
+
+// Closing/reloading the tab mid-quiz is the same "left without submitting" as the X — the
+// browser shows its own generic warning (the text cannot be customized), which still beats
+// silently losing an in-progress attempt.
+window.addEventListener("beforeunload", (e) => {
+  if (state.screen !== "quiz") return;
+  e.preventDefault();
+  e.returnValue = "";
+});
 
 function renderClosed() {
   // window.close() only actually works when the browser considers this tab
@@ -377,6 +398,26 @@ function renderLanding() {
       body.push(el("p", { class: "muted", style: "color:var(--error)" }, [state.joinError]));
     }
     body.push(signOutRow());
+  } else if (state.lastStartedAt && quiz.allowRetake === false) {
+    // Started earlier (here or in the app) and left without submitting, retakes off — that
+    // one try is used up. Mirrors JoinedQuizItem.isLockedAfterAbandon on Android.
+    body.push(
+      signedInLine(state.user),
+      el("p", { class: "muted" }, [S.LANDING_LEFT_LOCKED]),
+      signOutRow()
+    );
+  } else if (state.lastStartedAt) {
+    // Started earlier and left without submitting — nothing counted, so this is a fresh
+    // attempt, labelled as a retake like the app's Joined card.
+    body.push(
+      signedInLine(state.user),
+      el("p", { class: "muted" }, [S.LANDING_LEFT_WITHOUT_SUBMITTING]),
+      el("button", { class: "primary", onclick: retakeQuizAction }, [state.joining ? S.JOINING : S.LANDING_RETAKE])
+    );
+    if (state.joinError) {
+      body.push(el("p", { class: "muted", style: "color:var(--error)" }, [state.joinError]));
+    }
+    body.push(signOutRow());
   } else if (!state.hasJoined) {
     // Join is its own step, separate from Start — records membership (joined_quizzes)
     // right away so the owner's Participants tab sees this person the moment they join,
@@ -532,6 +573,7 @@ async function signOutAction() {
   state.hasJoined = false;
   state.joinError = null;
   state.existingAttempt = null;
+  state.lastStartedAt = null;
   render();
 }
 
@@ -603,6 +645,28 @@ async function startQuiz() {
     // Poll-only quiz whose every poll has already closed for this person — nothing to answer.
     leaveQuiz(S.POLL_ALL_CLOSED);
     return;
+  }
+  // Re-read the stamp rather than trusting the one boot() loaded: this quiz may have been
+  // started (and left) in the Android app, or another tab, since this card was drawn.
+  // Retakes off + started before + nothing submitted = that one try is used up.
+  if (state.quiz.allowRetake === false && !state.existingAttempt) {
+    const startedBefore = await SC.fetchLastStartedAt(state.quiz.id, state.user.id);
+    if (startedBefore) {
+      state.lastStartedAt = startedBefore;
+      state.screen = "landing";
+      render();
+      return;
+    }
+  }
+  // Stamps joined_quizzes.last_started_at — mirrors QuizPreviewViewModel.loadQuiz calling
+  // markQuizStarted, so leaving without submitting is remembered here too (and the owner
+  // gets the same "X started your quiz" notification). Never blocks the attempt: a failed
+  // stamp is no reason to refuse someone the quiz they are entitled to take.
+  try {
+    await SC.markQuizStarted(state.user.id, state.quiz.id);
+    state.lastStartedAt = Date.now();
+  } catch (e) {
+    /* offline / transient — carry on */
   }
   state.currentIndex = 0;
   state.screen = "quiz";
@@ -962,7 +1026,11 @@ function buildInstantFeedback(q, rawKeys) {
     const options = q.options || [];
     const correctTexts = new Set(q.correctAnswers || []);
     const correctIndices = new Set(options.map((_, i) => i).filter((i) => correctTexts.has(options[i])));
-    const eq = selectedIndices.size === correctIndices.size && [...selectedIndices].every((i) => correctIndices.has(i));
+    // MULTIPLE_CORRECT goes through the shared rule (mirrors Android's buildInstantFeedback)
+    // so an any-one-is-enough question can't flash red here and then score as correct.
+    const eq = q.type === "MULTIPLE_CORRECT"
+      ? window.Evaluator.isMultipleCorrectAnswer(correctIndices, selectedIndices, !!q.acceptAnyCorrect)
+      : selectedIndices.size === correctIndices.size && [...selectedIndices].every((i) => correctIndices.has(i));
     return { isCorrect: eq, correctOptionIndices: correctIndices, wrongSelectedIndices: new Set([...selectedIndices].filter((i) => !correctIndices.has(i))) };
   }
   if (q.type === "WRITTEN") {
@@ -1090,16 +1158,24 @@ async function finishQuiz() {
       } else if (q.type === "FILL_BLANK") {
         isCorrect = q.fillBlankContent ? FB.fillBlankIsQuestionCorrect(q.fillBlankContent, given) : false;
         rawPoints = isCorrect ? q.points : 0;
-      } else if (q.type === "MULTIPLE_CORRECT" && state.quiz.splitPointsAcrossChoices) {
+      } else if (q.type === "MULTIPLE_CORRECT") {
+        // By option position, same as buildInstantFeedback — both verdicts come from
+        // evaluator.isMultipleCorrectAnswer (mirrors Android's finishPreview).
         const options = q.options || [];
         const correctIdx = options.map((_, i) => i).filter((i) => (q.correctAnswers || []).includes(options[i]));
-        const pickedIdx = new Set(rawKeys.map(Number));
-        // Correctness is a set comparison inside scoreSplitMultipleCorrect, not
-        // "rawPoints === q.points" as it used to be — see that function's doc in
-        // evaluator.js for the two ways that comparison marked wrong answers correct.
-        const scored = evaluator.scoreSplitMultipleCorrect(correctIdx, pickedIdx, q.points);
-        rawPoints = scored.rawPoints;
-        isCorrect = scored.isCorrect;
+        const pickedIdx = new Set(rawKeys.map(Number).filter((n) => !Number.isNaN(n)));
+        const acceptAny = !!q.acceptAnyCorrect;
+        if (state.quiz.splitPointsAcrossChoices) {
+          // Correctness is a set comparison inside scoreSplitMultipleCorrect, not
+          // "rawPoints === q.points" as it used to be — see that function's doc in
+          // evaluator.js for the two ways that comparison marked wrong answers correct.
+          const scored = evaluator.scoreSplitMultipleCorrect(correctIdx, pickedIdx, q.points, acceptAny);
+          rawPoints = scored.rawPoints;
+          isCorrect = scored.isCorrect;
+        } else {
+          isCorrect = evaluator.isMultipleCorrectAnswer(new Set(correctIdx), pickedIdx, acceptAny);
+          rawPoints = isCorrect ? q.points : 0;
+        }
       } else {
         const a = new Set(given), b = new Set(q.correctAnswers || []);
         isCorrect = a.size === b.size && [...a].every((x) => b.has(x));
@@ -1158,7 +1234,7 @@ async function finishQuiz() {
 
 /** Top bar: X close, title, timer chip — mirrors QuizPreviewScreen's PreviewTopBar. */
 function buildQuizTopBar(quiz, q) {
-  const closeBtn = el("button", { class: "icon-btn", onclick: () => { if (confirm(S.LEAVE_CONFIRM)) leaveQuiz(S.QUIZ_CLOSED); } }, []);
+  const closeBtn = el("button", { class: "icon-btn", onclick: () => { if (confirmLeave()) leaveQuiz(S.QUIZ_CLOSED); } }, []);
   closeBtn.appendChild(html(CLOSE_X_SVG));
 
   // Reserved-width slot either way, so the title stays centered whether or not
@@ -1303,7 +1379,10 @@ function buildQuestionNumberLabel(quiz, q) {
     el("span", { class: "question-number-label" }, [S.questionXofN(state.currentIndex + 1, quiz.questions.length)]),
   ];
   if (q.type === "MULTIPLE_CORRECT") {
-    children.push(el("span", { class: "select-all-badge" }, [S.SELECT_ALL_THAT_APPLY]));
+    // "Select all that apply" would tell an any-one-is-enough taker to keep ticking.
+    children.push(el("span", { class: "select-all-badge" }, [
+      q.acceptAnyCorrect ? S.SELECT_ANY_CORRECT : S.SELECT_ALL_THAT_APPLY,
+    ]));
   }
   return el("div", { class: "question-number-row" }, children);
 }
@@ -2124,6 +2203,12 @@ async function boot() {
     if (state.user) {
       window.Analytics.identify(state.user.id, { email: state.user.email });
       state.existingAttempt = await SC.fetchExistingAttempt(quiz.id, state.user.id);
+      // With no existingAttempt, a non-null stamp means this account started the quiz
+      // (here or in the app) and left without submitting — Retake, or locked when the
+      // creator does not allow retakes. Mirrors JoinedQuizItem.hasAbandonedStart.
+      state.lastStartedAt = await SC.fetchLastStartedAt(quiz.id, state.user.id);
+      // Started before means membership already exists — no separate Join step needed.
+      if (state.lastStartedAt) state.hasJoined = true;
     }
 
     // No retake and already completed: land straight on the real result screen (score

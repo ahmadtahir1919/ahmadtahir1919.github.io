@@ -222,22 +222,32 @@ function splitCorrectOptionPoints(totalPoints, correctCount) {
   return Array.from({ length: correctCount }, (_, i) => (i < remainder ? base + 1 : base));
 }
 
+/** The verdict for a MULTIPLE_CORRECT answer — mirrors isMultipleCorrectAnswer() in
+ *  Grading.kt, and is the one rule finishQuiz and buildInstantFeedback both call.
+ *  `correct` and `picked` are Sets of option positions. acceptAny false: exactly the
+ *  correct set. acceptAny true: at least one correct and no wrong tick (a wrong tick
+ *  still fails it, otherwise ticking every option would pass). Nothing picked, or no
+ *  correct options at all, is always wrong. */
+function isMultipleCorrectAnswer(correct, picked, acceptAny) {
+  if (correct.size === 0 || picked.size === 0) return false;
+  if (acceptAny) return [...picked].every((i) => correct.has(i));
+  return picked.size === correct.size && [...correct].every((i) => picked.has(i));
+}
+
 /** Scores a MULTIPLE_CORRECT question when splitPointsAcrossChoices is on — mirrors
  *  scoreSplitMultipleCorrect() in Grading.kt. Correctness is a SET COMPARISON, never a
  *  comparison of points earned against the question total: on a no-marks question
  *  (totalPoints 0) every award is 0, so "earned === total" was trivially true and
  *  marked EVERY taker correct, including one who selected nothing. It also wrongly
- *  passed a taker who picked every correct option plus a wrong one. */
-function scoreSplitMultipleCorrect(correctIndices, pickedIndices, totalPoints) {
+ *  passed a taker who picked every correct option plus a wrong one. Points don't depend
+ *  on acceptAny: 1 of 3 correct under "any one" is correct but earns one share. */
+function scoreSplitMultipleCorrect(correctIndices, pickedIndices, totalPoints, acceptAny = false) {
   const shares = splitCorrectOptionPoints(totalPoints, correctIndices.length);
   const rawPoints = correctIndices.reduce(
     (sum, idx, i) => sum + (pickedIndices.has(idx) ? shares[i] : 0),
     0
   );
-  const isCorrect =
-    correctIndices.length > 0 &&
-    pickedIndices.size === correctIndices.length &&
-    correctIndices.every((idx) => pickedIndices.has(idx));
+  const isCorrect = isMultipleCorrectAnswer(new Set(correctIndices), pickedIndices, acceptAny);
   return { isCorrect, rawPoints };
 }
 
@@ -411,6 +421,7 @@ window.Evaluator = {
   defaultAnswerRule,
   TextNormalizer,
   splitCorrectOptionPoints,
+  isMultipleCorrectAnswer,
   scoreSplitMultipleCorrect,
   timeWeightageFactor,
   applyTimeWeightage,

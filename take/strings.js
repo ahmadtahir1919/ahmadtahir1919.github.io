@@ -37,7 +37,12 @@ const S = {
   CLOSED_THANKS: "Thanks for taking the quiz!",
   CLOSED_CAN_CLOSE: "You can close this tab now.",
   CLOSED_CLOSE_TAB: "Close tab",
-  LEAVE_CONFIRM: "Leave this quiz? Your progress won't be saved.",
+  // Mirrors preview_exit_title + preview_exit_msg_retake / _no_retake (one line — the
+  // browser's own confirm() box has no separate title).
+  LEAVE_CONFIRM_RETAKE:
+    "Leave this quiz? Your answers won't be saved — nothing has been submitted yet. You can retake it later.",
+  LEAVE_CONFIRM_NO_RETAKE:
+    "Leave this quiz? Your answers won't be saved, and the creator doesn't allow retakes — you won't be able to take this quiz again.",
   QUIZ_CLOSED: "Quiz closed",
   POLL_ALL_CLOSED: "This poll has already closed, so there's nothing here for you to answer.",
 
@@ -49,6 +54,10 @@ const S = {
   LANDING_ALREADY_DONE: "You've already completed this quiz. Retakes aren't allowed.",
   LANDING_SEE_RESULT: "See Result",
   LANDING_RETAKE: "Retake Exam",
+  // Mirrors joined_status_abandoned / joined_locked_message — started earlier, left
+  // without submitting (nothing counted).
+  LANDING_LEFT_WITHOUT_SUBMITTING: "Left without submitting",
+  LANDING_LEFT_LOCKED: "You left this quiz without submitting, and the creator doesn't allow retakes.",
   LANDING_JOIN: "Join",
   LANDING_START: "Start Quiz",
   questionCount: (n) => `${n} question${n === 1 ? "" : "s"}`,
@@ -72,6 +81,7 @@ const S = {
 
   // ── Taking a quiz ──────────────────────────────────────────────────────
   SELECT_ALL_THAT_APPLY: "Select all that apply",
+  SELECT_ANY_CORRECT: "Select any correct answer",
   NAV_NEXT: "Next",
   NAV_FINISH: "Finish",
   NAV_VOTE: "Vote",

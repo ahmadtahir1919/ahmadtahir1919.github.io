@@ -107,6 +107,9 @@ function questionFromRow(row) {
     answerRule: row.answer_rule ?? null, // jsonb, already an object (not a JSON string like the Kotlin column)
     pollSettings: row.poll_settings ?? null,
     fillBlankContent: row.fill_blank ?? null,
+    // Multiple: "any one correct is enough" (Question.acceptAnyCorrect). Missing column =
+    // the original all-or-nothing rule.
+    acceptAnyCorrect: row.accept_any_correct ?? false,
   };
 }
 
@@ -358,6 +361,35 @@ async function joinQuiz(userId, quizId) {
   if (error) throw error;
 }
 
+/** This account's last real start on a quiz (epoch ms), or null if never started / not
+ *  joined — mirrors JoinedQuizDao.getLastStartedAt on Android. With no completed attempt,
+ *  a non-null value means "started, then left without submitting": Retake if the quiz
+ *  allows it, otherwise locked (see renderLanding). Null on failure too — a read hiccup
+ *  must never lock someone out. */
+async function fetchLastStartedAt(quizId, userId) {
+  const { data, error } = await supabaseClient
+    .from("joined_quizzes")
+    .select("last_started_at")
+    .eq("quiz_id", quizId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error || !data) return null;
+  return data.last_started_at ?? null;
+}
+
+/** Stamps a real start — mirrors QuizRepository.markQuizStarted()/pushQuizStarted() on
+ *  Android (same column, so the owner's "X started your quiz" notification fires for web
+ *  takers too). An update, not an upsert: Start is only reachable after Join created the
+ *  row, and joined_at must stay the real join time. */
+async function markQuizStarted(userId, quizId) {
+  const { error } = await supabaseClient
+    .from("joined_quizzes")
+    .update({ last_started_at: Date.now() })
+    .eq("user_id", userId)
+    .eq("quiz_id", quizId);
+  if (error) throw error;
+}
+
 /** Checked right before a real submission lands — mirrors QuizRepository.isJoinedRemote()
  *  on Android. An owner's remove-participant action deletes this row remotely, but the
  *  removed taker's own tab has no way to find out short of asking here. Null (not false)
@@ -443,6 +475,8 @@ window.SupabaseClient = {
   countdownUntil,
   joinQuiz,
   isJoined,
+  fetchLastStartedAt,
+  markQuizStarted,
   fetchExistingAttempt,
   fetchAttemptAnswers,
   submitAttempt,
