@@ -297,6 +297,17 @@ const CHECK_SVG = `<svg viewBox="0 0 20 20" fill="none"><path d="M4 10.5l4 4 8-9
 const CLOSE_X_SVG = `<svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
 const CLOCK_SVG = `<svg viewBox="0 0 20 20" fill="none" width="13" height="13"><circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="1.6"/><path d="M10 6v4l2.6 2.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
 const CHEVRON_RIGHT_SVG = `<svg viewBox="0 0 16 16" fill="none" width="14" height="14"><path d="M6 3l5 5-5 5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+// Quiz-taking screen icons (Material Rounded/Outlined equivalents used on Android).
+const BULB_SVG = `<svg viewBox="0 0 24 24" fill="none" width="15" height="15"><path d="M9 18h6M10 21h4M12 3a6 6 0 00-3.6 10.8c.6.5 1 1.2 1 2V16h5.2v-.2c0-.8.4-1.5 1-2A6 6 0 0012 3z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const LOCK_SVG = `<svg viewBox="0 0 24 24" fill="none" width="13" height="13"><rect x="5" y="11" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 11V8a4 4 0 018 0v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+const PENCIL_SVG = `<svg viewBox="0 0 24 24" fill="none" width="14" height="14"><path d="M4 20h4L19 9l-4-4L4 16v4z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`;
+const TEXT_FIELDS_SVG = `<svg viewBox="0 0 24 24" fill="none" width="14" height="14"><path d="M4 7V5h11v2M9.5 5v14M7.5 19h4M14 12v-1.5h6V12M17 10.5V19M15.5 19h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const BAR_CHART_SVG = `<svg viewBox="0 0 24 24" fill="none" width="14" height="14"><path d="M6 20V11M12 20V4M18 20v-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>`;
+const CHECK_CIRCLE_SVG = `<svg viewBox="0 0 24 24" width="14" height="14"><circle cx="12" cy="12" r="10" fill="currentColor"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const CHECKBOX_OUTLINE_SVG = `<svg viewBox="0 0 24 24" fill="none" width="13" height="13"><rect x="3.5" y="3.5" width="17" height="17" rx="4" stroke="currentColor" stroke-width="2"/><path d="M8 12.5l2.8 2.8L16.5 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const TF_CHECK_SVG = `<svg viewBox="0 0 24 24" fill="none" width="22" height="22"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const TF_X_SVG = `<svg viewBox="0 0 24 24" fill="none" width="22" height="22"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>`;
+const COMMENT_SVG = `<svg viewBox="0 0 24 24" fill="none" width="14" height="14"><path d="M5 5h14a1 1 0 011 1v9a1 1 0 01-1 1H10l-4 3.5V16H5a1 1 0 01-1-1V6a1 1 0 011-1z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`;
 const CHEVRON_DOWN_SVG = `<svg viewBox="0 0 16 16" fill="none" width="14" height="14"><path d="M4 6l4 4 4-4" stroke="#BBBACC" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const TROPHY_SVG = `<svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M7 4h10v4a5 5 0 01-10 0V4z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/><path d="M7 6H4a3 3 0 003 3M17 6h3a3 3 0 01-3 3" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/><path d="M12 13v3M9 20h6M9.5 20c0-2 .8-3 2.5-3s2.5 1 2.5 3" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
@@ -853,14 +864,14 @@ function updateTimerDisplay() {
   const chip = document.getElementById("timer-chip");
   if (chip) {
     chip.textContent = "";
-    chip.appendChild(html(CLOCK_SVG));
-    chip.appendChild(document.createTextNode(" " + formatSeconds(state.secondsRemaining)));
-    chip.className = "timer-chip" + (urgent ? " urgent" : "");
+    chip.appendChild(html(chip.classList.contains("poll-chip") ? BAR_CHART_SVG : CLOCK_SVG));
+    chip.appendChild(document.createTextNode(formatSeconds(state.secondsRemaining)));
+    chip.classList.toggle("urgent", urgent);
   }
   const fill = document.getElementById("timer-fill");
   if (fill) {
     fill.style.width = `${(state.secondsRemaining / state.totalTimeSec) * 100}%`;
-    fill.style.background = urgent ? "#EF4444" : "var(--accent)";
+    fill.classList.toggle("urgent", urgent);
   }
   // Same element-mutation-in-place trick as #timer-fill above (not a full re-render) —
   // this is what lets the CSS transition below actually animate every tick instead of
@@ -1232,7 +1243,8 @@ async function finishQuiz() {
     });
 }
 
-/** Top bar: X close, title, timer chip — mirrors QuizPreviewScreen's PreviewTopBar. */
+/** Top bar: X close, title + "(Nq)", timer chip (poll chip on a poll) — mirrors
+ *  QuizScreenComponents.kt's QuizTopBar. */
 function buildQuizTopBar(quiz, q) {
   const closeBtn = el("button", { class: "icon-btn", onclick: () => { if (confirmLeave()) leaveQuiz(S.QUIZ_CLOSED); } }, []);
   closeBtn.appendChild(html(CLOSE_X_SVG));
@@ -1241,11 +1253,24 @@ function buildQuizTopBar(quiz, q) {
   // this question has a timer. Gated on quiz.showTimers too, not just q.timeSec — an
   // empty timer-chip pill was rendering (and reserving layout space) even with the
   // quiz-wide "Show Timer" setting off, since this check ignored it entirely.
-  const right = quiz.showTimers && q.timeSec > 0
-    ? el("div", { id: "timer-chip", class: "timer-chip" }, [])
-    : el("div", { style: "width:36px" }, []);
+  let right;
+  if (q.type === "POLL") {
+    // A timed poll's countdown is filled in by updateTimerDisplay (same #timer-chip id);
+    // an untimed one just says "Poll".
+    right = state.totalTimeSec > 0
+      ? el("div", { id: "timer-chip", class: "timer-chip poll-chip" }, [])
+      : el("div", { class: "timer-chip poll-chip" }, [html(BAR_CHART_SVG), S.POLL_CHIP]);
+  } else if (quiz.showTimers && q.timeSec > 0) {
+    right = el("div", { id: "timer-chip", class: "timer-chip" }, []);
+  } else {
+    right = el("div", { class: "topbar-spacer" }, []);
+  }
 
-  return el("div", { class: "quiz-topbar" }, [closeBtn, el("span", { class: "title" }, [quiz.title]), right]);
+  const title = el("span", { class: "title" }, [
+    quiz.title,
+    el("span", { class: "title-count" }, [S.questionCountSuffix(quiz.questions.length)]),
+  ]);
+  return el("div", { class: "quiz-topbar" }, [closeBtn, title, right]);
 }
 
 /** One segment per question (Stories-style) rather than a single continuous bar —
@@ -1295,13 +1320,13 @@ function buildQuestionProgressBar(quiz) {
     }
     const props = { class: "progress-segment-fill" + (animate ? " filling" : ""), style: `width:${fillPct}%` };
     if (segId) props.id = segId;
-    segments.push(el("div", { class: "progress-segment" }, [el("div", props)]));
+    segments.push(el("div", { class: "progress-segment" + (i === state.currentIndex ? " current" : "") }, [el("div", props)]));
   }
   return el("div", { class: "progress-track segmented" }, segments);
 }
 
-/** Bottom action bar: timer progress bar pinned above it, Skip + Next — mirrors
- *  QuizPreviewScreen's PreviewBottomBar. */
+/** Bottom action bar: timer progress bar pinned above it, Skip + the tactile Next —
+ *  mirrors QuizScreenComponents.kt's QuizBottomBar. */
 function buildBottomBar(q, isLastQuestion, onSkipFn, onNextFn) {
   const rows = [];
   // state.totalTimeSec, not q.timeSec — it's already the single source of truth computed
@@ -1309,40 +1334,27 @@ function buildBottomBar(q, isLastQuestion, onSkipFn, onNextFn) {
   // quiz.showTimers and a poll's own noTimeLimit; q.timeSec alone ignores both.
   if (state.totalTimeSec > 0) {
     rows.push(
-      el("div", { class: "progress-track" }, [
+      el("div", { class: "progress-track timer-track" }, [
         el("div", { id: "timer-fill", class: "progress-fill", style: `width:${(state.secondsRemaining / state.totalTimeSec) * 100}%` }),
       ])
     );
   }
   const disabled = !!state.instantFeedback;
-  const nextBtn = el("button", { class: "next-btn", onclick: onNextFn }, []);
-  if (disabled) nextBtn.disabled = true;
   // "Vote" instead of Next/Finish while a poll still needs its vote-cast tap — even as
   // the last question, since this tap casts and reveals in place rather than moving on
   // (see advance()). Matches PreviewBottomBar's isPollQuestion label on Android.
   const showVoteLabel = q.type === "POLL" && (!state.pollHasVoted || state.pollEditingVote);
+  const nextBtn = el("button", { class: "tactile-btn" + (showVoteLabel ? " wide" : ""), onclick: onNextFn }, []);
+  if (disabled) nextBtn.disabled = true;
   nextBtn.appendChild(document.createTextNode(
     showVoteLabel ? S.NAV_VOTE : (isLastQuestion ? S.NAV_FINISH : S.NAV_NEXT)
   ));
   nextBtn.appendChild(html(CHEVRON_RIGHT_SVG));
 
-  const skipBtn = el("button", { class: "skip-link", onclick: onSkipFn }, [S.SKIP]);
+  const skipBtn = el("button", { class: "quiz-skip", onclick: onSkipFn }, [showVoteLabel ? S.SKIP_POLL : S.SKIP]);
   if (disabled) skipBtn.disabled = true;
 
-  // Hint — only shown when this question actually has one (mirrors PreviewBottomBar's
-  // hasHint gate on Android). Left slot always reserved so Skip/Next don't shift when a
-  // question without a hint follows one that had it.
-  const barRow = el("div", { class: "bar-row" }, []);
-  if (q.hint) {
-    const hintBtn = el("button", { class: "hint-btn", onclick: showHintAction }, [S.HINT]);
-    if (disabled) hintBtn.disabled = true;
-    barRow.appendChild(hintBtn);
-  } else {
-    barRow.appendChild(el("div", { style: "width:56px" }, []));
-  }
-  barRow.appendChild(skipBtn);
-  barRow.appendChild(nextBtn);
-  rows.push(barRow);
+  rows.push(el("div", { class: "bar-row" }, [skipBtn, nextBtn]));
   return el("div", { class: "quiz-bottombar" }, rows);
 }
 
@@ -1370,21 +1382,72 @@ function buildHintBox(hint) {
   ]);
 }
 
-/** Mirrors QuizPreviewScreen.kt's QuestionLabel — "QUESTION X OF N" plus a "Select all
- *  that apply" pill for MULTIPLE_CORRECT — gated by quiz.showQuestionNumbers. Was never
- *  implemented on web at all before (the setting synced to Supabase but had zero effect
- *  here, unlike Android where it's genuinely wired), so toggling it never did anything. */
-function buildQuestionNumberLabel(quiz, q) {
-  const children = [
-    el("span", { class: "question-number-label" }, [S.questionXofN(state.currentIndex + 1, quiz.questions.length)]),
-  ];
-  if (q.type === "MULTIPLE_CORRECT") {
-    // "Select all that apply" would tell an any-one-is-enough taker to keep ticking.
-    children.push(el("span", { class: "select-all-badge" }, [
-      q.acceptAnyCorrect ? S.SELECT_ANY_CORRECT : S.SELECT_ALL_THAT_APPLY,
-    ]));
+/** "QUESTION X OF N" + Hint (and Anonymous on a poll) — mirrors the badge row in
+ *  QuizPreviewScreen.kt. The number is gated by quiz.showQuestionNumbers. */
+function buildBadgeRow(quiz, q) {
+  const anonymous = q.type === "POLL" && (q.pollSettings || {}).anonymous !== false;
+  const end = [];
+  if (anonymous) end.push(el("span", { class: "anon-chip" }, [html(LOCK_SVG), S.ANONYMOUS]));
+  if (q.hint) {
+    const hintBtn = el("button", { class: "hint-link", onclick: showHintAction }, [html(BULB_SVG), S.HINT_BUTTON]);
+    // Disabled during instant feedback: the question is settled, nothing left to hint at.
+    if (state.instantFeedback) hintBtn.disabled = true;
+    end.push(hintBtn);
   }
-  return el("div", { class: "question-number-row" }, children);
+  if (!quiz.showQuestionNumbers && end.length === 0) return null;
+  return el("div", { class: "badge-row" }, [
+    quiz.showQuestionNumbers
+      ? el("span", { class: "q-badge" }, [S.questionXofN(state.currentIndex + 1, quiz.questions.length)])
+      : el("span", {}, []),
+    el("div", { class: "badge-row-end" }, end),
+  ]);
+}
+
+/** Question card with the accent bar — mirrors QuizScreenComponents.kt's QuestionCard.
+ *  Fill Blank has an optional heading instead of a mandatory question text: the card
+ *  shows just its helper line when the creator left it blank (the sentence itself is
+ *  shown, interactively, below). */
+function buildQuestionCard(q) {
+  const title = q.type === "FILL_BLANK" ? (q.fillBlankContent?.title || "").trim() : q.text;
+  const body = [];
+  if (q.type === "POLL") body.push(el("div", { class: "q-overline" }, [S.POLL_OVERLINE]));
+  if (title) {
+    body.push(el("div", { class: "q-title" + (q.type === "TRUE_FALSE" ? " statement" : "") }, [renderMarkdown(title)]));
+  }
+  body.push(buildQuestionHelper(q));
+  return el("div", { class: "q-card" }, [el("div", { class: "q-card-accent" }, []), el("div", { class: "q-card-body" }, body)]);
+}
+
+function buildQuestionHelper(q) {
+  switch (q.type) {
+    case "SINGLE_CHOICE":
+      return el("div", { class: "q-helper" }, [S.HELPER_SINGLE_CHOICE]);
+    case "MULTIPLE_CORRECT":
+      // "Select all that apply" would tell an any-one-is-enough taker to keep ticking.
+      return el("span", { class: "select-all-chip" }, [
+        html(CHECKBOX_OUTLINE_SVG),
+        q.acceptAnyCorrect ? S.SELECT_ANY_CORRECT : S.SELECT_ALL_THAT_APPLY,
+      ]);
+    case "TRUE_FALSE":
+      return el("div", { class: "q-helper dot" }, [el("span", { class: "q-helper-dot" }, []), S.HELPER_TRUE_FALSE]);
+    case "WRITTEN":
+      return el("div", { class: "q-helper" }, [html(PENCIL_SVG), S.HELPER_WRITTEN]);
+    case "FILL_BLANK":
+      return el("div", { class: "q-helper" }, [html(TEXT_FIELDS_SVG), S.HELPER_FILL_BLANK]);
+    default: {
+      const settings = q.pollSettings || {};
+      return el("div", { class: "q-helper" }, [
+        S.pollHelper(
+          settings.allowMultiple ? S.SELECT_ALL_THAT_APPLY : S.POLL_HELPER_SINGLE,
+          settings.anonymous !== false ? S.POLL_HELPER_ANONYMOUS : S.POLL_HELPER_NAMED
+        ),
+      ]);
+    }
+  }
+}
+
+function buildFeedbackBanner(fb) {
+  return el("div", { class: "feedback-banner " + (fb.isCorrect ? "correct" : "wrong") }, [fb.isCorrect ? S.FEEDBACK_CORRECT : S.FEEDBACK_WRONG]);
 }
 
 function renderQuiz() {
@@ -1393,17 +1456,17 @@ function renderQuiz() {
   const accent = themeColorFromName(quiz.themeColorName);
   document.documentElement.style.setProperty("--accent", accent);
   const isLastQuestion = state.currentIndex === quiz.questions.length - 1;
+  const fb = state.instantFeedback;
 
-  const wrapper = el("div", { style: "display:flex;flex-direction:column;min-height:100%" }, [
-    buildQuizTopBar(quiz, q),
-    buildQuestionProgressBar(quiz),
-  ]);
+  const questionArea = el("div", { class: "quiz-body" }, []);
+  const badgeRow = buildBadgeRow(quiz, q);
+  if (badgeRow) questionArea.appendChild(badgeRow);
+  questionArea.appendChild(buildQuestionCard(q));
+  if (q.hint && state.hintVisible) {
+    questionArea.appendChild(buildHintBox(q.hint));
+  }
 
   if (q.type === "POLL") {
-    const questionArea = el("div", { class: "screen no-pad-top", style: "flex:1" }, [
-      ...(quiz.showQuestionNumbers ? [buildQuestionNumberLabel(quiz, q)] : []),
-      el("div", { class: "card" }, [el("p", { class: "question-text" }, [renderMarkdown(q.text)])]),
-    ]);
     if (!state.pollState) {
       questionArea.appendChild(el("p", { class: "muted" }, [S.LOADING]));
     } else if (state.pollDistribution && !state.pollEditingVote) {
@@ -1411,43 +1474,15 @@ function renderQuiz() {
     } else {
       questionArea.appendChild(buildPollVoting(q));
     }
-    wrapper.appendChild(questionArea);
-    wrapper.appendChild(buildBottomBar(q, isLastQuestion, onSkip, onNext));
-    app.appendChild(wrapper);
-    updateTimerDisplay();
-    return;
-  }
-
-  // Fill Blank has an optional heading instead of a mandatory question text —
-  // absent entirely when the creator left it blank, rather than falling back to
-  // the auto-generated underscore sentence (that's already shown, interactively,
-  // in the sentence card itself). Mirrors QuizPreviewScreen.kt's same condition.
-  const fillBlankTitle = q.type === "FILL_BLANK" ? (q.fillBlankContent?.title || "").trim() : "";
-  const showTitleCard = q.type !== "FILL_BLANK" || fillBlankTitle;
-  const questionArea = el("div", { class: "screen no-pad-top", style: "flex:1" }, [
-    ...(quiz.showQuestionNumbers ? [buildQuestionNumberLabel(quiz, q)] : []),
-    ...(showTitleCard
-      ? [el("div", { class: "card" }, [el("p", { class: "question-text" }, [renderMarkdown(fillBlankTitle || q.text)])])]
-      : []),
-  ]);
-
-  if (q.hint && state.hintVisible) {
-    questionArea.appendChild(buildHintBox(q.hint));
-  }
-
-  if (q.type === "FILL_BLANK") {
-    // Unlike WRITTEN/options (which swap their whole input away for a banner
-    // during feedback), the sentence itself always stays on screen — it's just
-    // as much the answer *display* as it is the input, so it renders its own
-    // correct/wrong coloring inline rather than disappearing behind a banner.
+  } else if (q.type === "FILL_BLANK") {
+    // The sentence always stays on screen, even during feedback — it's just as much
+    // the answer *display* as it is the input, so it renders its own correct/wrong
+    // coloring inline.
     if (q.fillBlankContent) {
       questionArea.appendChild(buildFillBlankSentence(q));
     }
-    if (state.instantFeedback) {
-      const fb = state.instantFeedback;
-      questionArea.appendChild(
-        el("div", { class: "feedback-banner " + (fb.isCorrect ? "correct" : "wrong") }, [fb.isCorrect ? S.FEEDBACK_CORRECT : S.FEEDBACK_WRONG])
-      );
+    if (fb) {
+      questionArea.appendChild(buildFeedbackBanner(fb));
       const ordered = q.fillBlankContent ? FB.orderedBlanks(q.fillBlankContent) : [];
       ordered.forEach((blank, i) => {
         if (fb.blankCorrectness && fb.blankCorrectness[i] === false) {
@@ -1460,53 +1495,141 @@ function renderQuiz() {
         }
       });
     }
-  } else if (state.instantFeedback) {
-    const fb = state.instantFeedback;
-    questionArea.appendChild(
-      el("div", { class: "feedback-banner " + (fb.isCorrect ? "correct" : "wrong") }, [fb.isCorrect ? S.FEEDBACK_CORRECT : S.FEEDBACK_WRONG])
-    );
-    if (!fb.isCorrect && fb.correctWrittenAnswer) {
-      questionArea.appendChild(el("p", { class: "muted" }, [S.correctAnswerIs(fb.correctWrittenAnswer)]));
-    }
-    // Also color the option rows themselves while feedback is showing.
-    if (q.options && fb.correctOptionIndices) {
-      q.options.forEach((optText, i) => {
-        const wasSelected = state.selectedAnswers.has(String(i));
-        const isCorrectOpt = fb.correctOptionIndices.has(i);
-        const cls = isCorrectOpt ? "correct" : wasSelected ? "wrong" : "";
-        const row = el("div", { class: "option-row" + (cls ? " " + cls : "") }, [
-          el("div", { class: "option-marker" + (q.type === "MULTIPLE_CORRECT" ? " square" : "") }, isCorrectOpt || wasSelected ? [html(CHECK_SVG)] : []),
-          el("span", {}, [optText]),
-        ]);
-        questionArea.appendChild(row);
-      });
-    }
   } else if (q.type === "WRITTEN") {
-    questionArea.appendChild(
-      el("textarea", {
-        rows: "4",
-        maxlength: String(RESPONSE_MAX_CHARS),
-        placeholder: S.ANSWER_PLACEHOLDER,
-        oninput: (e) => { state.writtenAnswer = e.target.value; scheduleLastQuestionAutoFinish(); },
-      }, [])
-    );
+    questionArea.appendChild(buildWrittenAnswer());
+    if (fb) {
+      questionArea.appendChild(buildFeedbackBanner(fb));
+      if (!fb.isCorrect && fb.correctWrittenAnswer) {
+        questionArea.appendChild(el("p", { class: "muted" }, [S.correctAnswerIs(fb.correctWrittenAnswer)]));
+      }
+    }
   } else {
-    (q.options || []).forEach((optText, i) => {
-      const selected = state.selectedAnswers.has(String(i));
-      const markerShape = q.type === "MULTIPLE_CORRECT" ? " square" : "";
-      questionArea.appendChild(
-        el("div", { class: "option-row" + (selected ? " selected" : ""), onclick: () => toggleAnswer(i) }, [
-          el("div", { class: "option-marker" + markerShape }, selected ? [html(CHECK_SVG)] : []),
-          el("span", {}, [optText]),
-        ])
-      );
-    });
+    questionArea.appendChild(buildChoiceList(q));
+    if (fb) questionArea.appendChild(buildFeedbackBanner(fb));
   }
 
-  wrapper.appendChild(questionArea);
-  wrapper.appendChild(buildBottomBar(q, isLastQuestion, onSkip, onNext));
-  app.appendChild(wrapper);
+  app.appendChild(el("div", { class: "quiz-screen" }, [
+    buildQuizTopBar(quiz, q),
+    buildQuestionProgressBar(quiz),
+    questionArea,
+    buildBottomBar(q, isLastQuestion, onSkip, onNext),
+  ]));
   updateTimerDisplay();
+}
+
+// ── Answer cards (mirrors QuizScreenComponents.kt: ChoiceOptionCard / TrueFalseCard /
+// AnswerInputCard) ───────────────────────────────────────────────────────────
+
+function optionLetter(index) {
+  return index < 26 ? String.fromCharCode(65 + index) : String(index + 1);
+}
+
+/** Options for SINGLE_CHOICE / MULTIPLE_CORRECT / TRUE_FALSE. While instant feedback is
+ *  showing, the correct option(s) turn green and a picked-but-wrong one red, and nothing
+ *  is clickable. */
+function buildChoiceList(q) {
+  const fb = state.instantFeedback;
+  const isMulti = q.type === "MULTIPLE_CORRECT";
+  const isTrueFalse = q.type === "TRUE_FALSE";
+  const list = el("div", { class: "choice-list" + (isMulti ? " tight" : "") }, []);
+  (q.options || []).forEach((optText, i) => {
+    const selected = state.selectedAnswers.has(String(i));
+    let feedback = "";
+    if (fb && fb.correctOptionIndices) {
+      if (fb.correctOptionIndices.has(i)) feedback = "correct";
+      else if (selected) feedback = "wrong";
+    }
+    const onClick = fb ? null : () => toggleAnswer(i);
+    list.appendChild(isTrueFalse
+      ? buildTrueFalseCard(optText, i, selected, feedback, onClick)
+      : buildChoiceCard({ index: i, text: optText, selected, multi: isMulti, feedback, onClick }));
+  });
+  const wrap = el("div", { class: "choice-wrap" }, [list]);
+  const count = state.selectedAnswers.size;
+  if (isMulti && !fb && count > 0) {
+    wrap.appendChild(el("div", { class: "selected-count-row" }, [
+      el("span", { class: "selected-count-chip" }, [html(CHECK_CIRCLE_SVG), S.optionsSelected(count)]),
+    ]));
+  }
+  return wrap;
+}
+
+function buildChoiceIndicator(selected, multi, feedback) {
+  if (feedback) {
+    return el("span", { class: "fb-badge " + feedback }, [html(feedback === "correct" ? CHECK_SVG : CLOSE_X_SVG)]);
+  }
+  return el("span", { class: multi ? "ind-check" : "ind-radio" }, selected ? [html(CHECK_SVG)] : []);
+}
+
+function buildChoiceCard({ index, text, selected, multi, feedback, onClick, poll, locked }) {
+  const classes = ["choice-card"];
+  if (selected && !feedback) classes.push("selected");
+  if (feedback) classes.push(feedback);
+  if (poll) classes.push("poll");
+  if (locked) classes.push("locked");
+  if (!onClick) classes.push("inert");
+  const props = { class: classes.join(" "), role: multi ? "checkbox" : "radio", "aria-checked": selected ? "true" : "false" };
+  if (onClick) props.onclick = onClick;
+  const textCol = el("div", { class: "choice-text" }, [el("span", { class: "choice-label" }, [text])]);
+  if (poll && selected) textCol.appendChild(el("span", { class: "choice-sub" }, [S.YOUR_SELECTION]));
+  return el("div", props, [
+    el("span", { class: "letter-box" }, [optionLetter(index)]),
+    textCol,
+    buildChoiceIndicator(selected, multi, feedback),
+  ]);
+}
+
+function buildTrueFalseCard(text, index, selected, feedback, onClick) {
+  const classes = ["choice-card", "tf-card"];
+  if (selected && !feedback) classes.push("selected");
+  if (feedback) classes.push(feedback);
+  if (!onClick) classes.push("inert");
+  const props = { class: classes.join(" "), role: "radio", "aria-checked": selected ? "true" : "false" };
+  if (onClick) props.onclick = onClick;
+  return el("div", props, [
+    el("span", { class: "tf-icon" }, [html(index === 0 ? TF_CHECK_SVG : TF_X_SVG)]),
+    el("div", { class: "choice-text" }, [
+      el("span", { class: "tf-title" }, [text]),
+      el("span", { class: "tf-sub" }, [selected ? S.TF_SELECTED : S.TF_ALTERNATIVE]),
+    ]),
+    buildChoiceIndicator(selected, false, feedback),
+  ]);
+}
+
+/** Written answer — the same single <textarea> (maxlength, placeholder, oninput) inside
+ *  the "YOUR ANSWER" card. Its value comes from state, so a re-render (opening the hint,
+ *  Clear) never wipes what was typed. */
+function buildWrittenAnswer() {
+  const fb = state.instantFeedback;
+  const countNum = el("b", {}, [String(state.writtenAnswer.length)]);
+  const counter = el("span", { class: "char-chip" }, [countNum, S.charCountSuffix(RESPONSE_MAX_CHARS)]);
+  const textareaProps = {
+    rows: "4",
+    maxlength: String(RESPONSE_MAX_CHARS),
+    placeholder: S.ANSWER_PLACEHOLDER,
+    oninput: (e) => {
+      state.writtenAnswer = e.target.value;
+      countNum.textContent = String(e.target.value.length);
+      scheduleLastQuestionAutoFinish();
+    },
+  };
+  if (fb) textareaProps.disabled = "true";
+  const textarea = el("textarea", textareaProps, []);
+  textarea.value = state.writtenAnswer;
+
+  const clearBtn = el("button", {
+    class: "answer-clear",
+    onclick: () => { state.writtenAnswer = ""; cancelLastQuestionAutoFinish(); render(); },
+  }, [S.CLEAR]);
+  if (fb) clearBtn.disabled = true;
+
+  return el("div", { class: "answer-card" + (fb ? (fb.isCorrect ? " correct" : " wrong") : "") }, [
+    el("div", { class: "answer-head" }, [el("span", { class: "answer-label" }, [S.YOUR_ANSWER_LABEL]), counter]),
+    el("div", { class: "answer-divider" }, []),
+    textarea,
+    el("div", { class: "answer-divider" }, []),
+    el("div", { class: "answer-foot" }, [clearBtn]),
+  ]);
 }
 
 // ── Poll — voting + results (mirrors PollComponents.kt's PollVotingBody /
@@ -1516,32 +1639,26 @@ function renderQuiz() {
 function buildPollVoting(q) {
   const settings = q.pollSettings || {};
   const locked = state.pollHasVoted && settings.allowVoteChange === false;
-  const container = el("div", { style: "display:flex;flex-direction:column;gap:10px" }, []);
+  const container = el("div", { class: "choice-list" }, []);
 
-  if (settings.allowMultiple && !locked) {
-    container.appendChild(el("p", { class: "poll-note" }, [S.SELECT_ALL_THAT_APPLY]));
-  }
+  // "Select all that apply" lives in the question card's helper line now.
+  const optionRow = (idx, label, position) => buildChoiceCard({
+    index: position,
+    text: label,
+    selected: state.pollSelected.has(idx),
+    multi: !!settings.allowMultiple,
+    poll: true,
+    locked,
+    onClick: locked ? null : () => togglePollOption(idx),
+  });
 
-  const optionRow = (idx, label) => {
-    const selected = state.pollSelected.has(idx);
-    const props = {
-      class: "option-row" + (selected ? " selected" : ""),
-      style: locked ? "cursor:default;opacity:0.65" : "",
-    };
-    if (!locked) props.onclick = () => togglePollOption(idx);
-    return el("div", props, [
-      el("div", { class: "option-marker" + (settings.allowMultiple ? " square" : "") }, selected ? [html(CHECK_SVG)] : []),
-      el("span", {}, [label]),
-    ]);
-  };
-
-  state.pollDisplayOrder.forEach((idx) => {
-    container.appendChild(optionRow(idx, (q.options || [])[idx]));
+  state.pollDisplayOrder.forEach((idx, position) => {
+    container.appendChild(optionRow(idx, (q.options || [])[idx], position));
   });
 
   if (settings.allowOther) {
     const otherSelected = state.pollSelected.has(PL.POLL_OTHER_INDEX);
-    container.appendChild(optionRow(PL.POLL_OTHER_INDEX, S.POLL_OTHER));
+    container.appendChild(optionRow(PL.POLL_OTHER_INDEX, S.POLL_OTHER, state.pollDisplayOrder.length));
     if (otherSelected) {
       const otherProps = {
         type: "text",
@@ -1556,14 +1673,23 @@ function buildPollVoting(q) {
   }
 
   if (settings.askReason && state.pollSelected.size > 0) {
+    const counter = el("span", { class: "reason-count" }, [S.charCount(state.pollReasonText.length, RESPONSE_MAX_CHARS)]);
     const reasonProps = {
       rows: "2",
       maxlength: String(RESPONSE_MAX_CHARS),
       placeholder: S.POLL_REASON_PLACEHOLDER,
-      oninput: (e) => { state.pollReasonText = e.target.value; },
+      oninput: (e) => {
+        state.pollReasonText = e.target.value;
+        counter.textContent = S.charCount(e.target.value.length, RESPONSE_MAX_CHARS);
+      },
     };
     if (locked) reasonProps.disabled = "true";
-    container.appendChild(el("textarea", reasonProps, state.pollReasonText ? [state.pollReasonText] : []));
+    const reasonInput = el("textarea", reasonProps, []);
+    reasonInput.value = state.pollReasonText;
+    container.appendChild(el("div", { class: "reason-box" }, [
+      el("div", { class: "reason-head" }, [html(COMMENT_SVG), el("span", { class: "reason-label" }, [S.REASON_LABEL]), counter]),
+      reasonInput,
+    ]));
   }
 
   if (state.pollHasVoted) {
@@ -1764,7 +1890,7 @@ function buildFillBlankSentence(q) {
     )
   );
 
-  return el("div", { class: "card" }, [
+  return el("div", { class: "sentence-card" }, [
     el("div", { style: "display:flex;flex-direction:column;gap:10px" }, lineEls),
   ]);
 }
