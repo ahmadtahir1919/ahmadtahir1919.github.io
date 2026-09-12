@@ -27,18 +27,21 @@
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-  background: var(--background);
+  font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  /* Dotted paper background behind every screen (the shared page chrome). */
+  background-color: #F4F5F9;
+  background-image: radial-gradient(#D3D5E2 1.1px, transparent 1.1px);
+  background-size: 22px 22px;
   color: var(--text-primary);
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
 }
+button, input, textarea { font-family: inherit; }
 
-/* Mobile: a single edge-to-edge column, same as the app. Desktop (see media query
-   below): the same column becomes a centered, elevated "device" card over a soft
-   decorative background, instead of stretching into a bare strip of white. */
+/* ── Shared shell: header / main / footer on every screen ─────────────────
+   One full-width column: the brand header pinned on top, the screen's content
+   centered in the middle, the version/legal footer at the bottom. */
 #app {
-  max-width: 480px;
-  margin: 0 auto;
   /* 100vh on mobile Chrome/Safari is measured against the LARGEST possible viewport
      (toolbar collapsed) even on first paint, while the toolbar is still expanded — so
      the actual visible area starts shorter than #app claims, cutting the top of the
@@ -47,41 +50,110 @@ body {
      that don't support dvh yet. */
   min-height: 100vh;
   min-height: 100dvh;
-  background: var(--background);
   display: flex;
   flex-direction: column;
 }
 
-@media (min-width: 640px) {
-  body {
-    background: linear-gradient(160deg, var(--background) 0%, color-mix(in srgb, var(--accent) 10%, var(--background)) 100%);
-    padding: 40px 16px;
-  }
-  #app {
-    min-height: min(860px, calc(100vh - 80px));
-    border-radius: 28px;
-    box-shadow: 0 30px 80px rgba(17, 24, 39, 0.18), 0 2px 8px rgba(17, 24, 39, 0.06);
-    overflow: hidden;
-  }
+.site-header {
+  height: 60px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 16px;
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid #E6E7EF;
 }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.brand-tile {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #5B4FE8 0%, #8B5CF6 100%);
+  box-shadow: 0 4px 10px rgba(91, 79, 232, 0.28);
+}
+.brand-name { font-size: 18px; font-weight: 800; letter-spacing: -0.3px; color: #1C1B2E; }
 
-.screen {
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid #E6E7EF;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  color: #3F3D56;
+  white-space: nowrap;
+}
+.status-chip.small { height: 24px; padding: 0 10px; font-size: 11px; }
+.status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18); }
+
+.site-main {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 32px 20px 28px;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 24px 16px;
+}
+
+.site-footer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 14px 16px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.footer-links { display: flex; gap: 14px; }
+.footer-links a { color: var(--primary); text-decoration: none; font-weight: 500; }
+.footer-links a:hover { text-decoration: underline; }
+
+@media (min-width: 640px) {
+  .site-header { padding: 0 32px; }
+  .site-main { padding: 40px 24px; }
+  .site-footer { padding: 16px 32px; }
+}
+@media (max-width: 380px) {
+  .site-footer { flex-direction: column; justify-content: center; }
+}
+
+.screen {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
   gap: 18px;
 }
-.screen.centered { align-items: center; justify-content: center; text-align: center; }
+.screen.centered { flex: 1; align-items: center; justify-content: center; text-align: center; }
 /* Follows directly after the top bar/progress bar in the quiz flow — a little
    breathing room, not the full top padding (would double up on the bar above). */
 .screen.no-pad-top { padding-top: 18px; }
+/* A single card in the middle of the page (enter code / landing / confirm name). */
+.screen.card-screen { max-width: 420px; align-items: center; gap: 16px; }
 
 .card {
+  position: relative;
+  width: 100%;
   background: var(--surface);
-  border-radius: 20px;
-  padding: 26px 22px;
-  box-shadow: 0 2px 14px rgba(17, 24, 39, 0.07);
+  border-radius: 24px;
+  padding: 30px 26px 26px;
+  box-shadow: 0 18px 50px rgba(30, 30, 60, 0.10), 0 1px 3px rgba(30, 30, 60, 0.05);
+  overflow: hidden;
   /* A plain <input>/<button> carries no default margin the way a <p> does, so without
      this, elements like the name field and its Confirm button on renderConfirmName sat
      flush against each other with zero gap. */
@@ -89,27 +161,251 @@ body {
   flex-direction: column;
   gap: 14px;
 }
+/* The gradient rule along the card's top edge. */
+.card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 5px;
+  background: linear-gradient(90deg, #5B4FE8 0%, #8B5CF6 100%);
+}
+.card.enter-code-card::before { background: linear-gradient(90deg, #5B4FE8 0%, #EC4899 100%); }
+@media (max-width: 480px) {
+  .card { padding: 26px 20px 22px; border-radius: 22px; }
+}
 
 .pill {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
   border-radius: 100px;
-  padding: 4px 12px;
+  padding: 5px 12px;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.6px;
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
   color: var(--accent);
 }
+.pill.dotted::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.pill.centered { align-self: center; }
+.centered { text-align: center; }
+.quiz-meta.centered, .quiz-title.centered { align-self: center; }
 
-.quiz-title { font-size: 22px; font-weight: 800; margin: 10px 0 4px; letter-spacing: -0.2px; }
-.quiz-meta { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+.quiz-title { font-size: 24px; font-weight: 800; margin: 2px 0 0; letter-spacing: -0.4px; line-height: 1.2; color: #1C1B2E; }
+.quiz-title .title-count { color: inherit; }
+.quiz-meta { font-size: 14px; color: var(--text-secondary); line-height: 1.55; margin: 0; }
 
-.app-version {
-  text-align: center;
+/* Kicker + question-count chip on one line (signed-out landing card). */
+.kicker-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.meta-chips { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: #F3F4F8;
+  color: #4B5563;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.meta-chip.plain { border-radius: 999px; height: 28px; padding: 0 12px; }
+
+/* Lavender "QUICK JOIN … Session Ready" strip at the top of the signed-in card. */
+.session-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 8px 8px 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 8%, #fff);
+}
+.session-kicker { font-size: 11px; font-weight: 700; letter-spacing: 0.6px; color: var(--accent); }
+
+/* Info box on the signed-out card ("Sign in with Google to take this quiz…"). */
+.info-box {
+  display: flex;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #F6F7FC;
+  border: 1px solid #ECEDF5;
+  color: #3F3D56;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.info-box svg { flex-shrink: 0; margin-top: 1px; color: var(--accent); }
+
+/* "Session: 6 Questions        v1.0 (build 64)" — the monospace card footer. */
+.card-meta-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--divider);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 11px;
   color: var(--text-secondary);
-  opacity: 0.6;
-  margin: 14px 0 0;
+}
+
+/* "SIGNED IN AS" account box. */
+.signed-in-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #F8F8FC;
+  border: 1px solid #ECEDF5;
+}
+.avatar {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+}
+.avatar-dot {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--success);
+  border: 2px solid #fff;
+}
+.signed-in-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.overline { font-size: 10px; font-weight: 700; letter-spacing: 0.8px; color: var(--icon-gray); }
+.signed-in-name { font-size: 15px; font-weight: 700; color: #1C1B2E; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Confirm-name card. */
+.title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.title-badge {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.field-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 4px; }
+.field-label { font-size: 11px; font-weight: 700; letter-spacing: 0.7px; color: #4B5563; }
+.field-label.centered { align-self: center; }
+.field-counter { font-size: 12px; color: var(--icon-gray); font-variant-numeric: tabular-nums; }
+.name-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 54px;
+  padding: 0 12px 0 14px;
+  border-radius: 14px;
+  border: 1.5px solid var(--border-light);
+  background: #fff;
+  color: var(--icon-gray);
+}
+.name-field:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent); }
+/* Beats the generic input[type="text"] rule further down (attribute + element
+   selector) — the frame is drawn by .name-field, the input itself stays bare. */
+.name-field input[type="text"] {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  height: 100%;
+  border: none;
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1C1B2E;
+  padding: 0;
+}
+.name-field input[type="text"]:focus { border: none; }
+.code-boxes input[type="text"].code-box { width: 48px; padding: 0; }
+@media (max-width: 400px) { .code-boxes input[type="text"].code-box { width: 42px; } }
+.field-clear {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--icon-gray);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.field-clear:hover { background: #F3F4F8; color: var(--text-primary); }
+.field-helper { display: flex; align-items: center; gap: 6px; font-size: 12px; margin: -6px 0 0; color: var(--text-secondary); }
+.field-helper.synced { color: #16A34A; }
+.field-hint { font-size: 12px; color: var(--icon-gray); margin: -4px 0 0; line-height: 1.5; }
+.field-error { font-size: 13px; color: var(--error); margin: -6px 0 0; text-align: center; }
+
+/* Enter-code card: six one-character boxes. */
+.code-boxes { display: flex; justify-content: center; gap: 10px; }
+.code-box {
+  width: 48px;
+  height: 56px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border-light);
+  background: #F7F8FB;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 800;
+  color: #1C1B2E;
+  outline: none;
+  padding: 0;
+  caret-color: var(--accent);
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+.code-box::placeholder { color: #C7C9D9; font-weight: 700; }
+.code-box.filled { background: #F0F1F7; }
+.code-box:focus { border-color: var(--accent); background: #fff; box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent); }
+@media (max-width: 400px) {
+  .code-boxes { gap: 8px; }
+  .code-box { width: 42px; height: 52px; font-size: 20px; }
+}
+.paste-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  align-self: center;
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  background: #fff;
+  color: #3F3D56;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.paste-btn:hover { background: #F7F8FB; }
+.card-footnote {
+  margin: 10px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--divider);
+  font-size: 12px;
+  color: var(--icon-gray);
+  text-align: center;
 }
 
 /* ── Buttons ──────────────────────────────────────────────────────────── */
@@ -120,19 +416,23 @@ button.primary {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
   background: var(--accent);
   color: #fff;
   border: none;
-  border-radius: 100px;
+  border-radius: 14px;
+  min-height: 54px;
   padding: 14px 20px;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   cursor: pointer;
   width: 100%;
+  margin-top: 4px;
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 28%, transparent);
 }
-button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+button.primary:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
 button.primary:active:not(:disabled) { transform: scale(0.98); }
+button.primary .btn-chevron { flex-shrink: 0; }
 
 /* Paired with .primary when a landing card offers two actions (e.g. "See Result" /
    "Retake Exam") — same shape, outlined instead of filled so it reads as secondary. */
@@ -144,13 +444,14 @@ button.secondary {
   background: transparent;
   color: var(--accent);
   border: 1.5px solid var(--accent);
-  border-radius: 100px;
+  border-radius: 14px;
+  min-height: 52px;
   padding: 12.5px 20px;
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
   width: 100%;
-  margin-top: 10px;
+  margin-top: 0;
 }
 button.secondary:disabled { opacity: 0.5; cursor: not-allowed; }
 button.secondary:active:not(:disabled) { transform: scale(0.98); }
@@ -163,16 +464,18 @@ button.google {
   justify-content: center;
   gap: 12px;
   background: #fff;
-  color: var(--text-primary);
-  border: 1px solid rgba(0,0,0,0.08);
+  color: #1C1B2E;
+  border: 1.5px solid var(--border-light);
   border-radius: 16px;
+  min-height: 56px;
   padding: 15px 20px;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   width: 100%;
-  box-shadow: 0 1px 6px rgba(17, 24, 39, 0.08);
+  box-shadow: 0 1px 6px rgba(17, 24, 39, 0.06);
 }
+button.google:hover { background: #FAFAFD; }
 button.google:active { transform: scale(0.98); }
 button.google svg { width: 20px; height: 20px; flex-shrink: 0; }
 
@@ -181,10 +484,12 @@ button.text-link {
   border: none;
   color: var(--text-secondary);
   font-weight: 500;
-  font-size: 15px;
+  font-size: 14px;
   cursor: pointer;
   padding: 8px;
+  align-self: center;
 }
+button.text-link:hover { color: var(--text-primary); }
 
 /* ── In-quiz top chrome ───────────────────────────────────────────────── */
 
@@ -725,8 +1030,17 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
 
 .error-text { color: var(--error); font-size: 13px; }
 .muted { color: var(--text-secondary); font-size: 13px; }
-.sign-out-row { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--divider); text-align: center; }
-.sign-out-row .skip-link { font-size: 13px; text-decoration: underline; }
+.sign-out-row { margin-top: 4px; padding-top: 4px; text-align: center; font-size: 13px; color: var(--text-secondary); }
+.sign-out-row .sign-out-link { font-size: 13px; font-weight: 700; color: #1C1B2E; padding: 0; }
+.sign-out-row .sign-out-link:hover { text-decoration: underline; }
+
+/* Quiz-taking and result screens sit in the same centered column as the cards. */
+.site-main > .quiz-screen { width: 100%; max-width: 480px; border-radius: 24px; overflow: hidden; box-shadow: 0 18px 50px rgba(30, 30, 60, 0.10); }
+.result-screen { padding-bottom: 8px; }
+@media (max-width: 480px) {
+  .site-main:has(> .quiz-screen) { padding: 0; }
+  .site-main > .quiz-screen { border-radius: 0; box-shadow: none; }
+}
 
 /* ── Quiz-taking screen (redesign) ─────────────────────────────────────────
    Mirrors the Android quiz screen (ui/preview/components/QuizScreenComponents.kt).

@@ -17,9 +17,30 @@ const S = {
   // exactly when a required script failed to load — possibly this one — so they must not
   // depend on it. They are the only user-facing literals left inline on purpose.
   ERR_GENERIC_TITLE: "Oops, that didn't work",
-  ERR_NO_CODE: "No quiz code in the link.",
   ERR_QUIZ_NOT_FOUND: "Quiz not found. Double-check the code.",
   ERR_SUPABASE_CDN: "Supabase library failed to load from CDN.",
+
+  // ── Shared shell (header + footer on every screen) ─────────────────────
+  BRAND: "Testly",
+  STATUS_READY: "Ready",
+  STATUS_LOADING: "Loading",
+  STATUS_ERROR: "Error",
+  STATUS_IN_PROGRESS: "In progress",
+  STATUS_SESSION_READY: "Session Ready",
+  footerVersion: (v) => `Testly Web v${v}`,
+  FOOTER_TERMS: "Terms",
+  FOOTER_PRIVACY: "Privacy",
+
+  // ── Enter code ─────────────────────────────────────────────────────────
+  ENTER_CODE_KICKER: "JOIN A QUIZ",
+  ENTER_CODE_TITLE: "Enter Quiz Code",
+  ENTER_CODE_BLURB: "Ask your quiz host or teacher for their 6-character PIN code to jump right in.",
+  ENTER_CODE_LABEL: "6-CHARACTER PIN",
+  ENTER_CODE_HINT: "Code not working? Double-check uppercase letters and numbers.",
+  ENTER_CODE_JOIN: "Join Quiz",
+  ENTER_CODE_PASTE: "Paste Code from Clipboard",
+  ENTER_CODE_NOTE: "Have a link? Just paste it above or enter the code to begin.",
+  ENTER_CODE_CLIPBOARD_EMPTY: "No quiz code found on the clipboard.",
 
   // ── Generic ────────────────────────────────────────────────────────────
   LOADING: "Loading…",
@@ -58,26 +79,31 @@ const S = {
   // without submitting (nothing counted).
   LANDING_LEFT_WITHOUT_SUBMITTING: "Left without submitting",
   LANDING_LEFT_LOCKED: "You left this quiz without submitting, and the creator doesn't allow retakes.",
-  LANDING_JOIN: "Join",
+  LANDING_JOIN: "Join Quiz Room",
   LANDING_START: "Start Quiz",
   questionCount: (n) => `${n} question${n === 1 ? "" : "s"}`,
+  sessionLine: (n) => `Session: ${n} Question${n === 1 ? "" : "s"}`,
   yourScore: (score, total) => `Your score: ${score} / ${total}`,
   version: (v, build) => `v${v} (build ${build})`,
 
   // ── Auth ───────────────────────────────────────────────────────────────
   SIGN_IN_GOOGLE: "Sign in with Google",
   SIGN_IN_BLURB:
-    "Sign in with Google to take this quiz — your result is saved to your account, same as the app.",
-  SIGN_OUT: "Not you? Sign out",
-  signedInAs: (name) => `Signed in as ${name}`,
+    "Sign in with Google to take this quiz — your result is saved to your account, same as the Android app.",
+  SIGNED_IN_AS_LABEL: "SIGNED IN AS",
+  SIGN_OUT_PREFIX: "Not you? ",
+  SIGN_OUT: "Sign out",
 
   // ── Confirm name ───────────────────────────────────────────────────────
   CONFIRM_NAME_KICKER: "ONE QUICK THING",
-  CONFIRM_NAME_TITLE: "Confirm your name",
+  CONFIRM_NAME_TITLE: "Confirm your display name",
   CONFIRM_NAME_BLURB:
-    "This is the name shown on your quizzes and results — some Google accounts have the wrong name attached, so fix it here if needed.",
+    "This is the name shown on your quizzes, leaderboard, and results. Some Google accounts have a nickname or email attached, so make sure it's accurate.",
+  CONFIRM_NAME_LABEL: "YOUR FULL NAME",
   CONFIRM_NAME_PLACEHOLDER: "Your name",
+  CONFIRM_NAME_SYNCED: "Synced from Google account",
   CONFIRM_NAME_SUBMIT: "Confirm & Continue",
+  CONFIRM_NAME_CANCEL: "Cancel & Sign out",
 
   // ── Taking a quiz ──────────────────────────────────────────────────────
   SELECT_ALL_THAT_APPLY: "Select all that apply",

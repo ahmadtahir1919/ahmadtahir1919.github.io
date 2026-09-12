@@ -113,8 +113,16 @@ function render() {
     state.landingTickerHandle = null;
   }
   app.innerHTML = "";
+  // Every screen shares the same chrome: brand header (with a status chip) on top, the
+  // screen's own content in the middle, version/legal footer at the bottom. Only the
+  // chip's text changes per screen, so the header reads identically everywhere.
+  app.appendChild(buildSiteHeader(headerStatusFor(state.screen)));
+  main = el("main", { class: "site-main" }, []);
+  app.appendChild(main);
+  app.appendChild(buildSiteFooter());
   switch (state.screen) {
     case "loading": return renderLoading();
+    case "enterCode": return renderEnterCode();
     case "landing": return renderLanding();
     case "confirmName": return renderConfirmName();
     case "quiz": return renderQuiz();
@@ -123,6 +131,45 @@ function render() {
     case "closed": return renderClosed();
     case "error": return renderError();
   }
+}
+
+/** The screen's content mount — the <main> between the shared header and footer.
+ *  Reassigned on every render(); the render* functions append into this, not #app. */
+let main = app;
+
+function headerStatusFor(screen) {
+  switch (screen) {
+    case "loading":
+    case "finishing": return S.STATUS_LOADING;
+    case "error": return S.STATUS_ERROR;
+    case "quiz": return S.STATUS_IN_PROGRESS;
+    default: return S.STATUS_READY;
+  }
+}
+
+const ROCKET_SVG = `<svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M14.5 4.5c2.2-.9 4.2-1 5-.5.5.8.4 2.8-.5 5-1.1 2.6-3.1 5.3-5.4 7.6l-2.2 2.2-3.7-3.7 2.2-2.2c2.3-2.3 5-4.3 7.6-5.4z" stroke="#fff" stroke-width="1.7" stroke-linejoin="round"/><path d="M8.2 12.4L5 13.5l-1.5 3 3-1.5M11.6 15.8l-1.1 3.2 3 1.5-1.5-3" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="15.5" cy="8.5" r="1.3" fill="#fff"/></svg>`;
+
+function buildSiteHeader(status) {
+  return el("header", { class: "site-header" }, [
+    el("div", { class: "brand" }, [
+      el("span", { class: "brand-tile" }, [html(ROCKET_SVG)]),
+      el("span", { class: "brand-name" }, [S.BRAND]),
+    ]),
+    el("span", { class: "status-chip" }, [
+      el("span", { class: "status-dot" }, []),
+      status,
+    ]),
+  ]);
+}
+
+function buildSiteFooter() {
+  return el("footer", { class: "site-footer" }, [
+    el("span", { class: "footer-version" }, [S.footerVersion(WEB_VERSION)]),
+    el("nav", { class: "footer-links" }, [
+      el("a", { href: "/terms/" }, [S.FOOTER_TERMS]),
+      el("a", { href: "/privacy/" }, [S.FOOTER_PRIVACY]),
+    ]),
+  ]);
 }
 
 /** Leaving the flow (Done, or the X mid-quiz) never navigates anywhere — there's
@@ -173,7 +220,7 @@ function renderClosed() {
   if (canClose) {
     children.push(el("button", { class: "primary", style: "margin-top:8px", onclick: () => window.close() }, [S.CLOSED_CLOSE_TAB]));
   }
-  app.appendChild(
+  main.appendChild(
     el("div", { class: "screen centered" }, [
       el("div", { class: "card", style: "width:100%" }, children),
     ])
@@ -312,7 +359,7 @@ const CHEVRON_DOWN_SVG = `<svg viewBox="0 0 16 16" fill="none" width="14" height
 const TROPHY_SVG = `<svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M7 4h10v4a5 5 0 01-10 0V4z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/><path d="M7 6H4a3 3 0 003 3M17 6h3a3 3 0 01-3 3" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/><path d="M12 13v3M9 20h6M9.5 20c0-2 .8-3 2.5-3s2.5 1 2.5 3" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 function renderLoading(label) {
-  app.appendChild(
+  main.appendChild(
     el("div", { class: "screen centered" }, [
       el("div", { class: "spinner" }),
       el("p", { class: "muted" }, [label || S.LOADING]),
@@ -321,12 +368,125 @@ function renderLoading(label) {
 }
 
 function renderError() {
-  app.appendChild(
+  main.appendChild(
     el("div", { class: "screen centered" }, [
       el("p", { class: "quiz-title" }, [S.ERR_GENERIC_TITLE]),
       el("p", { class: "muted" }, [state.errorMessage]),
     ])
   );
+}
+
+// ── Enter code ─────────────────────────────────────────────────────────────
+// Shown when /take/ is opened without a ?code= (or with one nobody recognises): six
+// one-character boxes, then Join reloads the page with ?code=XXXXXX so boot() takes
+// the exact same path a shared link does — no second way of loading a quiz.
+const CODE_LENGTH = 6;
+const CODE_CHARS = /[^A-Z0-9]/g;
+
+/** Pulls a share code out of whatever was pasted: a bare code, or a full share link. */
+function extractCode(text) {
+  const raw = String(text || "");
+  try {
+    const url = new URL(raw.trim());
+    const fromParam = url.searchParams.get("code");
+    if (fromParam) return fromParam.toUpperCase().replace(CODE_CHARS, "").slice(0, CODE_LENGTH);
+  } catch (e) { /* not a URL — fall through */ }
+  return raw.toUpperCase().replace(CODE_CHARS, "").slice(0, CODE_LENGTH);
+}
+
+function renderEnterCode() {
+  const draft = (state.enterCodeDraft || "").padEnd(CODE_LENGTH, " ").slice(0, CODE_LENGTH).split("");
+  const boxes = [];
+
+  const currentCode = () => boxes.map((b) => b.value).join("");
+  const sync = () => {
+    state.enterCodeDraft = currentCode();
+    boxes.forEach((b) => b.classList.toggle("filled", b.value !== ""));
+    joinBtn.disabled = state.enterCodeDraft.length !== CODE_LENGTH;
+  };
+  const focusBox = (i) => { const b = boxes[Math.max(0, Math.min(CODE_LENGTH - 1, i))]; b.focus(); b.select(); };
+  const fill = (text) => {
+    const code = extractCode(text);
+    if (!code) return false;
+    boxes.forEach((b, i) => { b.value = code[i] || ""; });
+    sync();
+    focusBox(Math.min(code.length, CODE_LENGTH - 1));
+    return true;
+  };
+  const submit = () => {
+    const code = currentCode();
+    if (code.length !== CODE_LENGTH) return;
+    window.location.search = `?code=${code}`;
+  };
+
+  for (let i = 0; i < CODE_LENGTH; i++) {
+    const box = el("input", {
+      class: "code-box",
+      type: "text",
+      maxlength: "1",
+      inputmode: "latin",
+      autocapitalize: "characters",
+      autocomplete: "off",
+      spellcheck: "false",
+      placeholder: "•",
+      "aria-label": S.ENTER_CODE_LABEL,
+      value: draft[i].trim(),
+      oninput: (e) => {
+        const v = e.target.value.toUpperCase().replace(CODE_CHARS, "");
+        if (v.length > 1) { fill(v); return; } // some keyboards insert whole words
+        e.target.value = v;
+        sync();
+        if (v && i < CODE_LENGTH - 1) focusBox(i + 1);
+      },
+      onkeydown: (e) => {
+        if (e.key === "Backspace" && !e.target.value && i > 0) { e.preventDefault(); boxes[i - 1].value = ""; sync(); focusBox(i - 1); }
+        else if (e.key === "ArrowLeft" && i > 0) { e.preventDefault(); focusBox(i - 1); }
+        else if (e.key === "ArrowRight" && i < CODE_LENGTH - 1) { e.preventDefault(); focusBox(i + 1); }
+        else if (e.key === "Enter") submit();
+      },
+      onpaste: (e) => {
+        e.preventDefault();
+        fill((e.clipboardData || window.clipboardData).getData("text"));
+      },
+      onfocus: (e) => e.target.select(),
+    });
+    boxes.push(box);
+  }
+
+  const joinBtn = el("button", { class: "primary", onclick: submit }, [S.ENTER_CODE_JOIN, html(ARROW_RIGHT_SVG)]);
+  const errorLine = el("p", { class: "field-error" }, [state.enterCodeError || ""]);
+  errorLine.style.display = state.enterCodeError ? "" : "none";
+
+  const body = [
+    el("span", { class: "pill centered" }, [S.ENTER_CODE_KICKER]),
+    el("h1", { class: "quiz-title centered" }, [S.ENTER_CODE_TITLE]),
+    el("p", { class: "quiz-meta centered" }, [S.ENTER_CODE_BLURB]),
+    el("span", { class: "field-label centered" }, [S.ENTER_CODE_LABEL]),
+    el("div", { class: "code-boxes" }, boxes),
+    errorLine,
+    el("p", { class: "field-hint centered" }, [S.ENTER_CODE_HINT]),
+    joinBtn,
+  ];
+  // Only offered where the browser can actually hand the clipboard over (secure
+  // context + API present) — a button that silently does nothing is worse than none.
+  if (navigator.clipboard && navigator.clipboard.readText) {
+    body.push(el("button", { class: "paste-btn", onclick: async () => {
+      let text = "";
+      try { text = await navigator.clipboard.readText(); } catch (e) { /* denied */ }
+      if (!fill(text)) {
+        state.enterCodeError = S.ENTER_CODE_CLIPBOARD_EMPTY;
+        errorLine.textContent = state.enterCodeError;
+        errorLine.style.display = "";
+      }
+    } }, [html(CLIPBOARD_SVG), S.ENTER_CODE_PASTE]));
+  }
+  body.push(el("p", { class: "card-footnote" }, [S.ENTER_CODE_NOTE]));
+
+  main.appendChild(el("div", { class: "screen card-screen" }, [el("div", { class: "card enter-code-card" }, body)]));
+  sync();
+  // Land the cursor on the first empty box so a taker can start typing straight away.
+  const firstEmpty = boxes.findIndex((b) => !b.value);
+  focusBox(firstEmpty === -1 ? CODE_LENGTH - 1 : firstEmpty);
 }
 
 function renderLanding() {
@@ -335,11 +495,28 @@ function renderLanding() {
   document.documentElement.style.setProperty("--accent", accent);
 
   const status = SC.effectiveStatus(quiz);
-  const body = [
-    el("span", { class: "pill" }, [S.LANDING_KICKER]),
-    el("h2", { class: "quiz-title" }, [quiz.title]),
-    el("p", { class: "quiz-meta" }, [S.questionCount(quiz.questions.length)]),
-  ];
+  const n = quiz.questions.length;
+  // Two card headers, one per sign-in state — same card frame underneath. Signed-out
+  // leads with the sign-in ask; signed-in leads with a "session ready" strip and the
+  // account box, so the taker can see at a glance who they're about to join as.
+  const body = state.user
+    ? [
+        el("div", { class: "session-strip" }, [
+          el("span", { class: "session-kicker" }, [S.LANDING_KICKER]),
+          el("span", { class: "status-chip small" }, [el("span", { class: "status-dot" }, []), S.STATUS_SESSION_READY]),
+        ]),
+        el("h1", { class: "quiz-title" }, [quiz.title, el("span", { class: "title-count" }, [S.questionCountSuffix(n)])]),
+        el("div", { class: "meta-chips" }, [
+          el("span", { class: "meta-chip" }, [html(QUESTION_MARK_SVG), S.questionCount(n)]),
+        ]),
+      ]
+    : [
+        el("div", { class: "kicker-row" }, [
+          el("span", { class: "pill dotted" }, [S.LANDING_KICKER]),
+          el("span", { class: "meta-chip plain" }, [S.questionCount(n)]),
+        ]),
+        el("h1", { class: "quiz-title" }, [quiz.title]),
+      ];
 
   // Archived overrides schedule-based status entirely, same rule as the Android app's
   // ArchivedQuizStatusAction — the creator deliberately took this quiz out of
@@ -382,8 +559,12 @@ function renderLanding() {
     );
     googleBtn.prepend(html(GOOGLE_G_SVG));
     body.push(
-      el("p", { class: "muted" }, [S.SIGN_IN_BLURB]),
-      googleBtn
+      el("div", { class: "info-box" }, [html(INFO_SVG), el("span", {}, [S.SIGN_IN_BLURB])]),
+      googleBtn,
+      el("div", { class: "card-meta-row" }, [
+        el("span", {}, [S.sessionLine(n)]),
+        el("span", {}, [S.version(WEB_VERSION, BUILD_NUMBER)]),
+      ])
     );
   } else if (state.existingAttempt && !quiz.allowRetake) {
     // Same rule as JoinScreen.kt's alreadyDoneAndLocked — a completed attempt
@@ -436,7 +617,7 @@ function renderLanding() {
     // answering something.
     body.push(
       signedInLine(state.user),
-      el("button", { class: "primary", onclick: joinQuizAction }, [state.joining ? S.JOINING : S.LANDING_JOIN])
+      primaryButton(state.joining ? S.JOINING : S.LANDING_JOIN, joinQuizAction)
     );
     if (state.joinError) {
       body.push(el("p", { class: "muted", style: "color:var(--error)" }, [state.joinError]));
@@ -445,7 +626,7 @@ function renderLanding() {
   } else {
     body.push(
       signedInLine(state.user),
-      el("button", { class: "primary", onclick: startQuiz }, [S.LANDING_START]),
+      primaryButton(S.LANDING_START, startQuiz),
       signOutRow()
     );
   }
@@ -479,13 +660,25 @@ const WEB_VERSION = "1.0";
 const BUILD_NUMBER = new URL(import.meta.url).searchParams.get("v") || "?";
 
 function appendLandingScreen(body) {
-  app.appendChild(
-    el("div", { class: "screen" }, [
-      el("div", { class: "card" }, body),
-      el("p", { class: "app-version" }, [S.version(WEB_VERSION, BUILD_NUMBER)]),
-    ])
+  main.appendChild(
+    el("div", { class: "screen card-screen" }, [el("div", { class: "card landing-card" }, body)])
   );
 }
+
+/** Filled CTA with the trailing chevron every primary action on these cards carries. */
+function primaryButton(label, onclick) {
+  return el("button", { class: "primary", onclick }, [label, html(BTN_CHEVRON_SVG)]);
+}
+
+const BTN_CHEVRON_SVG = `<svg class="btn-chevron" viewBox="0 0 16 16" fill="none" width="16" height="16"><path d="M6 3.5L10.5 8 6 12.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const ARROW_RIGHT_SVG = `<svg class="btn-chevron" viewBox="0 0 16 16" fill="none" width="16" height="16"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const INFO_SVG = `<svg viewBox="0 0 20 20" fill="none" width="18" height="18"><circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="1.6"/><path d="M10 9v4.5M10 6.5v.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+const QUESTION_MARK_SVG = `<svg viewBox="0 0 20 20" fill="none" width="14" height="14"><circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="1.6"/><path d="M7.8 8a2.2 2.2 0 114.1 1.1c-.6.9-1.9 1.2-1.9 2.4M10 14h.01" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const USER_SVG = `<svg viewBox="0 0 24 24" fill="none" width="20" height="20"><circle cx="12" cy="8.5" r="3.5" stroke="#fff" stroke-width="1.8"/><path d="M5.5 19c.8-3.2 3.3-4.8 6.5-4.8s5.7 1.6 6.5 4.8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+const EDIT_PENCIL_SVG = `<svg viewBox="0 0 20 20" fill="none" width="16" height="16"><path d="M4 13.5V16h2.5l7.4-7.4-2.5-2.5L4 13.5zM12.6 4.9l2.5 2.5 1.2-1.2a1 1 0 000-1.4l-1.1-1.1a1 1 0 00-1.4 0l-1.2 1.2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+const CLEAR_X_SVG = `<svg viewBox="0 0 16 16" fill="none" width="14" height="14"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+const TICK_SVG = `<svg viewBox="0 0 16 16" fill="none" width="12" height="12"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const CLIPBOARD_SVG = `<svg viewBox="0 0 20 20" fill="none" width="15" height="15"><rect x="5" y="4" width="10" height="13" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M8 4V3h4v1M8 9h4M8 12h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
 
 /** One-time gate right after a brand-new signup (profiles.name_confirmed = false) —
  *  mirrors the Android app's ConfirmNameScreen. Blocking, no skip: some Google
@@ -496,6 +689,16 @@ function renderConfirmName() {
     state.confirmNameDraft = SC.resolveDisplayName(state.user);
   }
   const trimmed = (state.confirmNameDraft || "").trim();
+  const googleName = SC.resolveDisplayName(state.user);
+
+  const counter = el("span", { class: "field-counter" }, [S.charCount((state.confirmNameDraft || "").length, DISPLAY_NAME_MAX_CHARS)]);
+  // "Synced from Google" only holds while the field still says what Google said.
+  const synced = el("p", { class: "field-helper synced" }, [html(TICK_SVG), S.CONFIRM_NAME_SYNCED]);
+  const refresh = (value) => {
+    saveBtn.disabled = state.confirmNameSaving || value.trim().length === 0;
+    counter.textContent = S.charCount(value.length, DISPLAY_NAME_MAX_CHARS);
+    synced.style.display = value === googleName ? "" : "none";
+  };
 
   const input = el("input", {
     type: "text",
@@ -505,31 +708,54 @@ function renderConfirmName() {
     autocomplete: "name",
     oninput: (e) => {
       state.confirmNameDraft = e.target.value;
-      saveBtn.disabled = state.confirmNameSaving || e.target.value.trim().length === 0;
+      refresh(e.target.value);
     },
+    onkeydown: (e) => { if (e.key === "Enter") submitConfirmedName(); },
   });
+  const clearBtn = el("button", { class: "field-clear", type: "button", onclick: () => {
+    state.confirmNameDraft = "";
+    input.value = "";
+    refresh("");
+    input.focus();
+  } }, [html(CLEAR_X_SVG)]);
 
-  const saveBtn = el(
-    "button",
-    { class: "primary", onclick: () => submitConfirmedName() },
-    [state.confirmNameSaving ? S.SAVING : S.CONFIRM_NAME_SUBMIT]
-  );
+  const saveBtn = primaryButton(state.confirmNameSaving ? S.SAVING : S.CONFIRM_NAME_SUBMIT, () => submitConfirmedName());
   saveBtn.disabled = state.confirmNameSaving || trimmed.length === 0;
+  synced.style.display = (state.confirmNameDraft || "") === googleName ? "" : "none";
 
   const body = [
-    el("span", { class: "pill" }, [S.CONFIRM_NAME_KICKER]),
-    el("h2", { class: "quiz-title" }, [S.CONFIRM_NAME_TITLE]),
-    el("p", { class: "quiz-meta" }, [
-      S.CONFIRM_NAME_BLURB,
+    el("span", { class: "pill dotted" }, [S.CONFIRM_NAME_KICKER]),
+    el("div", { class: "title-row" }, [
+      el("h1", { class: "quiz-title" }, [S.CONFIRM_NAME_TITLE]),
+      el("span", { class: "title-badge" }, [html(USER_SVG)]),
     ]),
-    input,
+    el("p", { class: "quiz-meta" }, [S.CONFIRM_NAME_BLURB]),
+    el("div", { class: "field-head" }, [
+      el("span", { class: "field-label" }, [S.CONFIRM_NAME_LABEL]),
+      counter,
+    ]),
+    el("div", { class: "name-field" }, [html(EDIT_PENCIL_SVG), input, clearBtn]),
+    synced,
   ];
   if (state.confirmNameError) {
     body.push(el("p", { class: "muted", style: "color:var(--error)" }, [state.confirmNameError]));
   }
-  body.push(saveBtn);
+  body.push(
+    saveBtn,
+    el("button", { class: "text-link", onclick: () => cancelConfirmName() }, [S.CONFIRM_NAME_CANCEL])
+  );
 
-  app.appendChild(el("div", { class: "screen" }, [el("div", { class: "card" }, body)]));
+  main.appendChild(el("div", { class: "screen card-screen" }, [el("div", { class: "card confirm-card" }, body)]));
+}
+
+/** "Cancel & Sign out" — wrong account picked. Back to the signed-out landing card
+ *  (signOutAction already re-renders); the draft is dropped so the next account's
+ *  Google name is picked up fresh instead of this one's leftover edit. */
+async function cancelConfirmName() {
+  state.confirmNameDraft = null;
+  state.confirmNameError = null;
+  state.screen = "landing";
+  await signOutAction();
 }
 
 async function submitConfirmedName() {
@@ -557,8 +783,25 @@ function currentQuestion() {
   return state.quiz.questions[state.currentIndex];
 }
 
+/** "SIGNED IN AS" account box — initials avatar (with an online dot) + the display name. */
 function signedInLine(user) {
-  return el("p", { class: "muted" }, [S.signedInAs(SC.resolveDisplayName(user))]);
+  const name = SC.resolveDisplayName(user);
+  return el("div", { class: "signed-in-box" }, [
+    el("div", { class: "avatar" }, [initialsOf(name), el("span", { class: "avatar-dot" }, [])]),
+    el("div", { class: "signed-in-text" }, [
+      el("span", { class: "overline" }, [S.SIGNED_IN_AS_LABEL]),
+      el("span", { class: "signed-in-name" }, [name]),
+    ]),
+  ]);
+}
+
+/** "Muhammad Ahmed Tahir" -> "MT" (first + last word), "Ahmad" -> "A", "" -> "?". */
+function initialsOf(name) {
+  const words = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return "?";
+  const first = words[0][0];
+  const last = words.length > 1 ? words[words.length - 1][0] : "";
+  return (first + last).toUpperCase();
 }
 
 /** "Sign out" escape hatch — wrong Google account picked, or just wants to switch,
@@ -567,7 +810,8 @@ function signedInLine(user) {
  *  sitting right next to that button risked a mis-tap signing someone out by accident. */
 function signOutRow() {
   return el("div", { class: "sign-out-row" }, [
-    el("button", { class: "skip-link", onclick: signOutAction }, [S.SIGN_OUT]),
+    el("span", { class: "sign-out-prefix" }, [S.SIGN_OUT_PREFIX]),
+    el("button", { class: "skip-link sign-out-link", onclick: signOutAction }, [S.SIGN_OUT]),
   ]);
 }
 
@@ -1508,7 +1752,7 @@ function renderQuiz() {
     if (fb) questionArea.appendChild(buildFeedbackBanner(fb));
   }
 
-  app.appendChild(el("div", { class: "quiz-screen" }, [
+  main.appendChild(el("div", { class: "quiz-screen" }, [
     buildQuizTopBar(quiz, q),
     buildQuestionProgressBar(quiz),
     questionArea,
@@ -2238,8 +2482,8 @@ function renderResult() {
     ? { awarded: breakdown.marksAwarded, total: breakdown.marksTotal, percent: breakdown.marksPercent }
     : null;
 
-  const content = el("div", { class: "screen" }, [
-    el("h2", { class: "quiz-title", style: "text-align:center;margin:4px 0 0" }, [quiz.title]),
+  const content = el("div", { class: "screen result-screen" }, [
+    el("h2", { class: "quiz-title centered", style: "margin:4px 0 0" }, [quiz.title]),
     // Nothing marked yet means there is no score — not a zero, not a partial one — so the
     // score card is replaced outright rather than showing 0/N (mirrors PendingReviewCard).
     pending > 0 && gradedCount === 0
@@ -2302,15 +2546,14 @@ function renderResult() {
     el("button", { class: "primary", style: "margin-top:8px", onclick: () => leaveQuiz(S.CLOSED_THANKS) }, [S.DONE])
   );
 
-  app.appendChild(content);
+  main.appendChild(content);
 }
 
 // ── Boot ───────────────────────────────────────────────────────────────────
 async function boot() {
   try {
     if (!shareCode) {
-      state.errorMessage = S.ERR_NO_CODE;
-      state.screen = "error";
+      state.screen = "enterCode";
       render();
       return;
     }
@@ -2319,8 +2562,10 @@ async function boot() {
 
     const quiz = await SC.fetchQuizByShareCode(shareCode);
     if (!quiz) {
-      state.errorMessage = S.ERR_QUIZ_NOT_FOUND;
-      state.screen = "error";
+      // Same entry screen as "no code", with the bad code left in the boxes to fix.
+      state.enterCodeDraft = extractCode(shareCode);
+      state.enterCodeError = S.ERR_QUIZ_NOT_FOUND;
+      state.screen = "enterCode";
       render();
       return;
     }
