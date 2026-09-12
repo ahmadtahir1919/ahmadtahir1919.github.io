@@ -92,6 +92,9 @@ const state = {
   lastStartedAt: null,
   joinError: null,
   joining: false,
+  // Admin maintenance switches (see SC.fetchFeatureFlags) — fetched once in boot() and
+  // fails open, so an unreached/erroring flags call never blocks a genuine join.
+  flags: { joinQuizEnabled: true },
 };
 
 // Fires window.Analytics.screen() once per genuine screen change, not once per
@@ -143,6 +146,11 @@ function headerStatusFor(screen) {
     case "finishing": return S.STATUS_LOADING;
     case "error": return S.STATUS_ERROR;
     case "quiz": return S.STATUS_IN_PROGRESS;
+    // Only these two screens actually offer a join/start action for the chip to reflect —
+    // everywhere else (confirmName, result, closed) a taker already got past joining, so
+    // the maintenance switch has nothing left to say about their session.
+    case "enterCode":
+    case "landing": return state.flags.joinQuizEnabled ? S.STATUS_READY : S.STATUS_PAUSED;
     default: return S.STATUS_READY;
   }
 }
@@ -397,12 +405,15 @@ function extractCode(text) {
 function renderEnterCode() {
   const draft = (state.enterCodeDraft || "").padEnd(CODE_LENGTH, " ").slice(0, CODE_LENGTH).split("");
   const boxes = [];
+  // Admin maintenance switch — visibly disables the whole join flow instead of letting
+  // someone fill in a code that will just fail server-side a moment later.
+  const paused = !state.flags.joinQuizEnabled;
 
   const currentCode = () => boxes.map((b) => b.value).join("");
   const sync = () => {
     state.enterCodeDraft = currentCode();
     boxes.forEach((b) => b.classList.toggle("filled", b.value !== ""));
-    joinBtn.disabled = state.enterCodeDraft.length !== CODE_LENGTH;
+    joinBtn.disabled = paused || state.enterCodeDraft.length !== CODE_LENGTH;
   };
   const focusBox = (i) => { const b = boxes[Math.max(0, Math.min(CODE_LENGTH - 1, i))]; b.focus(); b.select(); };
   const fill = (text) => {
@@ -414,6 +425,7 @@ function renderEnterCode() {
     return true;
   };
   const submit = () => {
+    if (paused) return;
     const code = currentCode();
     if (code.length !== CODE_LENGTH) return;
     window.location.search = `?code=${code}`;
@@ -431,6 +443,7 @@ function renderEnterCode() {
       placeholder: "•",
       "aria-label": S.ENTER_CODE_LABEL,
       value: draft[i].trim(),
+      ...(paused ? { disabled: "true" } : {}),
       oninput: (e) => {
         const v = e.target.value.toUpperCase().replace(CODE_CHARS, "");
         if (v.length > 1) { fill(v); return; } // some keyboards insert whole words
@@ -464,12 +477,20 @@ function renderEnterCode() {
     el("span", { class: "field-label centered" }, [S.ENTER_CODE_LABEL]),
     el("div", { class: "code-boxes" }, boxes),
     errorLine,
-    el("p", { class: "field-hint centered" }, [S.ENTER_CODE_HINT]),
-    joinBtn,
   ];
+  // Maintenance notice replaces the ordinary hint line entirely — a taker paused mid-flow
+  // needs to know joining isn't the problem here, the timing is, not a smaller hint about
+  // letter case underneath a button they can still press.
+  if (paused) {
+    body.push(el("p", { class: "field-error centered" }, [S.JOIN_PAUSED]));
+  } else {
+    body.push(el("p", { class: "field-hint centered" }, [S.ENTER_CODE_HINT]));
+  }
+  body.push(joinBtn);
   // Only offered where the browser can actually hand the clipboard over (secure
   // context + API present) — a button that silently does nothing is worse than none.
-  if (navigator.clipboard && navigator.clipboard.readText) {
+  // Hidden entirely while paused: pasting a code nobody can submit right now is pointless.
+  if (!paused && navigator.clipboard && navigator.clipboard.readText) {
     body.push(el("button", { class: "paste-btn", onclick: async () => {
       let text = "";
       try { text = await navigator.clipboard.readText(); } catch (e) { /* denied */ }
@@ -496,6 +517,10 @@ function renderLanding() {
 
   const status = SC.effectiveStatus(quiz);
   const n = quiz.questions.length;
+  // Admin maintenance switch — only replaces the actual join/start/retake actions below;
+  // signing in and viewing an already-graded result (goToExistingResult) are unaffected,
+  // since neither one records a new join.
+  const joinPaused = !state.flags.joinQuizEnabled;
   // Two card headers, one per sign-in state — same card frame underneath. Signed-out
   // leads with the sign-in ask; signed-in leads with a "session ready" strip and the
   // account box, so the taker can see at a glance who they're about to join as.
@@ -583,11 +608,15 @@ function renderLanding() {
     body.push(
       signedInLine(state.user),
       el("p", { class: "quiz-meta" }, [S.yourScore(state.existingAttempt.score, state.existingAttempt.total)]),
-      el("button", { class: "primary", onclick: goToExistingResult }, [S.LANDING_SEE_RESULT]),
-      el("button", { class: "secondary", onclick: retakeQuizAction }, [state.joining ? S.JOINING : S.LANDING_RETAKE])
+      el("button", { class: "primary", onclick: goToExistingResult }, [S.LANDING_SEE_RESULT])
     );
-    if (state.joinError) {
-      body.push(el("p", { class: "muted", style: "color:var(--error)" }, [state.joinError]));
+    if (joinPaused) {
+      body.push(pausedNotice());
+    } else {
+      body.push(el("button", { class: "secondary", onclick: retakeQuizAction }, [state.joining ? S.JOINING : S.LANDING_RETAKE]));
+      if (state.joinError) {
+        body.push(el("p", { class: "muted", style: "color:var(--error)" }, [state.joinError]));
+      }
     }
     body.push(signOutRow());
   } else if (state.lastStartedAt && quiz.allowRetake === false) {
@@ -603,11 +632,15 @@ function renderLanding() {
     // attempt, labelled as a retake like the app's Joined card.
     body.push(
       signedInLine(state.user),
-      el("p", { class: "muted" }, [S.LANDING_LEFT_WITHOUT_SUBMITTING]),
-      el("button", { class: "primary", onclick: retakeQuizAction }, [state.joining ? S.JOINING : S.LANDING_RETAKE])
+      el("p", { class: "muted" }, [S.LANDING_LEFT_WITHOUT_SUBMITTING])
     );
-    if (state.joinError) {
-      body.push(el("p", { class: "muted", style: "color:var(--error)" }, [state.joinError]));
+    if (joinPaused) {
+      body.push(pausedNotice());
+    } else {
+      body.push(el("button", { class: "primary", onclick: retakeQuizAction }, [state.joining ? S.JOINING : S.LANDING_RETAKE]));
+      if (state.joinError) {
+        body.push(el("p", { class: "muted", style: "color:var(--error)" }, [state.joinError]));
+      }
     }
     body.push(signOutRow());
   } else if (!state.hasJoined) {
@@ -615,20 +648,23 @@ function renderLanding() {
     // right away so the owner's Participants tab sees this person the moment they join,
     // same as joining by code in the app, rather than only once they actually finish
     // answering something.
-    body.push(
-      signedInLine(state.user),
-      primaryButton(state.joining ? S.JOINING : S.LANDING_JOIN, joinQuizAction)
-    );
-    if (state.joinError) {
-      body.push(el("p", { class: "muted", style: "color:var(--error)" }, [state.joinError]));
+    body.push(signedInLine(state.user));
+    if (joinPaused) {
+      body.push(pausedNotice());
+    } else {
+      body.push(primaryButton(state.joining ? S.JOINING : S.LANDING_JOIN, joinQuizAction));
+      if (state.joinError) {
+        body.push(el("p", { class: "muted", style: "color:var(--error)" }, [state.joinError]));
+      }
     }
     body.push(signOutRow());
   } else {
-    body.push(
-      signedInLine(state.user),
-      primaryButton(S.LANDING_START, startQuiz),
-      signOutRow()
-    );
+    body.push(signedInLine(state.user));
+    // Reaching here means hasJoined is already true (the membership row exists), so this
+    // is resuming/starting an already-joined quiz, not creating a new join — left
+    // unblocked on purpose, same as Home's Joined-tab retake/continue on Android.
+    body.push(primaryButton(S.LANDING_START, startQuiz));
+    body.push(signOutRow());
   }
 
   appendLandingScreen(body);
@@ -668,6 +704,12 @@ function appendLandingScreen(body) {
 /** Filled CTA with the trailing chevron every primary action on these cards carries. */
 function primaryButton(label, onclick) {
   return el("button", { class: "primary", onclick }, [label, html(BTN_CHEVRON_SVG)]);
+}
+
+/** Replaces a Join/Start/Retake button while an admin has joining paused for maintenance —
+ *  same info-box treatment as the sign-in blurb, so it reads as a status, not an error. */
+function pausedNotice() {
+  return el("div", { class: "info-box" }, [html(INFO_SVG), el("span", {}, [S.JOIN_PAUSED])]);
 }
 
 const BTN_CHEVRON_SVG = `<svg class="btn-chevron" viewBox="0 0 16 16" fill="none" width="16" height="16"><path d="M6 3.5L10.5 8 6 12.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -839,6 +881,14 @@ async function joinQuizAction() {
   // tab left open past the deadline could still fire this write. Re-check live, right
   // before the write, instead of trusting whatever status the button was drawn under.
   if (SC.effectiveStatus(state.quiz) !== "ACTIVE") {
+    render();
+    return;
+  }
+  // Defense in depth: the Join button is already hidden while paused (renderLanding), but
+  // an admin could flip the switch after this tab loaded and before this tap landed. The
+  // real backstop is the server's own joined_quizzes_insert_own check either way.
+  if (!state.flags.joinQuizEnabled) {
+    state.joinError = S.JOIN_PAUSED;
     render();
     return;
   }
@@ -2763,12 +2813,23 @@ async function boot() {
     if (!shareCode) {
       state.screen = "enterCode";
       render();
+      // Fetched after the first paint so a slow/offline flags call never delays showing
+      // the code-entry boxes — the screen just re-renders once it lands (fail-open default
+      // in the meantime, same as everywhere else this is read).
+      state.flags = await SC.fetchFeatureFlags();
+      render();
       return;
     }
 
     render(); // loading
 
-    const quiz = await SC.fetchQuizByShareCode(shareCode);
+    // Runs alongside the quiz fetch rather than after it — a paused join should be known
+    // by the time the enter-code/landing screen first paints, not flicker in a beat later.
+    const [quiz, flags] = await Promise.all([
+      SC.fetchQuizByShareCode(shareCode),
+      SC.fetchFeatureFlags(),
+    ]);
+    state.flags = flags;
     if (!quiz) {
       // Same entry screen as "no code", with the bad code left in the boxes to fix.
       state.enterCodeDraft = extractCode(shareCode);

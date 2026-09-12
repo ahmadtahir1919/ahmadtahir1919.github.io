@@ -27,6 +27,7 @@ const S = {
   STATUS_ERROR: "Error",
   STATUS_IN_PROGRESS: "In progress",
   STATUS_SESSION_READY: "Session Ready",
+  STATUS_PAUSED: "Maintenance",
   footerVersion: (v) => `Testly Web v${v}`,
   FOOTER_TERMS: "Terms",
   FOOTER_PRIVACY: "Privacy",
@@ -150,6 +151,7 @@ const S = {
   SUBMIT_SAVE_FAILED_PREFIX: "Couldn't save your result: ",
   SAVE_NAME_FAILED: "Couldn't save your name. Check your connection and try again.",
   JOIN_FAILED: "Couldn't join — check your connection and try again.",
+  JOIN_PAUSED: "Joining quizzes is paused for maintenance right now. It'll be back shortly.",
 
   // ── Poll ───────────────────────────────────────────────────────────────
   POLL_OTHER: "Other",

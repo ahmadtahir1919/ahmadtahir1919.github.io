@@ -194,6 +194,23 @@ async function fetchQuizByShareCode(code) {
   return quizFromRow(quizRow, (questionRows || []).map(questionFromRow));
 }
 
+/** Admin maintenance switches (app_limits.create_quiz_enabled / join_quiz_enabled — see
+ *  schema.sql). Web only ever needs the join one; create isn't a thing this page does.
+ *  Fails OPEN on any error — a network hiccup or a stale/missing RPC must never look like
+ *  a maintenance outage to a visitor who otherwise could have joined just fine. Granted to
+ *  anon, same as quiz_by_share_code, so this resolves before the visitor signs in. */
+async function fetchFeatureFlags() {
+  try {
+    const { data, error } = await supabaseClient.rpc("public_feature_flags");
+    if (error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) throw new Error("public_feature_flags: no row");
+    return { joinQuizEnabled: row.join_quiz_enabled !== false };
+  } catch (e) {
+    return { joinQuizEnabled: true };
+  }
+}
+
 /** Checked right before a real submission lands — mirrors QuizPreviewViewModel.
  *  finishPreview's own re-check on Android. The landing/Start-Quiz screen's status check
  *  only ever ran once, when the taker opened the quiz; it has no way to know the owner
@@ -473,6 +490,7 @@ window.SupabaseClient = {
   fetchNameConfirmed,
   confirmDisplayName,
   fetchQuizByShareCode,
+  fetchFeatureFlags,
   fetchQuizStatus,
   effectiveStatus,
   countdownUntil,
