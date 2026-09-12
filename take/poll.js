@@ -105,10 +105,19 @@ function pollHiddenForNonVoter(status, hasVoted) {
   return status === "CLOSED" && !hasVoted;
 }
 
+/** Whether voters get to see the tally at all — the owner's call, per poll.
+ *  Mirrors PollSettings.showResultsToVoters, which defaults to FALSE, so a missing key
+ *  must read as hidden rather than visible. The owner's own views ignore this; nothing on
+ *  this page is an owner view. */
+function pollResultsVisibleToVoters(settings) {
+  return (settings || {}).showResultsToVoters === true;
+}
+
 window.Poll = {
   POLL_OTHER_INDEX,
   computePollDistribution,
   computePollConsensus,
   pollShuffledOrder,
   pollHiddenForNonVoter,
+  pollResultsVisibleToVoters,
 };

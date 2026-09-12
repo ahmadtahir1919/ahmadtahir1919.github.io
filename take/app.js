@@ -1091,7 +1091,9 @@ async function loadPollForCurrentQuestion(q) {
 
   // Not just CLOSED — re-entering a poll already voted on (e.g. resuming mid-quiz)
   // reveals results immediately too, same as a fresh vote does (see advance()).
-  if (effectiveClosed || myVote) {
+  // Unless the owner kept the results to themselves: leaving pollDistribution null makes
+  // render() fall through to the voting body, which already shows "✓ You voted".
+  if ((effectiveClosed || myVote) && PL.pollResultsVisibleToVoters(settings)) {
     const distribution = PL.computePollDistribution(q.options || [], votes);
     state.pollDistribution = distribution;
     state.pollConsensus = PL.computePollConsensus(distribution);
@@ -1293,10 +1295,12 @@ async function advance(castPollVote) {
       // fresh vote list to actually include this vote.
       await SC.castPollVote(vote).catch(() => {});
       window.Analytics.track("poll_voted", { question_id: q.id });
-      const votes = (await SC.fetchPollVotes(q.id).catch(() => [])) || [];
-      const distribution = PL.computePollDistribution(q.options || [], votes);
-      state.pollDistribution = distribution;
-      state.pollConsensus = PL.computePollConsensus(distribution);
+      if (PL.pollResultsVisibleToVoters(settings)) {
+        const votes = (await SC.fetchPollVotes(q.id).catch(() => [])) || [];
+        const distribution = PL.computePollDistribution(q.options || [], votes);
+        state.pollDistribution = distribution;
+        state.pollConsensus = PL.computePollConsensus(distribution);
+      }
       state.pollHasVoted = true;
       state.pollEditingVote = false;
       // Reveal the just-cast results in place instead of snapping straight past them —
@@ -1997,7 +2001,12 @@ function buildPollVoting(q) {
 
   if (state.pollHasVoted) {
     container.appendChild(el("p", { class: "poll-voted-check" }, [S.POLL_VOTED]));
-    if (locked) container.appendChild(el("p", { class: "poll-note" }, [S.POLL_RESULTS_AFTER_CLOSE]));
+    // Don't promise results on close when the owner never shares them at all.
+    if (!PL.pollResultsVisibleToVoters(settings)) {
+      container.appendChild(el("p", { class: "poll-note" }, [S.POLL_RESULTS_NOT_SHARED]));
+    } else if (locked) {
+      container.appendChild(el("p", { class: "poll-note" }, [S.POLL_RESULTS_AFTER_CLOSE]));
+    }
   } else if (state.pollSelected.size > 0) {
     container.appendChild(el("p", { class: "poll-note" }, [S.POLL_TAP_NEXT]));
   }
@@ -2051,7 +2060,10 @@ async function buildResultPollItems(quiz, user) {
   return pollQuestions.map((q, i) => {
     const votes = results[i] || [];
     const myVote = user ? votes.find((v) => v.voterKey === user.id) || null : null;
-    const distribution = PL.computePollDistribution(q.options || [], votes);
+    // Null when the owner didn't share results — buildPollReviewCard shows a note instead.
+    const distribution = PL.pollResultsVisibleToVoters(q.pollSettings)
+      ? PL.computePollDistribution(q.options || [], votes)
+      : null;
     const status = states && states[q.id] ? states[q.id].status : null;
     return { question: q, distribution, myVote, status };
   });
@@ -2081,6 +2093,14 @@ function buildPollReviewCard(item, index) {
 
   if (expanded) {
     const dist = item.distribution;
+    // Owner kept the results private — this page is only ever a voter's view, so there's
+    // nothing to show but a note (matches ResultScreen.kt's PollReviewCard).
+    if (!dist) {
+      card.appendChild(el("div", { class: "review-body" }, [
+        el("p", { class: "poll-note" }, [S.POLL_RESULTS_NOT_SHARED]),
+      ]));
+      return card;
+    }
     const consensus = PL.computePollConsensus(dist);
     const myVoteIndices = new Set(item.myVote?.selectedOptionIndices || []);
     const bodyEl = el("div", { class: "review-body" }, []);

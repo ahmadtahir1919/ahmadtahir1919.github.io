@@ -159,6 +159,7 @@ const S = {
   POLL_RESULTS_AFTER_CLOSE: "Results are shown once the poll closes.",
   POLL_TAP_NEXT: "Tap Next to cast your vote.",
   POLL_CHANGE_VOTE: "Change vote",
+  POLL_RESULTS_NOT_SHARED: "The quiz owner hasn't shared this poll's results.",
   POLL_REASON_PLACEHOLDER: "Share why you picked this…",
   participantCount: (n) => `${n} participant${n === 1 ? "" : "s"}`,
   otherEntry: (text, count) => `${text} (${count})`,
