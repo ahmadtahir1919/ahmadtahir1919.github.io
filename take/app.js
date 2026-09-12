@@ -2726,7 +2726,7 @@ function renderResult() {
 
   if (!quiz.showResult) {
     content.appendChild(el("p", { class: "muted", style: "text-align:center" }, [S.RESULT_HIDDEN]));
-  } else if (quiz.showAnswers) {
+  } else {
     content.appendChild(el("div", { class: "review-head" }, [
       el("div", { class: "review-head-title" }, [S.RESULT_ANSWER_REVIEW]),
       el("div", { class: "review-head-sub" }, [S.RESULT_REVIEW_SUBTITLE]),
