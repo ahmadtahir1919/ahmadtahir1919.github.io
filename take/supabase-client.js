@@ -104,6 +104,9 @@ function questionFromRow(row) {
     points: row.points,
     orderIndex: row.order_index,
     hint: row.hint ?? null,
+    // Creator-written "why this is correct" — shown on the result review only (Models.kt's
+    // Question.reason); never during the attempt.
+    reason: row.reason ?? null,
     answerRule: row.answer_rule ?? null, // jsonb, already an object (not a JSON string like the Kotlin column)
     pollSettings: row.poll_settings ?? null,
     fillBlankContent: row.fill_blank ?? null,

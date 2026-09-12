@@ -866,6 +866,16 @@ async function goToExistingResult() {
   await pruneHiddenPolls();
   const pollItems = await buildResultPollItems(state.quiz, state.user);
   state.result = { score: state.existingAttempt.score, total: state.existingAttempt.total, answers, pollItems };
+  openResultScreen();
+}
+
+/** Every review card starts expanded and the filter on "All" — the review is the point
+ *  of this screen, so nothing should need a tap to be seen. */
+function openResultScreen() {
+  state.resultFilter = "all";
+  expandedReviews.clear();
+  expandedPollReviews.clear();
+  state.quiz.questions.forEach((q) => { expandedReviews.add(q.id); expandedPollReviews.add(q.id); });
   state.screen = "result";
   render();
 }
@@ -1473,8 +1483,7 @@ async function finishQuiz() {
       });
       const pollItems = await buildResultPollItems(state.quiz, state.user);
       state.result = { score, total: scored.length, answers, pollItems };
-      state.screen = "result";
-      render();
+      openResultScreen();
     })
     .catch((err) => {
       // Backstop for a race (e.g. two tabs submitting at once) — the landing-page
@@ -1983,14 +1992,18 @@ function buildPollResults(q) {
 async function buildResultPollItems(quiz, user) {
   const pollQuestions = quiz.questions.filter((q) => q.type === "POLL");
   if (pollQuestions.length === 0) return [];
-  const results = await Promise.all(
-    pollQuestions.map((q) => SC.fetchPollVotes(q.id).catch(() => []))
-  );
+  const [results, states] = await Promise.all([
+    Promise.all(pollQuestions.map((q) => SC.fetchPollVotes(q.id).catch(() => []))),
+    // Open/closed is only a label on the review card ("Poll Closed" / "Poll Open") — a
+    // failed fetch just leaves it as a plain "Poll", never blocks the result.
+    SC.fetchPollStates(pollQuestions.map((q) => q.id)).catch(() => ({})),
+  ]);
   return pollQuestions.map((q, i) => {
     const votes = results[i] || [];
     const myVote = user ? votes.find((v) => v.voterKey === user.id) || null : null;
     const distribution = PL.computePollDistribution(q.options || [], votes);
-    return { question: q, distribution, myVote };
+    const status = states && states[q.id] ? states[q.id].status : null;
+    return { question: q, distribution, myVote, status };
   });
 }
 
@@ -2002,28 +2015,25 @@ const expandedPollReviews = new Set();
 function buildPollReviewCard(item, index) {
   const q = item.question;
   const expanded = expandedPollReviews.has(q.id);
+  const typeLabel = item.status === "CLOSED" ? S.TYPE_POLL_CLOSED : item.status === "OPEN" ? S.TYPE_POLL_OPEN : S.TYPE_POLL;
 
-  const accent = el("div", { class: "review-accent poll" }, []);
-  const meta = el("div", { class: "review-meta" }, [
-    el("span", { class: "q-pill poll" }, [S.questionPill(index + 1)]),
-    el("span", { class: "poll-tag-badge" }, [S.POLL]),
-  ]);
-  const header = el(
-    "div",
-    { class: "review-header", onclick: () => { expandedPollReviews.has(q.id) ? expandedPollReviews.delete(q.id) : expandedPollReviews.add(q.id); render(); } },
-    [accent, el("div", { style: "flex:1" }, [meta, el("div", { class: "review-question" }, [stripMarkdownText(q.text)])])]
-  );
-  header.appendChild(html(CHEVRON_DOWN_SVG));
-
-  const card = el("div", { class: "review-card" }, [header]);
+  const header = buildReviewHeader({
+    stateClass: "poll",
+    index,
+    typeLabel,
+    timeSec: null,
+    text: q.text,
+    right: [],
+    expanded,
+    onToggle: () => { expandedPollReviews.has(q.id) ? expandedPollReviews.delete(q.id) : expandedPollReviews.add(q.id); render(); },
+  });
+  const card = el("div", { class: "review-card poll" + (expanded ? " open" : "") }, [header]);
 
   if (expanded) {
     const dist = item.distribution;
     const consensus = PL.computePollConsensus(dist);
     const myVoteIndices = new Set(item.myVote?.selectedOptionIndices || []);
-    const bodyEl = el("div", { class: "review-body" }, [
-      el("p", { class: "poll-note" }, [S.participantCount(dist.voterCount)]),
-    ]);
+    const bodyEl = el("div", { class: "review-body" }, []);
     if (consensus) bodyEl.appendChild(el("div", { class: "poll-consensus" }, [consensusText(consensus)]));
     dist.options.forEach((opt) => {
       bodyEl.appendChild(buildPollResultRow(opt, myVoteIndices.has(opt.optionIndex)));
@@ -2031,6 +2041,10 @@ function buildPollReviewCard(item, index) {
     if (dist.other.count > 0) {
       bodyEl.appendChild(buildPollResultRow(dist.other, myVoteIndices.has(PL.POLL_OTHER_INDEX), dist.otherEntries));
     }
+    bodyEl.appendChild(el("div", { class: "poll-footer" }, [
+      el("span", {}, [S.pollRespondents(dist.voterCount)]),
+      el("span", { class: "poll-unscored" }, [S.POLL_UNSCORED]),
+    ]));
     card.appendChild(bodyEl);
   }
   return card;
@@ -2041,17 +2055,18 @@ function buildPollResultRow(opt, mine, otherEntries) {
   // access to the string table — and documents that the UI must substitute its own
   // text by keying off POLL_OTHER_INDEX rather than rendering that literal.
   const label = opt.optionIndex === PL.POLL_OTHER_INDEX ? S.POLL_OTHER : opt.label;
+  const labelChildren = [el("span", { class: "label" }, [label])];
+  if (mine) labelChildren.push(el("span", { class: "your-vote-tag" }, [S.RESULT_YOUR_VOTE]));
   const children = [
     el("div", { class: "top" }, [
-      el("span", { class: "label" }, [label]),
-      el("span", { class: "pct" }, [S.percent(opt.percent)]),
+      el("span", { class: "label-wrap" }, labelChildren),
+      el("span", { class: "pct" }, [S.pollPctVotes(opt.percent, opt.count)]),
     ]),
     el("div", { class: "poll-result-bar" }, [el("div", { class: "poll-result-bar-fill", style: `width:${opt.percent}%` })]),
-    el("div", { class: "poll-result-count" }, [S.voteCount(opt.count)]),
   ];
   // "Other" free-text entries — what people actually typed, grouped and counted by
-  // computePollDistribution's otherEntries. Was collected and computed but never
-  // rendered anywhere on web (the aggregate "Other: N votes" bar was all a viewer saw).
+  // computePollDistribution's otherEntries (only ever present when the owner allowed
+  // "Other" on this poll).
   if (otherEntries && otherEntries.length > 0) {
     children.push(
       el("ul", { class: "poll-other-entries" }, otherEntries.map((entry) =>
@@ -2059,8 +2074,7 @@ function buildPollResultRow(opt, mine, otherEntries) {
       ))
     );
   }
-  // Per-voter "why" text from Ask Reason — also collected and computed already, just
-  // never shown on web.
+  // Per-voter "why" text — only collected when the owner turned on Ask Reason.
   if (opt.reasons && opt.reasons.length > 0) {
     children.push(
       el("ul", { class: "poll-reasons" }, opt.reasons.map((reason) => el("li", {}, [S.quotedReason(reason)])))
@@ -2070,10 +2084,32 @@ function buildPollResultRow(opt, mine, otherEntries) {
 }
 
 function consensusText(c) {
-  if (c.type === "strong") return `🔥 Strong agreement — ${c.percent}% chose "${c.option}"`;
-  if (c.type === "divided") return `⚖️ Split — "${c.optionA}" vs "${c.optionB}"`;
-  return `📊 "${c.option}" is leading with ${c.percent}%`;
+  if (c.type === "strong") return S.consensusStrong(c.percent, c.option);
+  if (c.type === "divided") return S.consensusDivided(c.optionA, c.optionB);
+  return S.consensusLeading(c.option, c.percent);
 }
+
+/** Shared review-card header — left accent bar, Q# pill, type badge, time, question
+ *  text, right-side badges (marks etc.) and the expand chevron. */
+function buildReviewHeader({ stateClass, index, typeLabel, timeSec, text, right, expanded, onToggle }) {
+  const meta = el("div", { class: "review-meta" }, [
+    el("span", { class: "q-pill " + stateClass }, [S.questionPill(index + 1)]),
+    el("span", { class: "type-badge " + stateClass }, [typeLabel]),
+  ]);
+  if (timeSec != null) {
+    meta.appendChild(el("span", { class: "review-time" }, [html(CLOCK_SMALL_SVG), S.timeTaken(timeSec)]));
+  }
+  const rightEl = el("div", { class: "review-right" }, right || []);
+  rightEl.appendChild(html(expanded ? CHEVRON_UP_SVG : CHEVRON_DOWN_SVG));
+  return el("div", { class: "review-header", onclick: onToggle }, [
+    el("div", { class: "review-accent " + stateClass }, []),
+    el("div", { class: "review-main" }, [meta, el("div", { class: "review-question" }, [stripMarkdownText(text)])]),
+    rightEl,
+  ]);
+}
+
+const CLOCK_SMALL_SVG = `<svg viewBox="0 0 16 16" fill="none" width="12" height="12"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v3l2 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const CHEVRON_UP_SVG = `<svg viewBox="0 0 16 16" fill="none" width="14" height="14"><path d="M4 10l4-4 4 4" stroke="#BBBACC" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 // ── Fill Blank — inline sentence (mirrors QuizPreviewScreen.kt's
 // FillBlankQuestionBody/InlineBlankField exactly: the blank is a real input
@@ -2266,16 +2302,19 @@ function buildScoreCard(score, total, marks) {
   }
 
   const numbersRow = [
-    el("div", { style: "display:flex;align-items:flex-end" }, [
-      el("span", { class: "score-big" }, [String(score)]),
-      el("span", { class: "score-total" }, [S.outOf(total)]),
+    el("div", {}, [
+      el("div", { style: "display:flex;align-items:flex-end" }, [
+        el("span", { class: "score-big" }, [String(score)]),
+        el("span", { class: "score-total" }, [S.outOf(total)]),
+      ]),
+      el("div", { class: "score-caption" }, [S.RESULT_QUESTIONS_CORRECT]),
     ]),
   ];
   if (marks) {
     numbersRow.push(
       el("div", {}, [
         el("div", { class: "accuracy-num" }, [S.percent(marks.percent)]),
-        el("div", { class: "accuracy-label" }, [S.marksBadge(marks.awarded, marks.total)]),
+        el("div", { class: "accuracy-label" }, [S.marksLine(marks.awarded, marks.total)]),
       ])
     );
   }
@@ -2297,9 +2336,7 @@ function buildScoreCard(score, total, marks) {
  * withholding it entirely would mean the taker learns nothing from this screen.
  */
 function buildPendingCard(pending, score, gradedCount) {
-  const body = gradedCount > 0
-    ? `${score} of ${gradedCount} app-checked questions correct. The other ${pending} still need the quiz admin to mark them by hand, so this isn't your final result yet.`
-    : S.RESULT_PENDING_BODY;
+  const body = gradedCount > 0 ? S.pendingPartial(score, gradedCount, pending) : S.RESULT_PENDING_BODY;
 
   return el("div", { class: "pending-card" }, [
     el("div", { class: "pending-title" }, [S.RESULT_PENDING_TITLE]),
@@ -2320,102 +2357,180 @@ function buildReviewCard(answer, index) {
   const stateClass = isPending ? "pending" : isCorrect ? "correct" : "wrong";
   const expanded = expandedReviews.has(answer.questionId);
 
-  const accent = el("div", { class: "review-accent " + stateClass }, []);
-  const meta = el("div", { class: "review-meta" }, [
-    el("span", { class: "q-pill " + stateClass }, [S.questionPill(index + 1)]),
-    el("span", { class: "muted" }, [S.timeTaken(answer.timeTakenSec)]),
-  ]);
-  // Mirrors ResultScreen.kt's per-row marks badge ("X/Y") for a points-carrying question —
-  // was missing on web entirely, so a marks-based quiz's review list gave no indication
-  // of how many marks each question actually earned, just a green/red accent color.
-  if (q.type !== "POLL" && answer.maxPoints > 0) {
-    meta.appendChild(el("span", { class: "marks-badge " + stateClass }, [S.marksFraction(answer.awardedPoints ?? 0, answer.maxPoints)]));
+  const right = [];
+  // Per-row marks badge ("X/Y") for a points-carrying question (ResultScreen.kt's badge).
+  if (answer.maxPoints > 0) {
+    right.push(el("span", { class: "marks-badge " + stateClass }, [S.marksFraction(answer.awardedPoints ?? 0, answer.maxPoints)]));
   }
-  if (isPending) meta.appendChild(el("span", { class: "pending-tag" }, [S.RESULT_AWAITING_MARKING]));
-  if (answer.usedHint) meta.appendChild(el("span", { class: "hint-used-tag" }, [S.HINT]));
-  const header = el(
-    "div",
-    { class: "review-header", onclick: () => { expandedReviews.has(q.id) ? expandedReviews.delete(q.id) : expandedReviews.add(q.id); render(); } },
-    [accent, el("div", { style: "flex:1" }, [meta, el("div", { class: "review-question" }, [stripMarkdownText(q.text)])])]
-  );
-  header.appendChild(html(CHEVRON_DOWN_SVG));
+  if (isPending) right.push(el("span", { class: "pending-tag" }, [S.RESULT_AWAITING_MARKING]));
+  if (answer.usedHint) right.push(el("span", { class: "hint-used-tag" }, [S.HINT]));
 
-  const card = el("div", { class: "review-card" }, [header]);
+  const header = buildReviewHeader({
+    stateClass,
+    index,
+    typeLabel: questionTypeLabel(q),
+    timeSec: answer.timeTakenSec,
+    text: q.text,
+    right,
+    expanded,
+    onToggle: () => { expandedReviews.has(q.id) ? expandedReviews.delete(q.id) : expandedReviews.add(q.id); render(); },
+  });
+
+  const card = el("div", { class: "review-card " + stateClass + (expanded ? " open" : "") }, [header]);
 
   if (expanded) {
     const bodyEl = el("div", { class: "review-body" }, []);
     if (q.type === "WRITTEN") {
-      const given = answer.givenAnswers[0] || "";
-      // The expected answer stays hidden while pending: it's the owner's reference for
-      // marking, and revealing it before they've judged invites "but I wrote that" .
-      if (!isPending) bodyEl.appendChild(reviewLine(S.RESULT_CORRECT_ANSWER, q.writtenAnswer || "", "#22C55E"));
-      bodyEl.appendChild(reviewLine(S.RESULT_YOUR_ANSWER, given || S.RESULT_NO_ANSWER, isPending ? "#B08900" : isCorrect ? "#22C55E" : "#EF4444"));
-      // Mirrors ResultScreen.kt's WrittenEvalRow — status label, points-earned badge,
-      // and per-word matched/unmatched chips from the evaluator's own breakdown. Was
-      // previously discarded entirely on web (only isCorrect survived past evaluate()),
-      // so a typo-tolerant/partial-credit answer just showed a flat green/red line with
-      // no explanation of how the verdict was actually reached.
-      const evalResult = answer.evaluationResult;
-      if (!isPending && evalResult) {
-        bodyEl.appendChild(buildWrittenEvalDetail(evalResult, answer.awardedPoints, answer.maxPoints));
-      }
+      bodyEl.appendChild(buildWrittenReview(q, answer, isPending, isCorrect));
     } else if (q.type === "FILL_BLANK") {
-      // This branch didn't exist at all before — FILL_BLANK has no q.options (that's
-      // WRITTEN/FILL_BLANK-only null per buildQuestionFromForm), so it fell into the
-      // "else" options branch below and rendered nothing on expand. Mirrors ResultScreen.kt's
-      // ReviewCard FILL_BLANK branch: one "correct answer"/"your answer" line pair per blank.
-      const content = q.fillBlankContent;
-      if (content) {
-        const ordered = FB.orderedBlanks(content);
-        const given = answer.givenAnswers || [];
-        ordered.forEach((blank, i) => {
-          const givenText = given[i] || "";
-          if (answer.needsManualMarking) {
-            // Manual: no accepted answer was ever recorded, so nothing to reveal — just
-            // the taker's own text, colored by the owner's whole-question verdict (or
-            // neutral while still pending).
-            const color = isPending ? "#B08900" : isCorrect ? "#22C55E" : "#EF4444";
-            bodyEl.appendChild(reviewLine(`BLANK ${i + 1} — YOUR ANSWER`, givenText || S.RESULT_NO_ANSWER, color));
-          } else {
-            const blankCorrect = FB.fillBlankIsCorrect(blank, givenText, content.checking);
-            const correctText = (blank.acceptedAnswers || []).find((a) => a && a.trim()) || "";
-            bodyEl.appendChild(reviewLine(`BLANK ${i + 1} — CORRECT ANSWER`, correctText, "#22C55E"));
-            bodyEl.appendChild(reviewLine(`BLANK ${i + 1} — YOUR ANSWER`, givenText || S.RESULT_NO_ANSWER, blankCorrect ? "#22C55E" : "#EF4444"));
-          }
-        });
-      }
+      bodyEl.appendChild(buildFillBlankReview(q, answer, isPending, isCorrect));
+    } else if (q.type === "TRUE_FALSE") {
+      bodyEl.appendChild(buildTrueFalseReview(q, answer, isPending));
     } else {
-      (q.options || []).forEach((opt) => {
-        const wasGiven = answer.givenAnswers.includes(opt);
-        const isCorrectOpt = (q.correctAnswers || []).includes(opt);
-        // While pending, only show what they picked — no green "this was right" hints.
-        const cls = isPending ? (wasGiven ? "pending" : "") : isCorrectOpt ? "correct" : wasGiven ? "wrong" : "";
-        // isCorrectOpt alone only ever means "this is a/the right answer" — shown green
-        // whether or not the taker actually picked it (that's what reveals the correct
-        // answer to them). Without a "YOUR ANSWER" tag, nothing distinguished "correct,
-        // and you picked it" from "correct, but you didn't" — both were a plain green
-        // check, so a reader genuinely couldn't tell what the taker had actually chosen.
-        const labelChildren = [el("span", {}, [opt])];
-        if (wasGiven) labelChildren.push(el("span", { class: "option-your-answer-tag" }, [S.RESULT_YOUR_ANSWER]));
-        bodyEl.appendChild(
-          el("div", { class: "option-row" + (cls ? " " + cls : ""), style: "cursor:default" }, [
-            el("div", { class: "option-marker" }, (isPending ? wasGiven : isCorrectOpt || wasGiven) ? [html(CHECK_SVG)] : []),
-            el("div", { style: "display:flex;flex-direction:column;gap:2px" }, labelChildren),
-          ])
-        );
-      });
+      bodyEl.appendChild(buildChoiceReview(q, answer, isPending));
+    }
+    // Creator-written explanation — only when one exists, and never while the answer is
+    // still waiting to be marked (it would reveal the reference before the judgment).
+    if (!isPending && q.reason && q.reason.trim()) {
+      bodyEl.appendChild(el("div", { class: "reason-box" }, [
+        el("strong", {}, [S.RESULT_EXPLANATION]),
+        " " + q.reason.trim(),
+      ]));
     }
     card.appendChild(bodyEl);
   }
   return card;
 }
 
-function reviewLine(label, text, color) {
-  return el("div", { class: "review-answer-line", style: `border-left-color:${color}` }, [
-    el("span", { class: "rline-label", style: `color:${color}` }, [label]),
-    el("span", {}, [text]),
-  ]);
+function questionTypeLabel(q) {
+  switch (q.type) {
+    case "WRITTEN": return S.TYPE_WRITTEN;
+    case "MULTIPLE_CORRECT": return S.TYPE_MULTI;
+    case "FILL_BLANK": return S.TYPE_FILL;
+    case "TRUE_FALSE": return S.TYPE_TF;
+    case "POLL": return S.TYPE_POLL;
+    default: return S.TYPE_SINGLE;
+  }
 }
+
+/** "Your Typed Answer" box (red/green/amber) + "Accepted Answers" box (hidden while
+ *  pending — it's the owner's marking reference). The verdict chip comes from the
+ *  evaluator's status when this result was just graded in this tab; a result reloaded
+ *  later only has isCorrect, so it degrades to Match / Mismatch. */
+function buildWrittenReview(q, answer, isPending, isCorrect) {
+  const given = (answer.givenAnswers || [])[0] || "";
+  const evalResult = answer.evaluationResult;
+  const mineChip = isPending
+    ? S.RESULT_AWAITING_MARKING
+    : evalResult && WRITTEN_STATUS_LABELS[evalResult.status] && evalResult.status !== "EXACT_MATCH" && evalResult.status !== "INCORRECT"
+      ? WRITTEN_STATUS_LABELS[evalResult.status]
+      : isCorrect ? S.RESULT_MATCH : S.RESULT_MISMATCH;
+  const mineState = isPending ? "pending" : isCorrect ? "correct" : "wrong";
+  const wrap = el("div", { class: "written-review" }, [
+    el("div", { class: "answer-box " + mineState }, [
+      el("div", { class: "answer-box-head" }, [
+        el("span", { class: "answer-box-label" }, [html(mineState === "wrong" ? BAR_SVG : TICK_SVG), S.RESULT_YOUR_TYPED]),
+        el("span", { class: "answer-chip " + mineState }, [mineChip]),
+      ]),
+      el("div", { class: "answer-box-text mono" }, [given || S.RESULT_NO_ANSWER]),
+    ]),
+  ]);
+  if (!isPending) {
+    const acceptedHead = [el("span", { class: "answer-box-label" }, [html(TICK_SVG), S.RESULT_ACCEPTED])];
+    if (evalResult && WRITTEN_STATUS_LABELS[evalResult.status]) {
+      acceptedHead.push(el("span", { class: "answer-chip correct" }, [WRITTEN_STATUS_LABELS[evalResult.status]]));
+    }
+    const acceptedChildren = [
+      el("div", { class: "answer-box-head" }, acceptedHead),
+      el("div", { class: "answer-box-text mono strong" }, [q.writtenAnswer || ""]),
+    ];
+    if (evalResult) {
+      acceptedChildren.push(buildWrittenEvalDetail(evalResult, answer.awardedPoints, answer.maxPoints));
+    }
+    wrap.appendChild(el("div", { class: "answer-box correct" }, acceptedChildren));
+  }
+  return wrap;
+}
+
+/** The sentence with each blank rendered as the taker's own text — green when it
+ *  matched, red (with the accepted answer chip right after it) when it didn't; amber
+ *  and unrevealed for manual marking. */
+function buildFillBlankReview(q, answer, isPending, isCorrect) {
+  const content = q.fillBlankContent;
+  if (!content) return el("div", {}, []);
+  const segments = FB.parseFillBlankTemplate(content.template, content.blanks);
+  const given = answer.givenAnswers || [];
+  const children = segments.map((seg) => {
+    if (seg.type === "text") return el("span", { class: "fb-word" }, [seg.text]);
+    const givenText = given[seg.orderIndex] || "";
+    if (answer.needsManualMarking) {
+      const cls = isPending ? "pending" : isCorrect ? "correct" : "wrong";
+      return el("span", { class: "fb-review-chip " + cls }, [givenText || S.RESULT_NO_ANSWER]);
+    }
+    const ok = FB.fillBlankIsCorrect(seg.blank, givenText, content.checking);
+    const frag = document.createDocumentFragment();
+    frag.appendChild(el("span", { class: "fb-review-chip " + (ok ? "correct" : "wrong") }, [givenText || S.RESULT_NO_ANSWER]));
+    if (!ok) {
+      const correctText = (seg.blank.acceptedAnswers || []).find((a) => a && a.trim()) || "";
+      if (correctText) frag.appendChild(el("span", { class: "fb-review-chip correct answer" }, [correctText]));
+    }
+    return frag;
+  });
+  return el("div", { class: "fb-review-sentence" }, children);
+}
+
+/** TRUE / FALSE as two tiles — the picked one carries the verdict, the other reads
+ *  "Not Selected" (or "Correct Answer" when it was the right one). */
+function buildTrueFalseReview(q, answer, isPending) {
+  const given = answer.givenAnswers || [];
+  const correct = q.correctAnswers || [];
+  const tiles = (q.options || []).map((opt) => {
+    const wasGiven = given.includes(opt);
+    const isCorrectOpt = correct.includes(opt);
+    let cls = "";
+    let sub = S.RESULT_TAG_NOT_SELECTED;
+    if (wasGiven) {
+      cls = isPending ? "pending" : isCorrectOpt ? "correct" : "wrong";
+      sub = isPending ? S.RESULT_TF_YOUR_PENDING : isCorrectOpt ? S.RESULT_TF_YOUR_CORRECT : S.RESULT_TF_YOUR_WRONG;
+    } else if (!isPending && isCorrectOpt) {
+      cls = "answer";
+      sub = S.RESULT_TAG_CORRECT_ANSWER;
+    }
+    return el("div", { class: "tf-tile " + cls }, [
+      el("div", { class: "tf-tile-label" }, [opt.toUpperCase()]),
+      el("div", { class: "tf-tile-sub" }, [sub]),
+    ]);
+  });
+  return el("div", { class: "tf-tiles" }, tiles);
+}
+
+/** Single / multiple choice — every option as a row with a radio/checkbox marker and a
+ *  right-aligned tag saying what it was to this taker. Pending: only what they picked. */
+function buildChoiceReview(q, answer, isPending) {
+  const given = answer.givenAnswers || [];
+  const correct = q.correctAnswers || [];
+  const multi = q.type === "MULTIPLE_CORRECT";
+  const rows = (q.options || []).map((opt) => {
+    const wasGiven = given.includes(opt);
+    const isCorrectOpt = correct.includes(opt);
+    let cls = "";
+    let tag = "";
+    if (isPending) {
+      if (wasGiven) { cls = "pending"; tag = S.RESULT_TAG_YOUR_CHOICE; }
+    } else if (wasGiven && isCorrectOpt) { cls = "correct"; tag = S.RESULT_TAG_YOUR_CORRECT; }
+    else if (wasGiven) { cls = "wrong"; tag = S.RESULT_TAG_YOUR_CHOICE; }
+    else if (isCorrectOpt) { cls = "answer"; tag = S.RESULT_TAG_CORRECT_ANSWER; }
+    const children = [
+      el("span", { class: "choice-marker" + (multi ? " square" : "") }, wasGiven ? [html(TICK_SVG)] : []),
+      el("span", { class: "choice-text" }, [opt]),
+    ];
+    if (tag) children.push(el("span", { class: "choice-tag" }, [tag]));
+    return el("div", { class: "choice-row " + cls }, children);
+  });
+  return el("div", { class: "choice-rows" }, rows);
+}
+
+const BAR_SVG = `<svg viewBox="0 0 16 16" fill="none" width="12" height="12"><rect x="6" y="2" width="4" height="12" rx="1.5" fill="currentColor"/></svg>`;
 
 const WRITTEN_STATUS_LABELS = {
   EXACT_MATCH: S.RESULT_CORRECT,
@@ -2482,14 +2597,35 @@ function renderResult() {
     ? { awarded: breakdown.marksAwarded, total: breakdown.marksTotal, percent: breakdown.marksPercent }
     : null;
 
+  const pollItems = state.result.pollItems || [];
+  const pollCount = pollItems.length;
+
   const content = el("div", { class: "screen result-screen" }, [
-    el("h2", { class: "quiz-title centered", style: "margin:4px 0 0" }, [quiz.title]),
+    el("h1", { class: "quiz-title centered" }, [quiz.title]),
+    el("div", { class: "candidate-line" }, [
+      html(USER_OUTLINE_SVG),
+      S.RESULT_CANDIDATE,
+      el("strong", {}, [SC.resolveDisplayName(state.user)]),
+    ]),
+    el("span", { class: "meta-chip plain count-chip" }, [S.resultCount(total + pollCount, total, pollCount)]),
     // Nothing marked yet means there is no score — not a zero, not a partial one — so the
     // score card is replaced outright rather than showing 0/N (mirrors PendingReviewCard).
     pending > 0 && gradedCount === 0
       ? buildPendingCard(pending, 0, 0)
       : buildScoreCard(score, total, marksForScoreCard),
   ]);
+
+  // Correct / Incorrect / Total Time / Hints Used — pending answers count under neither
+  // verdict (the pending banner above already accounts for them).
+  const incorrect = answers.filter((a) => !isPendingAnswer(a) && !a.isCorrect).length;
+  const totalTime = answers.reduce((sum, a) => sum + (a.timeTakenSec || 0), 0);
+  const hints = answers.filter((a) => a.usedHint).length;
+  content.appendChild(el("div", { class: "stat-grid" }, [
+    buildStatTile("correct", CHECK_STAT_SVG, S.RESULT_STAT_CORRECT, S.qsCount(score)),
+    buildStatTile("wrong", BAR_SVG, S.RESULT_STAT_INCORRECT, S.qsCount(incorrect)),
+    buildStatTile("time", CLOCK_SMALL_SVG, S.RESULT_STAT_TIME, S.secondsShort(totalTime)),
+    buildStatTile("hint", BULB_SVG, S.RESULT_STAT_HINTS, S.hintsUsed(hints)),
+  ]));
 
   if (pending > 0 && gradedCount > 0) {
     // Some questions were app-checked and some weren't: the score above is real but not
@@ -2521,33 +2657,105 @@ function renderResult() {
   if (!quiz.showResult) {
     content.appendChild(el("p", { class: "muted", style: "text-align:center" }, [S.RESULT_HIDDEN]));
   } else if (quiz.showAnswers) {
-    content.appendChild(el("p", { class: "muted", style: "font-weight:700;letter-spacing:0.6px" }, [S.RESULT_ANSWER_REVIEW]));
+    content.appendChild(el("div", { class: "review-head" }, [
+      el("div", { class: "review-head-title" }, [S.RESULT_ANSWER_REVIEW]),
+      el("div", { class: "review-head-sub" }, [S.RESULT_REVIEW_SUBTITLE]),
+    ]));
+
+    // Filter tabs — All / Incorrect / Correct / Poll (Poll only when there is one).
+    const filter = state.resultFilter || "all";
+    const tabs = [
+      ["all", S.tabAll(total + pollCount)],
+      ["incorrect", S.tabIncorrect(incorrect)],
+      ["correct", S.tabCorrect(score)],
+    ];
+    if (pollCount > 0) tabs.push(["poll", S.tabPoll(pollCount)]);
+    content.appendChild(el("div", { class: "filter-tabs" }, tabs.map(([key, label]) =>
+      el("button", {
+        class: "filter-tab " + key + (filter === key ? " active" : ""),
+        onclick: () => { state.resultFilter = key; render(); },
+      }, [label])
+    )));
+
     // Poll questions interleaved at their original position in the quiz, same as
     // ResultScreen.kt's resultItems (Scored + PollItem, sortedBy index) — a poll
     // sitting between two scored questions shows up between them here too, not
     // dumped at the end.
     const answerByQid = new Map(answers.map((a) => [a.questionId, a]));
-    const pollByQid = new Map((state.result.pollItems || []).map((p) => [p.question.id, p]));
+    const pollByQid = new Map(pollItems.map((p) => [p.question.id, p]));
+    const list = el("div", { class: "review-list" }, []);
     quiz.questions.forEach((q, idx) => {
       if (q.type === "POLL") {
+        if (filter !== "all" && filter !== "poll") return;
         const item = pollByQid.get(q.id);
-        if (item) content.appendChild(buildPollReviewCard(item, idx));
+        if (item) list.appendChild(buildPollReviewCard(item, idx));
       } else {
         const a = answerByQid.get(q.id);
-        if (a) {
-          const card = buildReviewCard(a, idx);
-          if (card) content.appendChild(card);
-        }
+        if (!a) return;
+        const pendingA = isPendingAnswer(a);
+        if (filter === "poll") return;
+        if (filter === "correct" && (pendingA || !a.isCorrect)) return;
+        if (filter === "incorrect" && (pendingA || a.isCorrect)) return;
+        const card = buildReviewCard(a, idx);
+        if (card) list.appendChild(card);
       }
     });
+    content.appendChild(list);
   }
 
-  content.appendChild(
-    el("button", { class: "primary", style: "margin-top:8px", onclick: () => leaveQuiz(S.CLOSED_THANKS) }, [S.DONE])
-  );
+  // Retake only when the creator allows it and the quiz is still open; PDF is the
+  // browser's own print → Save as PDF (see the @media print rules in style.css).
+  const actions = el("div", { class: "result-actions" }, []);
+  if (quiz.allowRetake && SC.effectiveStatus(quiz) === "ACTIVE") {
+    actions.appendChild(el("button", { class: "primary", onclick: retakeQuizAction }, [
+      html(REFRESH_SVG), state.joining ? S.JOINING : S.RESULT_RETAKE,
+    ]));
+    if (state.joinError) actions.appendChild(el("p", { class: "muted", style: "color:var(--error);text-align:center" }, [state.joinError]));
+  }
+  actions.appendChild(el("button", { class: "outline-btn", onclick: printResult }, [html(PDF_SVG), S.RESULT_PDF]));
+  actions.appendChild(el("button", { class: "text-link", onclick: () => leaveQuiz(S.CLOSED_THANKS) }, [S.DONE]));
+  content.appendChild(actions);
 
   main.appendChild(content);
 }
+
+function buildStatTile(kind, iconSvg, label, value) {
+  return el("div", { class: "stat-tile" }, [
+    el("span", { class: "stat-icon " + kind }, [html(iconSvg)]),
+    el("div", { class: "stat-text" }, [
+      el("span", { class: "stat-label" }, [label]),
+      el("span", { class: "stat-value" }, [value]),
+    ]),
+  ]);
+}
+
+/** Print → Save as PDF. While printing, every card is expanded and the filter ignored
+ *  (the `printing` class on <body> drives that in CSS), then restored afterwards. */
+function printResult() {
+  const savedFilter = state.resultFilter;
+  const savedReviews = new Set(expandedReviews);
+  const savedPolls = new Set(expandedPollReviews);
+  state.resultFilter = "all";
+  state.quiz.questions.forEach((q) => { expandedReviews.add(q.id); expandedPollReviews.add(q.id); });
+  document.body.classList.add("printing");
+  render();
+  const restore = () => {
+    document.body.classList.remove("printing");
+    state.resultFilter = savedFilter;
+    expandedReviews.clear(); savedReviews.forEach((id) => expandedReviews.add(id));
+    expandedPollReviews.clear(); savedPolls.forEach((id) => expandedPollReviews.add(id));
+    window.removeEventListener("afterprint", restore);
+    render();
+  };
+  window.addEventListener("afterprint", restore);
+  // Deferred a frame so the expanded DOM is painted before the print dialog snapshots it.
+  requestAnimationFrame(() => setTimeout(() => window.print(), 50));
+}
+
+const USER_OUTLINE_SVG = `<svg viewBox="0 0 24 24" fill="none" width="15" height="15"><circle cx="12" cy="8.5" r="3.5" stroke="currentColor" stroke-width="1.8"/><path d="M5.5 19c.8-3.2 3.3-4.8 6.5-4.8s5.7 1.6 6.5 4.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+const CHECK_STAT_SVG = `<svg viewBox="0 0 16 16" fill="none" width="14" height="14"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const REFRESH_SVG = `<svg viewBox="0 0 20 20" fill="none" width="16" height="16"><path d="M16 10a6 6 0 01-10.5 4M4 10a6 6 0 0110.5-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14.5 3v3.5H11M5.5 17v-3.5H9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const PDF_SVG = `<svg viewBox="0 0 20 20" fill="none" width="16" height="16"><path d="M5 3h7l4 4v10H5V3z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 3v4h4M7.5 11h5M7.5 14h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
 
 // ── Boot ───────────────────────────────────────────────────────────────────
 async function boot() {
