@@ -21,14 +21,14 @@ const S = {
   ERR_SUPABASE_CDN: "Supabase library failed to load from CDN.",
 
   // ── Shared shell (header + footer on every screen) ─────────────────────
-  BRAND: "Testly",
+  BRAND: "Quizoma",
   STATUS_READY: "Ready",
   STATUS_LOADING: "Loading",
   STATUS_ERROR: "Error",
   STATUS_IN_PROGRESS: "In progress",
   STATUS_SESSION_READY: "Session Ready",
   STATUS_PAUSED: "Maintenance",
-  footerVersion: (v) => `Testly Web v${v}`,
+  footerVersion: (v) => `Quizoma Web v${v}`,
   FOOTER_TERMS: "Terms",
   FOOTER_PRIVACY: "Privacy",
 

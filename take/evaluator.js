@@ -9,7 +9,15 @@
 // ── TextNormalizer.kt ────────────────────────────────────────────────────
 const TextNormalizer = {
   // \p{L}/\p{N} need the 'u' flag in JS regex to behave like Kotlin's \p{L}/\p{N}.
-  _punct: /[^\p{L}\p{N} ]/gu,
+  // \p{M} keeps every script's combining marks (G-02) — see TextNormalizer.kt's doc for why
+  // this whitelist silently deleted Devanagari/Bengali/etc. vowel signs as "punctuation"
+  // before, and why Arabic harakat is stripped separately below rather than folded in here.
+  _punct: /[^\p{L}\p{N}\p{M} ]/gu,
+  // Arabic/Urdu diacritics only — mirrors TextNormalizer.kt's arabicHarakatRegex exactly,
+  // including the doc there on why this can't be a \p{Script=Arabic} regex property (the
+  // marks' own Script is "Common"/"Inherited", not "Arabic", on both JS and Java's engines —
+  // verified directly).
+  _arabicHarakat: /[ؐ-ًؚ-ٰٟۖ-ۜ۟-۪ۤۧۨ-ۭ࣓-ࣣ࣡-ࣿ]/g,
   _space: /\s+/g,
 
   /** Shared cleaning pipeline. The collapse-strip-collapse ordering is deliberate and
@@ -24,7 +32,7 @@ const TextNormalizer = {
   _clean(input, dropPunctuation) {
     const collapsed = input.replace(this._space, " ");
     const stripped = dropPunctuation
-      ? collapsed.replace(this._punct, "").replace(this._space, " ")
+      ? collapsed.replace(this._punct, "").replace(this._arabicHarakat, "").replace(this._space, " ")
       : collapsed;
     return stripped.trim();
   },
@@ -185,7 +193,9 @@ function defaultAnswerRule(overrides) {
       keywords: [],
       keywordCoverage: "ALL", // ALL=1.0, MOST=0.75, HALF=0.50
       partialCreditEnabled: false,
-      marksPattern: "WEIGHTED_BY_SIMILARITY",
+      // G-01: was "WEIGHTED_BY_SIMILARITY" — see computeScore's doc below for why that
+      // silently graded every untouched quiz on a curve. Mirrors AnswerRule.kt's default.
+      marksPattern: "ALL_OR_NOTHING",
     },
     overrides || {}
   );
@@ -193,15 +203,26 @@ function defaultAnswerRule(overrides) {
 
 const KEYWORD_COVERAGE_THRESHOLD = { ALL: 1.0, MOST: 0.75, HALF: 0.5 };
 
-/** Mirrors computeScore() in AnswerModels.kt exactly, including the
- *  HALF_FOR_PARTIAL/ALL_OR_NOTHING branches being identical (a latent
- *  duplication in the Kotlin source, replicated here on purpose for parity —
- *  not something this task was asked to fix). */
+/** Mirrors computeScore() in AnswerModels.kt exactly, including the HALF_FOR_PARTIAL/
+ *  ALL_OR_NOTHING branches being identical (a latent duplication in the Kotlin source,
+ *  replicated here on purpose for parity — not something G-01 was asked to fix).
+ *
+ *  G-01: WEIGHTED_BY_SIMILARITY's PARTIAL_MATCH case now requires partialCreditEnabled, same
+ *  as the other two patterns already did — it used to score any non-zero similarity
+ *  regardless of that flag, and the caller (app.js's finishQuiz) rounded any nonzero score up
+ *  to full marks, so a 40%-similar answer (PARTIAL_MATCH's passing floor) silently earned
+ *  full credit on the default rule. */
 function computeScore(result, points, rule) {
   if (result.status === "INCORRECT") return 0;
   let raw;
   if (rule.marksPattern === "WEIGHTED_BY_SIMILARITY") {
-    raw = points * clamp(result.similarityScore, 0, 1);
+    if (result.status === "EXACT_MATCH" || result.status === "ACCEPTED_WITH_TYPO") {
+      raw = points * clamp(result.similarityScore, 0, 1);
+    } else if (result.status === "PARTIAL_MATCH") {
+      raw = rule.partialCreditEnabled ? points * clamp(result.similarityScore, 0, 1) : 0;
+    } else {
+      raw = 0; // unreachable — INCORRECT already returned above
+    }
   } else {
     // HALF_FOR_PARTIAL and ALL_OR_NOTHING share this same body in the Kotlin source.
     if (result.status === "EXACT_MATCH" || result.status === "ACCEPTED_WITH_TYPO") raw = points * 1;

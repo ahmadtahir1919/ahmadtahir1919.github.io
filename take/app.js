@@ -33,7 +33,7 @@ if (!window.Evaluator || !window.SupabaseClient || !window.FillBlank || !window.
     "A required script failed to load (often a slow/blocked connection to the Supabase library CDN). " +
     "Please check your connection and reload the page." +
     "</div>";
-  throw new Error("Testly web: required globals missing (Evaluator/SupabaseClient/FillBlank/Poll/S) — aborting boot.");
+  throw new Error("Quizoma web: required globals missing (Evaluator/SupabaseClient/FillBlank/Poll/S) — aborting boot.");
 }
 if (window.SupabaseClient.initError) {
   app.innerHTML =
@@ -41,7 +41,7 @@ if (window.SupabaseClient.initError) {
     "<b>Couldn't connect.</b><br><br>" +
     window.SupabaseClient.initError.message +
     "</div>";
-  throw new Error("Testly web: Supabase client failed to initialize — aborting boot.");
+  throw new Error("Quizoma web: Supabase client failed to initialize — aborting boot.");
 }
 
 const { evaluate, computeScore, defaultAnswerRule } = window.Evaluator;
@@ -1463,17 +1463,25 @@ async function finishQuiz() {
         const expected = q.writtenAnswer || "";
         if (!userInput.trim()) {
           isCorrect = false;
+          rawPoints = 0;
         } else if (!expected.trim()) {
-          // No expected answer was ever set — any attempt counts as correct.
+          // No expected answer was ever set — any attempt counts as correct, for full marks.
           isCorrect = true;
+          rawPoints = q.points;
         } else {
           const rule = q.answerRule || defaultAnswerRule();
           evaluationResult = evaluator.evaluate(userInput, expected, rule);
-          // Math.max(points, 1): computeScore multiplies by points, so a no-marks
-          // question (points = 0) would grade every answer as wrong no matter what.
-          isCorrect = evaluator.computeScore(evaluationResult, Math.max(q.points, 1), rule) > 0;
+          // Math.max(points, 1): for a 0-points (correctness-track) question, computeScore
+          // against the real points (0) would always read as 0 regardless of verdict — score
+          // against a nominal 1 purely to read off correctness.
+          const nominalPoints = Math.max(q.points, 1);
+          const earned = evaluator.computeScore(evaluationResult, nominalPoints, rule);
+          isCorrect = earned > 0;
+          // G-01: the marks track's award IS whatever computeScore returned, not a flat
+          // "correct means full marks" — mirrors QuizPreviewViewModel.finishPreview's
+          // identical fix on the Android side. A 0-points question earns 0 either way.
+          rawPoints = q.points > 0 ? Math.round(earned) : 0;
         }
-        rawPoints = isCorrect ? q.points : 0;
       } else if (q.type === "FILL_BLANK") {
         isCorrect = q.fillBlankContent ? FB.fillBlankIsQuestionCorrect(q.fillBlankContent, given) : false;
         rawPoints = isCorrect ? q.points : 0;
