@@ -10,7 +10,7 @@
 // Plain script (not type="module") on purpose — app.js and friends already reach
 // supabase-js the same way, via a plain global (see index.html's own comment on why).
 (function () {
-  var POSTHOG_API_KEY = ""; // fill in once a PostHog project exists
+  var POSTHOG_API_KEY = "phc_uT6HjPYV4TLQ452NHGEuABxHuC6KUDfBQtHXHebhj2wm"; // fill in once a PostHog project exists
   var POSTHOG_HOST = "https://us.i.posthog.com";
 
   function noop() {}
