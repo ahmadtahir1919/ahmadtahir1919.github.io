@@ -26,7 +26,13 @@
     defaults: "2026-05-30",
     // Screen views are sent explicitly via window.Analytics.screen() below — same
     // reasoning as the Android side disabling captureScreenViews.
-    capture_pageview: false
+    capture_pageview: false,
+    // Only the explicit track()/screen() events below — never autocaptured clicks or
+    // input text, and never session recordings: a taker types answers on this page, and
+    // the privacy policy (deploy/privacy/) promises those never reach analytics.
+    autocapture: false,
+    disable_session_recording: true,
+    capture_pageleave: false
   });
 
   // A super property — attaches to every capture() from here on, so every existing

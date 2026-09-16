@@ -2869,7 +2869,9 @@ async function boot() {
     state.quiz = quiz;
     state.user = await SC.getCurrentUser();
     if (state.user) {
-      window.Analytics.identify(state.user.id, { email: state.user.email });
+      // Pseudonymous id only, same as the Android app (AuthRepository.identifyIfNeeded):
+      // the privacy policy promises analytics never receives email or name.
+      window.Analytics.identify(state.user.id);
       state.existingAttempt = await SC.fetchExistingAttempt(quiz.id, state.user.id);
       // With no existingAttempt, a non-null stamp means this account started the quiz
       // (here or in the app) and left without submitting — Retake, or locked when the
