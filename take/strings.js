@@ -131,6 +131,10 @@ const S = {
   HELPER_TRUE_FALSE: "Select true or false",
   HELPER_WRITTEN: "Type your detailed written answer below",
   HELPER_FILL_BLANK: "Type the missing words in the blanks below",
+  // Question preview (read first) — mirrors qz_reveal_* in strings.xml.
+  REVEAL_GET_READY: "Read the question",
+  REVEAL_CHOICES_SOON: "Choices appear in a moment",
+  REVEAL_ANSWER_SOON: "Answer box appears in a moment",
   YOUR_SELECTION: "Your selection",
   TF_SELECTED: "Selected choice",
   TF_ALTERNATIVE: "Alternative choice",

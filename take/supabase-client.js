@@ -141,6 +141,9 @@ function quizFromRow(row, questions) {
     showTimers: row.show_timers ?? true,
     splitPointsAcrossChoices: row.split_points_across_choices ?? false,
     timeWeightageEnabled: row.time_weightage_enabled ?? false,
+    // Seconds each non-poll question shows on its own before its choices (0 = off) —
+    // Quiz.questionPreviewSec, stamped from the creator's app setting.
+    questionPreviewSec: row.question_preview_sec ?? 4,
     themeColorName: row.theme_color_name,
     createdAt: row.created_at,
     questions: questions.sort((a, b) => a.orderIndex - b.orderIndex),

@@ -78,6 +78,12 @@ const state = {
   totalTimeSec: 0,
   timerHandle: null,
   autoFinishHandle: null, // setTimeout id — LAST question only, once it's been answered
+  // Question preview (quiz.questionPreviewSec): the question shows on its own first, with
+  // no choices and no clock — mirrors QuizPreviewUiState.revealingQuestion.
+  revealing: false,
+  revealHandle: null, // setTimeout id ending the preview
+  revealStartedAt: 0, // epoch ms — keeps the fill bar continuous across re-renders
+  revealJustEnded: false, // one render: the card settles up and the choices animate in
   questionStartSec: 0,
   questionAnswers: {}, // questionId -> raw keys (index-strings / written text)
   questionTimings: {}, // questionId -> seconds
@@ -188,6 +194,8 @@ function buildSiteFooter() {
  *  regular link tap don't qualify, so the button just doesn't render there). */
 function leaveQuiz(message) {
   clearInterval(state.timerHandle);
+  clearTimeout(state.revealHandle);
+  state.revealing = false;
   cancelLastQuestionAutoFinish();
   state.closedMessage = message;
   state.screen = "closed";
@@ -1039,8 +1047,37 @@ function prepareCurrentQuestion() {
     loadPollForCurrentQuestion(q);
     return;
   }
+  const previewSec = state.quiz.questionPreviewSec || 0;
+  if (previewSec > 0) {
+    startQuestionReveal(q, previewSec);
+    return;
+  }
   startTimer();
   render();
+}
+
+/** Mirrors QuizPreviewViewModel.prepareCurrentQuestion's preview branch: the question
+ *  shows alone for [sec] seconds, then its choices and timer appear. questionStartSec is
+ *  reset at that moment so the reading time never counts as answer time (time taken and
+ *  time weightage both read it). */
+function startQuestionReveal(q, sec) {
+  clearInterval(state.timerHandle);
+  clearTimeout(state.revealHandle);
+  state.totalTimeSec = 0;
+  state.secondsRemaining = 0;
+  state.revealing = true;
+  state.revealStartedAt = Date.now();
+  render();
+  state.revealHandle = setTimeout(() => {
+    state.revealHandle = null;
+    if (!state.revealing || currentQuestion()?.id !== q.id) return;
+    state.revealing = false;
+    state.questionStartSec = Math.floor(Date.now() / 1000);
+    state.revealJustEnded = true;
+    startTimer();
+    render();
+    state.revealJustEnded = false;
+  }, sec * 1000);
 }
 
 /** Opens the poll on first visit (lazy — mirrors PollRepository.ensureOpen:
@@ -1271,6 +1308,7 @@ function cancelLastQuestionAutoFinish() {
 
 async function advance(castPollVote) {
   if (state.instantFeedback) return; // already mid-feedback — ignore stray taps
+  if (state.revealing) return; // question still previewing on its own — nothing to answer yet
   // A real Finish/Skip tap (or the auto-finish firing) takes over from here.
   cancelLastQuestionAutoFinish();
   const q = currentQuestion();
@@ -1575,7 +1613,7 @@ function buildQuizTopBar(quiz, q) {
     right = state.totalTimeSec > 0
       ? el("div", { id: "timer-chip", class: "timer-chip poll-chip" }, [])
       : el("div", { class: "timer-chip poll-chip" }, [html(BAR_CHART_SVG), S.POLL_CHIP]);
-  } else if (quiz.showTimers && q.timeSec > 0) {
+  } else if (quiz.showTimers && q.timeSec > 0 && !state.revealing) {
     right = el("div", { id: "timer-chip", class: "timer-chip" }, []);
   } else {
     right = el("div", { class: "topbar-spacer" }, []);
@@ -1610,8 +1648,10 @@ let lastAnimatedProgressIndex = -1;
  */
 function buildQuestionProgressBar(quiz) {
   const total = quiz.questions.length;
-  const isNewQuestion = lastAnimatedProgressIndex !== state.currentIndex;
-  lastAnimatedProgressIndex = state.currentIndex;
+  // While the question previews on its own the current segment stays empty (nothing is
+  // timed yet), and its one-shot fill is saved for when the choices actually arrive.
+  const isNewQuestion = !state.revealing && lastAnimatedProgressIndex !== state.currentIndex;
+  if (!state.revealing) lastAnimatedProgressIndex = state.currentIndex;
   const timed = state.totalTimeSec > 0;
   const segments = [];
   for (let i = 0; i < total; i++) {
@@ -1621,7 +1661,9 @@ function buildQuestionProgressBar(quiz) {
     if (i < state.currentIndex) {
       fillPct = 100;
     } else if (i === state.currentIndex) {
-      if (timed) {
+      if (state.revealing) {
+        fillPct = 0;
+      } else if (timed) {
         fillPct = ((state.totalTimeSec - state.secondsRemaining) / state.totalTimeSec) * 100;
         segId = "current-progress-fill";
       } else {
@@ -1654,7 +1696,7 @@ function buildBottomBar(q, isLastQuestion, onSkipFn, onNextFn) {
       ])
     );
   }
-  const disabled = !!state.instantFeedback;
+  const disabled = !!state.instantFeedback || state.revealing;
   // "Vote" instead of Next/Finish while a poll still needs its vote-cast tap — even as
   // the last question, since this tap casts and reveals in place rather than moving on
   // (see advance()). Matches PreviewBottomBar's isPollQuestion label on Android.
@@ -1678,7 +1720,7 @@ function buildBottomBar(q, isLastQuestion, onSkipFn, onNextFn) {
  *  inline (see renderQuiz's hint-box, right below the question) rather than a popup, to
  *  keep this file's plain-DOM approach — no modal/bottom-sheet primitive exists here. */
 function showHintAction() {
-  if (state.instantFeedback) return;
+  if (state.instantFeedback || state.revealing) return;
   const q = currentQuestion();
   state.hintVisible = true;
   state.hintUsed[q.id] = true;
@@ -1706,7 +1748,7 @@ function buildBadgeRow(quiz, q) {
   if (q.hint) {
     const hintBtn = el("button", { class: "hint-link", onclick: showHintAction }, [html(BULB_SVG), S.HINT_BUTTON]);
     // Disabled during instant feedback: the question is settled, nothing left to hint at.
-    if (state.instantFeedback) hintBtn.disabled = true;
+    if (state.instantFeedback || state.revealing) hintBtn.disabled = true;
     end.push(hintBtn);
   }
   if (!quiz.showQuestionNumbers && end.length === 0) return null;
@@ -1761,6 +1803,25 @@ function buildQuestionHelper(q) {
   }
 }
 
+/** Under the question while it previews on its own — mirrors QuestionRevealIndicator.kt:
+ *  breathing dots, a short cue, and a bar that *fills* (no digits, so it never reads as the
+ *  answer timer). A negative animation-delay keeps the bar continuous if anything re-renders
+ *  mid-preview, instead of restarting it. */
+function buildRevealIndicator(q, sec) {
+  const elapsedMs = Math.max(0, Date.now() - state.revealStartedAt);
+  const fill = el("div", {
+    class: "reveal-bar-fill",
+    style: `animation-duration:${sec}s;animation-delay:-${elapsedMs}ms`,
+  }, []);
+  const soon = q.type === "WRITTEN" || q.type === "FILL_BLANK" ? S.REVEAL_ANSWER_SOON : S.REVEAL_CHOICES_SOON;
+  return el("div", { class: "reveal-indicator", role: "status" }, [
+    el("div", { class: "reveal-dots", "aria-hidden": "true" }, [el("span", {}, []), el("span", {}, []), el("span", {}, [])]),
+    el("div", { class: "reveal-title" }, [S.REVEAL_GET_READY]),
+    el("div", { class: "reveal-sub" }, [soon]),
+    el("div", { class: "reveal-bar", "aria-hidden": "true" }, [fill]),
+  ]);
+}
+
 function buildFeedbackBanner(fb) {
   return el("div", { class: "feedback-banner " + (fb.isCorrect ? "correct" : "wrong") }, [fb.isCorrect ? S.FEEDBACK_CORRECT : S.FEEDBACK_WRONG]);
 }
@@ -1773,7 +1834,11 @@ function renderQuiz() {
   const isLastQuestion = state.currentIndex === quiz.questions.length - 1;
   const fb = state.instantFeedback;
 
-  const questionArea = el("div", { class: "quiz-body" }, []);
+  const bodyClass = "quiz-body" +
+    (state.revealing ? " revealing" : "") +
+    (state.revealing && Date.now() - state.revealStartedAt < 120 ? " reveal-enter" : "") +
+    (state.revealJustEnded ? " answers-in" : "");
+  const questionArea = el("div", { class: bodyClass }, []);
   const badgeRow = buildBadgeRow(quiz, q);
   if (badgeRow) questionArea.appendChild(badgeRow);
   questionArea.appendChild(buildQuestionCard(q));
@@ -1781,7 +1846,9 @@ function renderQuiz() {
     questionArea.appendChild(buildHintBox(q.hint));
   }
 
-  if (q.type === "POLL") {
+  if (state.revealing) {
+    questionArea.appendChild(buildRevealIndicator(q, quiz.questionPreviewSec));
+  } else if (q.type === "POLL") {
     if (!state.pollState) {
       questionArea.appendChild(el("p", { class: "muted" }, [S.LOADING]));
     } else if (state.pollDistribution && !state.pollEditingVote) {
