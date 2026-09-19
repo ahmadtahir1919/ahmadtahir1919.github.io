@@ -931,6 +931,11 @@ async function goToExistingResult() {
  *  of this screen, so nothing should need a tap to be seen. */
 function openResultScreen() {
   state.resultFilter = "all";
+  // The score counts up once per result, and the details start folded away.
+  state.resultAnimated = false;
+  state.resultSummaryOpen = false;
+  state.resultReviewOpen = false;
+  state.resultJustToggled = null;
   expandedReviews.clear();
   expandedPollReviews.clear();
   state.quiz.questions.forEach((q) => { expandedReviews.add(q.id); expandedPollReviews.add(q.id); });
@@ -2459,52 +2464,104 @@ function buildScoreSectionCard(title, subtitle, value, percent, pending) {
  *  accuracy%, and progress track. No "Passed"/"Not passed" status label anymore (a 60%-
  *  threshold pass/fail read as needlessly harsh on an otherwise-decent score) — only a
  *  genuine zero-correct result gets called out as "Failed", same as Android. */
-// No accuracy%/progress bar here anymore — the score itself (and the Marks/
-// Correctness sections below, for a graded quiz) already say everything a
-// percentage would, without implying a pass/fail-style judgment on top of it.
 /**
- * @param marks Optional { awarded, total, percent } — when a marks-carrying quiz is fully
- *   graded (never while anything in that track is still pending), its percent fills the
- *   empty right side of the numbers row instead of leaving it blank (this row used to be a
- *   two-sided layout back when it also showed an overall accuracy% — see accuracy-num/
- *   accuracy-label in style.css, reused here rather than adding a whole new section that
- *   would just make the card taller).
+ * The score, big, on one solid block of the quiz's color — mirrors ResultScreen.kt's
+ * ScoreHero. No gradient, disc or badge: the number carries the card. It counts up while
+ * the bar fills, then the one-line summary settles in — once per result
+ * (state.resultAnimated), since render() rebuilds the DOM on every tap.
+ *
+ * @param marks Optional { awarded, total } — only when a marks track is fully graded.
  */
-function buildScoreCard(score, total, marks) {
-  const badge = el("div", { class: "badge" }, []);
-  badge.appendChild(html(TROPHY_SVG));
+function buildScoreHero(score, total, marks, pollCount) {
+  const percent = total > 0 ? Math.round((score / total) * 100) : 0;
+  const animate = !state.resultAnimated && !prefersReducedMotion();
+  const missed = Math.max(0, total - score);
 
-  const labelColumn = [el("div", { class: "label" }, [S.RESULT_YOUR_SCORE])];
-  if (score === 0) {
-    labelColumn.push(el("div", { class: "status" }, [S.RESULT_FAILED]));
-  }
+  const band = score === 0 ? S.RESULT_BAND_ZERO
+    : percent >= 80 ? S.RESULT_BAND_HIGH
+    : percent >= 50 ? S.RESULT_BAND_MID
+    : S.RESULT_BAND_LOW;
+  const sentence = [band];
+  if (missed > 0 && score > 0) sentence.push(S.resultMissed(missed));
+  if (pollCount > 0) sentence.push(S.resultPolls(pollCount));
 
-  const numbersRow = [
-    el("div", {}, [
-      el("div", { style: "display:flex;align-items:flex-end" }, [
-        el("span", { class: "score-big" }, [String(score)]),
-        el("span", { class: "score-total" }, [S.outOf(total)]),
-      ]),
-      el("div", { class: "score-caption" }, [S.RESULT_QUESTIONS_CORRECT]),
+  const footer = [el("div", { class: "hero-sentence" }, [sentence.join("  ·  ")])];
+  if (marks) footer.push(el("div", { class: "hero-marks" }, [S.marksLine(marks.awarded, marks.total)]));
+
+  return el("div", {
+    class: "score-hero" + (animate ? " animate" : ""),
+    style: `--pct:${percent}%`,
+    "data-score": String(score),
+    "data-percent": String(percent),
+  }, [
+    el("div", { class: "hero-label" }, [S.RESULT_SCORE_LABEL]),
+    el("div", { class: "hero-numbers" }, [
+      el("span", { class: "hero-score" }, [animate ? "0" : String(score)]),
+      el("span", { class: "hero-total" }, [S.outOf(total)]),
     ]),
-  ];
-  if (marks) {
-    numbersRow.push(
-      el("div", {}, [
-        el("div", { class: "accuracy-num" }, [S.percent(marks.percent)]),
-        el("div", { class: "accuracy-label" }, [S.marksLine(marks.awarded, marks.total)]),
-      ])
-    );
-  }
-
-  return el("div", { class: "score-card" }, [
-    el("div", { class: "row-top" }, [
-      badge,
-      el("div", {}, labelColumn),
+    el("div", { class: "hero-bar-row" }, [
+      el("div", { class: "hero-bar" }, [el("div", { class: "hero-bar-fill" }, [])]),
+      el("span", { class: "hero-percent" }, [S.percent(animate ? 0 : percent)]),
     ]),
-    el("div", { class: "numbers" }, numbersRow),
+    el("div", { class: "hero-footer" }, footer),
   ]);
 }
+
+function prefersReducedMotion() {
+  return window.matchMedia && window.matchMedia(`(prefers-reduced-motion: reduce)`).matches;
+}
+
+/** Counts the hero's number and percent up in step with its CSS bar fill (same duration
+ *  and easing), then marks the result as animated so later re-renders show it settled. */
+function runScoreHeroCountUp() {
+  const hero = document.querySelector(`.score-hero.animate`);
+  state.resultAnimated = true;
+  if (!hero) return;
+  const score = Number(hero.dataset.score);
+  const percent = Number(hero.dataset.percent);
+  const scoreEl = hero.querySelector(`.hero-score`);
+  const percentEl = hero.querySelector(`.hero-percent`);
+  const DELAY = 200, DURATION = 1100;
+  const start = performance.now() + DELAY;
+  const ease = (t) => 1 - Math.pow(1 - t, 3);
+  const tick = (now) => {
+    if (!hero.isConnected) return;
+    const t = Math.min(1, Math.max(0, (now - start) / DURATION));
+    const e = ease(t);
+    scoreEl.textContent = String(Math.round(score * e));
+    percentEl.textContent = S.percent(Math.round(percent * e));
+    if (t < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+/** A plain collapsible section under the hero — mirrors ResultScreen.kt's ResultExpander.
+ *  The body is always in the DOM (hidden when closed) so Print → PDF can show it. */
+function buildResultExpander(key, title, subtitle, open, body) {
+  const justToggled = state.resultJustToggled === key;
+  const head = el("button", {
+    class: "expander-head",
+    "aria-expanded": open ? "true" : "false",
+    onclick: () => {
+      if (key === "summary") state.resultSummaryOpen = !state.resultSummaryOpen;
+      else state.resultReviewOpen = !state.resultReviewOpen;
+      state.resultJustToggled = key;
+      render();
+      state.resultJustToggled = null;
+    },
+  }, [
+    el("span", { class: "expander-text" }, [
+      el("span", { class: "expander-title" }, [title]),
+      el("span", { class: "expander-sub" }, [subtitle]),
+    ]),
+    html(EXPANDER_CHEVRON_SVG),
+  ]);
+  const bodyEl = el("div", { class: "expander-body" + (justToggled && open ? " opening" : "") }, body);
+  return el("div", { class: "result-expander" + (open ? " open" : "") }, [head, bodyEl]);
+}
+
+const EXPANDER_CHEVRON_SVG = `<svg class="expander-chevron" viewBox="0 0 20 20" fill="none" width="20" height="20"><path d="M5 7.5l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
 
 /**
  * "Waiting to be marked" — mirrors ResultScreen.kt's PendingReviewCard.
@@ -2785,25 +2842,12 @@ function renderResult() {
       S.RESULT_CANDIDATE,
       el("strong", {}, [SC.resolveDisplayName(state.user)]),
     ]),
-    el("span", { class: "meta-chip plain count-chip" }, [S.resultCount(total + pollCount, total, pollCount)]),
     // Nothing marked yet means there is no score — not a zero, not a partial one — so the
     // score card is replaced outright rather than showing 0/N (mirrors PendingReviewCard).
     pending > 0 && gradedCount === 0
       ? buildPendingCard(pending, 0, 0)
-      : buildScoreCard(score, total, marksForScoreCard),
+      : buildScoreHero(score, total, marksForScoreCard, pollCount),
   ]);
-
-  // Correct / Incorrect / Total Time / Hints Used — pending answers count under neither
-  // verdict (the pending banner above already accounts for them).
-  const incorrect = answers.filter((a) => !isPendingAnswer(a) && !a.isCorrect).length;
-  const totalTime = answers.reduce((sum, a) => sum + (a.timeTakenSec || 0), 0);
-  const hints = answers.filter((a) => a.usedHint).length;
-  content.appendChild(el("div", { class: "stat-grid" }, [
-    buildStatTile("correct", CHECK_STAT_SVG, S.RESULT_STAT_CORRECT, S.qsCount(score)),
-    buildStatTile("wrong", BAR_SVG, S.RESULT_STAT_INCORRECT, S.qsCount(incorrect)),
-    buildStatTile("time", CLOCK_SMALL_SVG, S.RESULT_STAT_TIME, S.secondsShort(totalTime)),
-    buildStatTile("hint", BULB_SVG, S.RESULT_STAT_HINTS, S.hintsUsed(hints)),
-  ]));
 
   if (pending > 0 && gradedCount > 0) {
     // Some questions were app-checked and some weren't: the score above is real but not
@@ -2811,10 +2855,25 @@ function renderResult() {
     content.appendChild(buildPendingCard(pending, score, gradedCount));
   }
 
+  // Everything below the score is detail — folded into two expanders so the first thing
+  // on screen is just how the taker did (mirrors ResultScreen.kt's ResultExpander).
+  // Correct / Incorrect / Total Time / Hints Used — pending answers count under neither
+  // verdict (the pending banner above already accounts for them).
+  const incorrect = answers.filter((a) => !isPendingAnswer(a) && !a.isCorrect).length;
+  const totalTime = answers.reduce((sum, a) => sum + (a.timeTakenSec || 0), 0);
+  const hints = answers.filter((a) => a.usedHint).length;
+  const summary = [];
+  summary.push(el("div", { class: "stat-grid" }, [
+    buildStatTile("correct", CHECK_STAT_SVG, S.RESULT_STAT_CORRECT, S.qsCount(score)),
+    buildStatTile("wrong", BAR_SVG, S.RESULT_STAT_INCORRECT, S.qsCount(incorrect)),
+    buildStatTile("time", CLOCK_SMALL_SVG, S.RESULT_STAT_TIME, S.secondsShort(totalTime)),
+    buildStatTile("hint", BULB_SVG, S.RESULT_STAT_HINTS, S.hintsUsed(hints)),
+  ]));
+
   // Shown separately only when it wasn't already folded into the score card above
   // (still pending, or the score card itself was replaced by the pending card).
   if (breakdown.hasMarks && !marksForScoreCard) {
-    content.appendChild(buildScoreSectionCard(
+    summary.push(buildScoreSectionCard(
       S.RESULT_MARKS,
       S.RESULT_MARKS_BLURB,
       `${breakdown.marksAwarded} / ${breakdown.marksTotal}`,
@@ -2823,7 +2882,7 @@ function renderResult() {
     ));
   }
   if (breakdown.hasCorrectness) {
-    content.appendChild(buildScoreSectionCard(
+    summary.push(buildScoreSectionCard(
       S.RESULT_CORRECT_ANSWERS,
       S.RESULT_CORRECTNESS_BLURB,
       `${breakdown.correctCount} / ${breakdown.correctnessTotal}`,
@@ -2832,14 +2891,14 @@ function renderResult() {
     ));
   }
 
+  content.appendChild(buildResultExpander(
+    "summary", S.RESULT_SUMMARY_TITLE, S.RESULT_SUMMARY_SUBTITLE, !!state.resultSummaryOpen, summary
+  ));
+
   if (!quiz.showResult) {
     content.appendChild(el("p", { class: "muted", style: "text-align:center" }, [S.RESULT_HIDDEN]));
   } else {
-    content.appendChild(el("div", { class: "review-head" }, [
-      el("div", { class: "review-head-title" }, [S.RESULT_ANSWER_REVIEW]),
-      el("div", { class: "review-head-sub" }, [S.RESULT_REVIEW_SUBTITLE]),
-    ]));
-
+    const review = [];
     // Filter tabs — All / Incorrect / Correct / Poll (Poll only when there is one).
     const filter = state.resultFilter || "all";
     const tabs = [
@@ -2848,7 +2907,7 @@ function renderResult() {
       ["correct", S.tabCorrect(score)],
     ];
     if (pollCount > 0) tabs.push(["poll", S.tabPoll(pollCount)]);
-    content.appendChild(el("div", { class: "filter-tabs" }, tabs.map(([key, label]) =>
+    review.push(el("div", { class: "filter-tabs" }, tabs.map(([key, label]) =>
       el("button", {
         class: "filter-tab " + key + (filter === key ? " active" : ""),
         onclick: () => { state.resultFilter = key; render(); },
@@ -2878,7 +2937,10 @@ function renderResult() {
         if (card) list.appendChild(card);
       }
     });
-    content.appendChild(list);
+    review.push(list);
+    content.appendChild(buildResultExpander(
+      "review", S.RESULT_REVIEW_TITLE, S.RESULT_REVIEW_EXPANDER_SUBTITLE, !!state.resultReviewOpen, review
+    ));
   }
 
   // Retake only when the creator allows it and the quiz is still open; PDF is the
@@ -2895,6 +2957,7 @@ function renderResult() {
   content.appendChild(actions);
 
   main.appendChild(content);
+  if (!state.resultAnimated) runScoreHeroCountUp();
 }
 
 function buildStatTile(kind, iconSvg, label, value) {
@@ -2913,13 +2976,19 @@ function printResult() {
   const savedFilter = state.resultFilter;
   const savedReviews = new Set(expandedReviews);
   const savedPolls = new Set(expandedPollReviews);
+  const savedSummaryOpen = state.resultSummaryOpen;
+  const savedReviewOpen = state.resultReviewOpen;
   state.resultFilter = "all";
+  state.resultSummaryOpen = true;
+  state.resultReviewOpen = true;
   state.quiz.questions.forEach((q) => { expandedReviews.add(q.id); expandedPollReviews.add(q.id); });
   document.body.classList.add("printing");
   render();
   const restore = () => {
     document.body.classList.remove("printing");
     state.resultFilter = savedFilter;
+    state.resultSummaryOpen = savedSummaryOpen;
+    state.resultReviewOpen = savedReviewOpen;
     expandedReviews.clear(); savedReviews.forEach((id) => expandedReviews.add(id));
     expandedPollReviews.clear(); savedPolls.forEach((id) => expandedPollReviews.add(id));
     window.removeEventListener("afterprint", restore);

@@ -924,43 +924,66 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
 .candidate-line { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); }
 .candidate-line svg { color: var(--accent); }
 .candidate-line strong { color: #1C1B2E; font-weight: 700; }
-.count-chip { margin-bottom: 4px; }
-
-.score-card {
+/* The score hero — mirrors ResultScreen.kt's ScoreHero: one solid block of the quiz's
+   color, the number carrying the card. No gradient, disc, badge or shadow. The .animate
+   variant plays once per result (state.resultAnimated): the card rises in, the bar fills
+   in step with the JS count-up (same 200ms delay, 1100ms, ease-out), then the footer. */
+.score-hero {
   width: 100%;
   border-radius: 20px;
-  padding: 20px 22px;
-  background: linear-gradient(120deg, #6D5DF6 0%, #5B4FE8 55%, #7C3AED 100%);
+  padding: 22px 24px;
+  background: var(--accent);
   color: #fff;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 14px 34px rgba(91, 79, 232, 0.28);
+  text-align: left;
 }
-.score-card::after {
-  content: "";
-  position: absolute;
-  right: -40px;
-  top: -60px;
-  width: 190px;
-  height: 190px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
+.score-hero .hero-label { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.78); }
+.score-hero .hero-numbers { display: flex; align-items: flex-end; margin-top: 6px; }
+.score-hero .hero-score { font-size: 64px; line-height: 1; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -1px; }
+.score-hero .hero-total { font-size: 24px; font-weight: 600; color: rgba(255,255,255,0.7); padding-bottom: 7px; }
+.score-hero .hero-bar-row { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
+.score-hero .hero-bar { flex: 1; height: 8px; border-radius: 999px; background: rgba(255,255,255,0.22); overflow: hidden; }
+.score-hero .hero-bar-fill { height: 100%; width: var(--pct); border-radius: 999px; background: #fff; }
+.score-hero .hero-percent { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; min-width: 40px; text-align: right; }
+.score-hero .hero-footer { margin-top: 14px; }
+.score-hero .hero-sentence { font-size: 14px; font-weight: 500; }
+.score-hero .hero-marks { font-size: 13px; color: rgba(255,255,255,0.78); margin-top: 4px; }
+
+.score-hero.animate { animation: heroIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.score-hero.animate .hero-bar-fill { animation: heroBarFill 1.1s cubic-bezier(0.33, 1, 0.68, 1) 0.2s both; }
+.score-hero.animate .hero-footer { animation: heroFooterIn 0.36s ease-out 1.3s both; }
+@keyframes heroIn { from { opacity: 0; transform: translateY(12px); } }
+@keyframes heroBarFill { from { width: 0; } }
+@keyframes heroFooterIn { from { opacity: 0; transform: translateY(8px); } }
+
+/* Detail expanders under the hero — plain rows: title, a muted line, a chevron. */
+.result-expander { width: 100%; }
+.result-expander .expander-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--q-border, #E5E7EB);
+  border-radius: 14px;
+  background: #fff;
+  color: #1C1B2E;
+  text-align: left;
+  cursor: pointer;
 }
-.score-card .row-top { display: flex; align-items: center; gap: 10px; }
-.score-card .badge {
-  width: 30px; height: 30px; border-radius: 50%;
-  background: rgba(255,255,255,0.18);
-  display: flex; align-items: center; justify-content: center;
+.result-expander .expander-text { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.result-expander .expander-title { font-size: 15px; font-weight: 600; }
+.result-expander .expander-sub { font-size: 13px; color: var(--text-secondary); }
+.result-expander .expander-chevron { color: var(--text-secondary); transition: transform 0.22s ease; flex-shrink: 0; }
+.result-expander.open .expander-chevron { transform: rotate(180deg); }
+.result-expander .expander-body { display: none; padding-top: 12px; flex-direction: column; gap: 12px; }
+.result-expander.open .expander-body { display: flex; }
+.result-expander .expander-body.opening { animation: expanderOpen 0.28s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes expanderOpen { from { opacity: 0; transform: translateY(-6px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .score-hero.animate, .score-hero.animate .hero-bar-fill, .score-hero.animate .hero-footer,
+  .result-expander .expander-body.opening { animation: none; }
 }
-.score-card .badge svg { width: 16px; height: 16px; }
-.score-card .label { font-size: 12px; letter-spacing: 1px; font-weight: 700; color: rgba(255,255,255,0.85); text-transform: uppercase; }
-.score-card .status { font-weight: 500; color: #fff; font-size: 12px; }
-.score-card .numbers { display: flex; align-items: flex-end; justify-content: space-between; margin-top: 14px; position: relative; }
-.score-card .score-big { font-size: 44px; font-weight: 800; line-height: 1; }
-.score-card .score-total { font-size: 18px; font-weight: 600; color: rgba(255,255,255,0.7); margin-left: 4px; padding-bottom: 4px; }
-.score-card .score-caption { font-size: 13px; color: rgba(255,255,255,0.8); margin-top: 4px; }
-.score-card .accuracy-num { font-size: 30px; font-weight: 800; text-align: right; line-height: 1.1; }
-.score-card .accuracy-label { font-size: 12px; font-weight: 600; letter-spacing: 0.6px; color: rgba(255,255,255,0.8); text-align: right; margin-top: 4px; }
 
 /* Correct / Incorrect / Total Time / Hints Used tiles. */
 .stat-grid { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -1004,12 +1027,12 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
 .score-section-value { font-size: 20px; font-weight: 800; color: var(--accent); }
 .score-section-percent { font-size: 11px; color: var(--text-secondary); }
 
-/* "Waiting to be marked" — same shell as .score-card, in amber. */
+/* "Waiting to be marked" — same solid shell as .score-hero, in amber. */
 .pending-card {
   width: 100%;
   border-radius: 20px;
   padding: 20px;
-  background: linear-gradient(135deg, #F6A609, #D98200);
+  background: #E39B06;
   color: #fff;
 }
 .pending-card .pending-title { font-size: 18px; font-weight: 700; }
@@ -1265,8 +1288,10 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
   .site-header, .site-footer, .filter-tabs, .result-actions, .review-right svg { display: none !important; }
   .site-main { padding: 0 !important; }
   .screen.result-screen { max-width: none; }
-  .review-card, .stat-tile, .score-card { box-shadow: none !important; break-inside: avoid; }
-  .score-card { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .review-card, .stat-tile, .score-hero { box-shadow: none !important; break-inside: avoid; }
+  .score-hero { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .result-expander .expander-body { display: flex !important; }
+  .result-expander .expander-chevron { display: none; }
   .review-header { cursor: default; }
 }
 

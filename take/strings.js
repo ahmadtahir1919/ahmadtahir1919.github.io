@@ -166,8 +166,19 @@ const S = {
   quotedReason: (reason) => `“${reason}”`,
 
   // ── Result ─────────────────────────────────────────────────────────────
-  RESULT_YOUR_SCORE: "YOUR SCORE",
-  RESULT_FAILED: "Failed",
+  // Score hero + detail expanders — mirror result_score_label / result_score_band_* /
+  // result_missed / result_polls_count / result_details_* in strings.xml.
+  RESULT_SCORE_LABEL: "Your score",
+  RESULT_BAND_HIGH: "Great effort — strong result.",
+  RESULT_BAND_MID: "Nice work — a solid result.",
+  RESULT_BAND_LOW: "Quiz complete — here's how you did.",
+  RESULT_BAND_ZERO: "No correct answers this time.",
+  resultMissed: (n) => `${n} missed`,
+  resultPolls: (n) => `${n} poll${n === 1 ? "" : "s"}`,
+  RESULT_SUMMARY_TITLE: "Summary",
+  RESULT_SUMMARY_SUBTITLE: "Correct, incorrect, time and hints",
+  RESULT_REVIEW_TITLE: "Review answers",
+  RESULT_REVIEW_EXPANDER_SUBTITLE: "Each question with the right answer",
   RESULT_PENDING_TITLE: "Waiting to be marked",
   RESULT_PENDING_BODY:
     "Your answers have been submitted. The quiz admin still has to mark them by hand, so there's no result to show yet. Check back a little later.",
@@ -175,14 +186,7 @@ const S = {
     `${score} of ${graded} app-checked questions correct. The other ${pending} still need the quiz admin to mark them by hand, so this isn't your final result yet.`,
   RESULT_AWAITING_MARKING: "Awaiting marking",
   RESULT_HIDDEN: "Results are hidden for this quiz — check with the quiz creator.",
-  RESULT_ANSWER_REVIEW: "ANSWER REVIEW",
-  RESULT_REVIEW_SUBTITLE: "Detailed question analysis and correct answers",
   RESULT_CANDIDATE: "Candidate:",
-  resultCount: (total, scored, polls) =>
-    polls > 0
-      ? `${total} Question${total === 1 ? "" : "s"} (${scored} Scored + ${polls} Poll${polls === 1 ? "" : "s"})`
-      : `${total} Question${total === 1 ? "" : "s"}`,
-  RESULT_QUESTIONS_CORRECT: "Questions Correct",
   marksLine: (awarded, total) => `${awarded} / ${total} MARKS`,
   RESULT_STAT_CORRECT: "Correct",
   RESULT_STAT_INCORRECT: "Incorrect",
