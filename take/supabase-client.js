@@ -143,7 +143,7 @@ function quizFromRow(row, questions) {
     timeWeightageEnabled: row.time_weightage_enabled ?? false,
     // Seconds each non-poll question shows on its own before its choices (0 = off) —
     // Quiz.questionPreviewSec, stamped from the creator's app setting.
-    questionPreviewSec: row.question_preview_sec ?? 4,
+    questionPreviewSec: row.question_preview_sec ?? 5,
     themeColorName: row.theme_color_name,
     createdAt: row.created_at,
     questions: questions.sort((a, b) => a.orderIndex - b.orderIndex),

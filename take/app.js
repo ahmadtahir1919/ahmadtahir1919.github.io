@@ -1696,7 +1696,7 @@ function buildBottomBar(q, isLastQuestion, onSkipFn, onNextFn) {
       ])
     );
   }
-  const disabled = !!state.instantFeedback || state.revealing;
+  const disabled = !!state.instantFeedback;
   // "Vote" instead of Next/Finish while a poll still needs its vote-cast tap — even as
   // the last question, since this tap casts and reveals in place rather than moving on
   // (see advance()). Matches PreviewBottomBar's isPollQuestion label on Android.
@@ -1712,7 +1712,8 @@ function buildBottomBar(q, isLastQuestion, onSkipFn, onNextFn) {
   if (disabled) skipBtn.disabled = true;
 
   rows.push(el("div", { class: "bar-row" }, [skipBtn, nextBtn]));
-  return el("div", { class: "quiz-bottombar" }, rows);
+  // Slides up with the choices on the render right after a question preview ends.
+  return el("div", { class: "quiz-bottombar" + (state.revealJustEnded ? " bar-in" : "") }, rows);
 }
 
 /** Mirrors QuizPreviewViewModel.onShowHint — marks this question's hint as used the
@@ -1748,7 +1749,7 @@ function buildBadgeRow(quiz, q) {
   if (q.hint) {
     const hintBtn = el("button", { class: "hint-link", onclick: showHintAction }, [html(BULB_SVG), S.HINT_BUTTON]);
     // Disabled during instant feedback: the question is settled, nothing left to hint at.
-    if (state.instantFeedback || state.revealing) hintBtn.disabled = true;
+    if (state.instantFeedback) hintBtn.disabled = true;
     end.push(hintBtn);
   }
   if (!quiz.showQuestionNumbers && end.length === 0) return null;
@@ -1803,23 +1804,47 @@ function buildQuestionHelper(q) {
   }
 }
 
-/** Under the question while it previews on its own — mirrors QuestionRevealIndicator.kt:
- *  breathing dots, a short cue, and a bar that *fills* (no digits, so it never reads as the
- *  answer timer). A negative animation-delay keeps the bar continuous if anything re-renders
- *  mid-preview, instead of restarting it. */
-function buildRevealIndicator(q, sec) {
+/** The question-preview stage — mirrors QuestionRevealStage.kt: number pill top-left, the
+ *  question alone in large type (sized down as it gets longer), and a bar that *fills* (no
+ *  digits, so it never reads as the answer timer). Entrance animations only play on the
+ *  first paint, and a negative animation-delay keeps the bar continuous if anything
+ *  re-renders mid-preview. */
+function buildRevealStage(quiz, q) {
   const elapsedMs = Math.max(0, Date.now() - state.revealStartedAt);
-  const fill = el("div", {
-    class: "reveal-bar-fill",
-    style: `animation-duration:${sec}s;animation-delay:-${elapsedMs}ms`,
-  }, []);
-  const soon = q.type === "WRITTEN" || q.type === "FILL_BLANK" ? S.REVEAL_ANSWER_SOON : S.REVEAL_CHOICES_SOON;
-  return el("div", { class: "reveal-indicator", role: "status" }, [
-    el("div", { class: "reveal-dots", "aria-hidden": "true" }, [el("span", {}, []), el("span", {}, []), el("span", {}, [])]),
-    el("div", { class: "reveal-title" }, [S.REVEAL_GET_READY]),
-    el("div", { class: "reveal-sub" }, [soon]),
-    el("div", { class: "reveal-bar", "aria-hidden": "true" }, [fill]),
-  ]);
+  // Fill in the Blanks: the heading (if any) is the big text, and the sentence itself sits
+  // under it read-only, blanks drawn as gaps — filling starts after the preview.
+  const blanks = q.type === "FILL_BLANK" ? q.fillBlankContent : null;
+  const text = blanks ? (blanks.title || "").trim() : q.text || "";
+  const size = text.length <= 80 ? "lg" : text.length <= 160 ? "md" : "sm";
+  const rtl = FB.isRtlText(text || (blanks ? blanks.template : ""));
+
+  const center = [];
+  if (text) center.push(el("div", { class: "reveal-question " + size }, [renderMarkdown(text)]));
+  if (blanks) center.push(buildRevealSentence(blanks, !text));
+  center.push(el("div", { class: "reveal-bar", "aria-hidden": "true" }, [
+    el("div", { class: "reveal-bar-fill", style: `animation-duration:${quiz.questionPreviewSec}s;animation-delay:-${elapsedMs}ms` }, []),
+  ]));
+
+  const children = [];
+  if (quiz.showQuestionNumbers) {
+    children.push(el("span", { class: "q-badge reveal-pill" }, [S.questionXofN(state.currentIndex + 1, quiz.questions.length)]));
+  }
+  // dir on the text block only — the number pill stays top-left either way.
+  children.push(el("div", { class: "reveal-center", dir: rtl ? "rtl" : "ltr" }, center));
+  return el("div", { class: "reveal-stage" + (elapsedMs < 120 ? " entering" : "") }, children);
+}
+
+/** The fill-blank sentence on the preview stage — same word tokens as buildFillBlankSentence,
+ *  with each blank an empty gap instead of an input. */
+function buildRevealSentence(content, large) {
+  const lines = splitFillBlankIntoTokenLines(FB.parseFillBlankTemplate(content.template, content.blanks));
+  return el("div", { class: "reveal-sentence" + (large ? " large" : "") }, lines.map((line) =>
+    el("div", { class: "reveal-sentence-line" }, line.map((token) =>
+      token.type === "word"
+        ? el("span", {}, [token.text])
+        : el("span", { class: "reveal-gap", "aria-label": S.BLANK_PLACEHOLDER }, [])
+    ))
+  ));
 }
 
 function buildFeedbackBanner(fb) {
@@ -1834,11 +1859,18 @@ function renderQuiz() {
   const isLastQuestion = state.currentIndex === quiz.questions.length - 1;
   const fb = state.instantFeedback;
 
-  const bodyClass = "quiz-body" +
-    (state.revealing ? " revealing" : "") +
-    (state.revealing && Date.now() - state.revealStartedAt < 120 ? " reveal-enter" : "") +
-    (state.revealJustEnded ? " answers-in" : "");
-  const questionArea = el("div", { class: bodyClass }, []);
+  // Question preview: the question alone, big, with its number pill and a fill bar — no
+  // card, helper text, choices or bottom bar (mirrors QuestionRevealStage.kt).
+  if (state.revealing) {
+    main.appendChild(el("div", { class: "quiz-screen" }, [
+      buildQuizTopBar(quiz, q),
+      buildQuestionProgressBar(quiz),
+      buildRevealStage(quiz, q),
+    ]));
+    return;
+  }
+
+  const questionArea = el("div", { class: "quiz-body" + (state.revealJustEnded ? " answers-in" : "") }, []);
   const badgeRow = buildBadgeRow(quiz, q);
   if (badgeRow) questionArea.appendChild(badgeRow);
   questionArea.appendChild(buildQuestionCard(q));
@@ -1846,9 +1878,7 @@ function renderQuiz() {
     questionArea.appendChild(buildHintBox(q.hint));
   }
 
-  if (state.revealing) {
-    questionArea.appendChild(buildRevealIndicator(q, quiz.questionPreviewSec));
-  } else if (q.type === "POLL") {
+  if (q.type === "POLL") {
     if (!state.pollState) {
       questionArea.appendChild(el("p", { class: "muted" }, [S.LOADING]));
     } else if (state.pollDistribution && !state.pollEditingVote) {
@@ -2315,7 +2345,7 @@ function buildFillBlankSentence(q) {
     )
   );
 
-  return el("div", { class: "sentence-card" }, [
+  return el("div", { class: "sentence-card", dir: FB.isRtlText(content.template) ? "rtl" : "ltr" }, [
     el("div", { style: "display:flex;flex-direction:column;gap:10px" }, lineEls),
   ]);
 }
@@ -2340,6 +2370,9 @@ function buildFillBlankInput(orderIndex, isLast, inputRefs) {
     autocomplete: "off",
     autocapitalize: "off",
     spellcheck: "false",
+    // Its own direction from what's typed (or the placeholder), not the sentence's — an
+    // English answer or placeholder inside an Urdu sentence would otherwise read backwards.
+    dir: "auto",
     enterkeyhint: isLast ? "done" : "next",
     oninput: (e) => {
       const v = e.target.value;

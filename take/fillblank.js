@@ -73,7 +73,17 @@ function fillBlankCorrectness(content, givenAnswers) {
   );
 }
 
+/** True when the first strongly-directional character is right-to-left (Urdu, Arabic,
+ *  Hebrew…) — mirrors ui/components/TextDirection.kt's isRtlText. The sentence is laid out
+ *  word by word in a flex row, which follows `dir`, not each word's own script — without
+ *  this an Urdu sentence (and its blank) reads backwards. */
+function isRtlText(text) {
+  const m = /[A-Za-zÀ-ɏͰ-ϿЀ-ӿ]|[֐-ࣿיִ-﷿ﹰ-﻿]/.exec(text || "");
+  return !!m && /[֐-ࣿיִ-﷿ﹰ-﻿]/.test(m[0]);
+}
+
 window.FillBlank = {
+  isRtlText,
   parseFillBlankTemplate,
   orderedBlanks,
   fillBlankIsCorrect,

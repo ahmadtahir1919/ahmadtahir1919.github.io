@@ -1551,69 +1551,68 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
 @keyframes qCardCorrectIn { from { background: #fff; border-color: var(--q-border); } }
 @keyframes qCardWrongIn { from { background: #fff; border-color: var(--q-border); } }
 
-/* Question preview (read first) — mirrors QuestionReveal.kt. While revealing, the badge
-   row + card sit --reveal-lift lower (near the optical center); on the render where the
-   choices arrive (.answers-in) they start at that same offset and glide up into place, so
-   the question never jumps. Keyframes, not transitions: render() rebuilds the DOM. */
-.quiz-screen .quiz-body { --reveal-lift: 14vh; }
-.quiz-screen .quiz-body.revealing { padding-top: calc(16px + var(--reveal-lift)); }
-.quiz-screen .quiz-body.reveal-enter .q-card { animation: revealCardIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
-.quiz-screen .quiz-body.reveal-enter .badge-row { animation: revealFadeIn 0.4s ease-out both; }
-@keyframes revealCardIn {
-  from { opacity: 0; transform: translateY(22px) scale(0.92); }
-  to   { opacity: 1; transform: none; }
-}
-@keyframes revealFadeIn { from { opacity: 0; } }
-
-.quiz-screen .quiz-body.answers-in > .badge-row,
-.quiz-screen .quiz-body.answers-in > .q-card { animation: revealSettle 0.52s cubic-bezier(0.4, 0, 0.2, 1) both; }
-@keyframes revealSettle { from { transform: translateY(var(--reveal-lift)); } }
-
-/* Choices / answer box follow the card up, one after another. */
-.quiz-screen .quiz-body.answers-in .choice-card,
-.quiz-screen .quiz-body.answers-in .answer-card,
-.quiz-screen .quiz-body.answers-in .q-card ~ div:not(.choice-wrap) {
-  animation: revealAnswerIn 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
-  animation-delay: 0.2s;
-}
-.quiz-screen .quiz-body.answers-in .choice-card:nth-child(2) { animation-delay: 0.27s; }
-.quiz-screen .quiz-body.answers-in .choice-card:nth-child(3) { animation-delay: 0.34s; }
-.quiz-screen .quiz-body.answers-in .choice-card:nth-child(n+4) { animation-delay: 0.41s; }
-@keyframes revealAnswerIn {
-  from { opacity: 0; transform: translateY(14px); }
-  to   { opacity: 1; transform: none; }
-}
-
-.quiz-screen .reveal-indicator {
+/* Question preview (read first) — mirrors QuestionReveal.kt. The stage is the question
+   alone: number pill top-left, big text, a fill bar; no card, helper, choices or bottom
+   bar. Keyframes, not transitions: render() rebuilds the DOM. Entrance animations only
+   run on the stage's first paint (.entering). */
+.quiz-screen .reveal-stage {
+  flex: 1;
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
+  padding: 16px 24px 32px;
+}
+.quiz-screen .reveal-center {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 24px 0 12vh;
+}
+.quiz-screen .reveal-question {
+  color: var(--q-text-strong);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.quiz-screen .reveal-question.lg { font-size: 28px; line-height: 37px; letter-spacing: -0.3px; }
+.quiz-screen .reveal-question.md { font-size: 24px; line-height: 32px; letter-spacing: -0.2px; }
+.quiz-screen .reveal-question.sm { font-size: 20px; line-height: 28px; }
+/* Fill-blank sentence under its heading — word by word like the answer card, so it wraps
+   and orders the same (dir on .reveal-center flips the rows for Urdu/Arabic). */
+.quiz-screen .reveal-sentence { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+.quiz-screen .reveal-sentence.large { margin-top: 0; }
+.quiz-screen .reveal-sentence-line {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  text-align: center;
-  padding-top: 8px;
+  gap: 12px 8px;
+  font-size: 20px;
+  line-height: 30px;
+  font-weight: 500;
+  color: var(--q-text-body, #374151);
 }
-.quiz-screen .quiz-body.reveal-enter .reveal-indicator {
-  animation: revealAnswerIn 0.42s cubic-bezier(0.22, 1, 0.36, 1) 0.26s both;
+.quiz-screen .reveal-sentence.large .reveal-sentence-line {
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 700;
+  color: var(--q-text-strong);
 }
-.quiz-screen .reveal-dots { display: flex; gap: 7px; margin-bottom: 14px; }
-.quiz-screen .reveal-dots span {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--q-primary);
-  animation: revealDot 1.2s ease-in-out infinite alternate;
+.quiz-screen .reveal-gap {
+  display: inline-block;
+  width: 76px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--q-soft) linear-gradient(var(--q-primary), var(--q-primary)) no-repeat;
+  background-size: calc(100% - 16px) 2px;
+  background-position: 50% calc(100% - 2px);
 }
-.quiz-screen .reveal-dots span:nth-child(2) { animation-delay: 0.16s; }
-.quiz-screen .reveal-dots span:nth-child(3) { animation-delay: 0.32s; }
-@keyframes revealDot {
-  from { opacity: 0.35; transform: scale(0.75); }
-  to   { opacity: 1; transform: scale(1); }
-}
-.quiz-screen .reveal-title { font-size: 13px; font-weight: 600; color: var(--q-text-strong, #1a1c1e); }
-.quiz-screen .reveal-sub { margin-top: 6px; font-size: 12px; font-weight: 500; color: var(--q-text-muted, #6b7280); }
+.quiz-screen .reveal-stage.entering .reveal-sentence { animation: revealRise 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.26s both; }
+
 .quiz-screen .reveal-bar {
-  width: 168px;
-  height: 6px;
-  margin-top: 18px;
+  width: 42%;
+  height: 5px;
+  margin-top: 28px;
   border-radius: 999px;
   background: var(--q-soft);
   overflow: hidden;
@@ -1630,16 +1629,55 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
 }
 @keyframes revealBarFill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 
+.quiz-screen .reveal-stage.entering .reveal-pill { animation: revealRise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.quiz-screen .reveal-stage.entering .reveal-question {
+  transform-origin: left center;
+  animation: revealQuestionIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+}
+.quiz-screen .reveal-stage.entering .reveal-bar { animation: revealRise 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.42s both; }
+@keyframes revealQuestionIn {
+  from { opacity: 0; transform: translateY(26px) scale(0.94); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes revealRise {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* The answer screen crossfades in once the preview ends; choices stagger, the bottom bar
+   slides up. */
+.quiz-screen .quiz-body.answers-in > .badge-row,
+.quiz-screen .quiz-body.answers-in > .q-card { animation: revealAnswerIn 0.38s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.quiz-screen .quiz-body.answers-in .choice-card,
+.quiz-screen .quiz-body.answers-in .answer-card,
+.quiz-screen .quiz-body.answers-in .q-card ~ div:not(.choice-wrap) {
+  animation: revealAnswerIn 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.12s;
+}
+.quiz-screen .quiz-body.answers-in .choice-card:nth-child(2) { animation-delay: 0.19s; }
+.quiz-screen .quiz-body.answers-in .choice-card:nth-child(3) { animation-delay: 0.26s; }
+.quiz-screen .quiz-body.answers-in .choice-card:nth-child(n+4) { animation-delay: 0.33s; }
+@keyframes revealAnswerIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+.quiz-screen .quiz-bottombar.bar-in { animation: revealBarUp 0.38s cubic-bezier(0.4, 0, 0.2, 1) 0.14s both; }
+@keyframes revealBarUp {
+  from { opacity: 0; transform: translateY(100%); }
+  to   { opacity: 1; transform: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .quiz-screen .quiz-body.reveal-enter .q-card,
-  .quiz-screen .quiz-body.reveal-enter .badge-row,
-  .quiz-screen .quiz-body.reveal-enter .reveal-indicator,
+  .quiz-screen .reveal-stage.entering .reveal-pill,
+  .quiz-screen .reveal-stage.entering .reveal-question,
+  .quiz-screen .reveal-stage.entering .reveal-bar,
+  .quiz-screen .reveal-stage.entering .reveal-sentence,
   .quiz-screen .quiz-body.answers-in > .badge-row,
   .quiz-screen .quiz-body.answers-in > .q-card,
   .quiz-screen .quiz-body.answers-in .choice-card,
   .quiz-screen .quiz-body.answers-in .answer-card,
   .quiz-screen .quiz-body.answers-in .q-card ~ div:not(.choice-wrap),
-  .quiz-screen .reveal-dots span { animation: none; }
+  .quiz-screen .quiz-bottombar.bar-in { animation: none; }
 }
 
 .quiz-screen .letter-box {
