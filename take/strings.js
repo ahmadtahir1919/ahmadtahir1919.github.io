@@ -123,7 +123,7 @@ const S = {
   ANONYMOUS: "Anonymous",
   SKIP_POLL: "Skip Poll",
   POLL_CHIP: "Poll",
-  POLL_OVERLINE: "Live community poll",
+  POLL_OVERLINE: "Community poll",
   POLL_HELPER_SINGLE: "Select single choice",
   POLL_HELPER_ANONYMOUS: "Your response is anonymous and not scored",
   POLL_HELPER_NAMED: "Your response is not scored",
