@@ -343,6 +343,26 @@ h1, h2, h3, h4 { margin: 0; font-family: var(--font-sans); }
   text-decoration-thickness: 4px;
 }
 
+/* Hero headline typewriter: "dual smart grading." types itself out on load. */
+.typewriter.typing {
+  text-decoration: none;
+  display: inline-block;
+}
+.typewriter.typing::after {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 0.85em;
+  margin-left: 3px;
+  background: var(--color-primary);
+  vertical-align: -0.1em;
+  animation: typewriterCaret 0.8s steps(1) infinite;
+}
+@keyframes typewriterCaret { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .typewriter.typing::after { animation: none; }
+}
+
 /* =========================================================
    Hero
    ========================================================= */

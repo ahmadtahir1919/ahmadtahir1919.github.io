@@ -14,6 +14,28 @@ document.addEventListener('DOMContentLoaded', function () {
     window.addEventListener('scroll', updateHeaderScrolled, { passive: true });
   }
 
+  // Hero headline: type out "dual smart grading." on load instead of just
+  // appearing, so the page feels a little more alive on first visit. Falls
+  // back to the plain static text (already in the HTML) with no JS or when
+  // the visitor prefers reduced motion.
+  var typewriterEl = document.getElementById('typewriter-word');
+  var reduceMotionQuery = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
+  if (typewriterEl && !(reduceMotionQuery && reduceMotionQuery.matches)) {
+    var fullText = typewriterEl.textContent;
+    typewriterEl.textContent = '';
+    typewriterEl.classList.add('typing');
+    var charIndex = 0;
+    setTimeout(function typeNextChar() {
+      charIndex++;
+      typewriterEl.textContent = fullText.slice(0, charIndex);
+      if (charIndex < fullText.length) {
+        setTimeout(typeNextChar, 55);
+      } else {
+        setTimeout(function () { typewriterEl.classList.remove('typing'); }, 700);
+      }
+    }, 400);
+  }
+
   // Hero "X Online" count: a believable random headcount that drifts a
   // little over time instead of a hardcoded number.
   var onlineCount = document.getElementById('online-count');
