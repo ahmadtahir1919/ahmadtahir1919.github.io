@@ -1060,7 +1060,12 @@ function prepareCurrentQuestion() {
     return;
   }
   const previewSec = state.quiz.questionPreviewSec || 0;
-  if (previewSec > 0) {
+  // Mirrors revealsBeforeAnswering: a preview stage that ends by starting a timer makes
+  // no sense to show when this question has no timer to start (quiz-wide "Show Timer"
+  // off, or this question's own timeSec is 0) — same as it's skipped when the quiz's
+  // preview setting itself is off.
+  const questionHasTimer = state.quiz.showTimers && (q.timeSec || 0) > 0;
+  if (previewSec > 0 && questionHasTimer) {
     startQuestionReveal(q, previewSec);
     return;
   }
