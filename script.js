@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', function () {
       charIndex++;
       typewriterEl.textContent = fullText.slice(0, charIndex);
       if (charIndex < fullText.length) {
-        setTimeout(typeNextChar, 55);
+        setTimeout(typeNextChar, 105);
       } else {
         setTimeout(function () { typewriterEl.classList.remove('typing'); }, 700);
       }
