@@ -59,8 +59,10 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border
 .brand-tile {
   width: 32px; height: 32px; border-radius: 9px;
   display: flex; align-items: center; justify-content: center;
-  background: linear-gradient(135deg, #5B4FE8 0%, #8B5CF6 100%);
+  overflow: hidden;
+  box-shadow: 0 3px 8px rgba(91, 79, 232, 0.28);
 }
+.brand-icon { width: 100%; height: 100%; object-fit: cover; }
 .brand-name { font-size: 17px; font-weight: 800; letter-spacing: -0.2px; }
 .header-links { display: flex; gap: 18px; font-size: 14px; }
 .header-links a { color: var(--muted); text-decoration: none; font-weight: 500; }
