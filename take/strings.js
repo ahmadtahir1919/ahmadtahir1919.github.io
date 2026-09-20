@@ -169,6 +169,9 @@ const S = {
   // Score hero + detail expanders — mirror result_score_label / result_score_band_* /
   // result_missed / result_polls_count / result_details_* in strings.xml.
   RESULT_SCORE_LABEL: "Your score",
+  RESULT_HIDDEN_LABEL: "SUBMITTED",
+  RESULT_POLL_RESULTS: "POLL RESULTS",
+  RESULT_YOU_VOTED: "You voted ✓",
   RESULT_BAND_HIGH: "Great effort — strong result.",
   RESULT_BAND_MID: "Nice work — a solid result.",
   RESULT_BAND_LOW: "Quiz complete — here's how you did.",

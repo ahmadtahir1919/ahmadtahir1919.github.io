@@ -78,8 +78,11 @@ function fillBlankCorrectness(content, givenAnswers) {
  *  word by word in a flex row, which follows `dir`, not each word's own script — without
  *  this an Urdu sentence (and its blank) reads backwards. */
 function isRtlText(text) {
-  const m = /[A-Za-zÀ-ɏͰ-ϿЀ-ӿ]|[֐-ࣿיִ-﷿ﹰ-﻿]/.exec(text || "");
-  return !!m && /[֐-ࣿיִ-﷿ﹰ-﻿]/.test(m[0]);
+  // The first letter of ANY script (or a bidi mark) decides — digits, punctuation, spaces,
+  // a pasted BOM and combining marks are skipped, same as the Kotlin version.
+  const m = /[\p{L}\u200E\u200F]/u.exec(text || "");
+  if (!m) return false;
+  return /[\u200F\p{Script=Arabic}\p{Script=Hebrew}\p{Script=Syriac}\p{Script=Thaana}\p{Script=Nko}\p{Script=Adlam}\p{Script=Samaritan}\p{Script=Mandaic}]/u.test(m[0]);
 }
 
 window.FillBlank = {

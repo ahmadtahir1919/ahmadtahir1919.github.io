@@ -142,7 +142,7 @@ function quizFromRow(row, questions) {
     splitPointsAcrossChoices: row.split_points_across_choices ?? false,
     timeWeightageEnabled: row.time_weightage_enabled ?? false,
     // Seconds each non-poll question shows on its own before its choices (0 = off) —
-    // Quiz.questionPreviewSec, stamped from the creator's app setting.
+    // Quiz.questionPreviewSec, a per-quiz rule set by the creator.
     questionPreviewSec: row.question_preview_sec ?? 5,
     themeColorName: row.theme_color_name,
     createdAt: row.created_at,

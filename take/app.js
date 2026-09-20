@@ -195,6 +195,8 @@ function buildSiteFooter() {
 function leaveQuiz(message) {
   clearInterval(state.timerHandle);
   clearTimeout(state.revealHandle);
+  clearTimeout(state.feedbackHandle);
+  state.feedbackHandle = null;
   state.revealing = false;
   cancelLastQuestionAutoFinish();
   state.closedMessage = message;
@@ -1037,6 +1039,11 @@ function prepareCurrentQuestion() {
   state.hintVisible = false;
   state.questionStartSec = Math.floor(Date.now() / 1000);
   if (q.type === "POLL") {
+    // Polls are never previewed — and a preview left over from an earlier question (its
+    // timeout bails once the question changes) must not keep this one hidden forever.
+    clearTimeout(state.revealHandle);
+    state.revealHandle = null;
+    state.revealing = false;
     state.pollState = null;
     state.pollDisplayOrder = [];
     state.pollSelected = new Set();
@@ -1066,6 +1073,7 @@ function prepareCurrentQuestion() {
  *  reset at that moment so the reading time never counts as answer time (time taken and
  *  time weightage both read it). */
 function startQuestionReveal(q, sec) {
+  if (state.screen !== "quiz") return;
   clearInterval(state.timerHandle);
   clearTimeout(state.revealHandle);
   state.totalTimeSec = 0;
@@ -1083,6 +1091,12 @@ function startQuestionReveal(q, sec) {
     render();
     state.revealJustEnded = false;
   }, sec * 1000);
+}
+
+/** False once the taker has moved past [q] or left the quiz — async work started for a
+ *  question must not act on whatever replaced it. */
+function isStillOnQuestion(q) {
+  return state.screen === "quiz" && currentQuestion()?.id === q.id;
 }
 
 /** Opens the poll on first visit (lazy — mirrors PollRepository.ensureOpen:
@@ -1103,16 +1117,19 @@ async function loadPollForCurrentQuestion(q) {
     opened = { status: "OPEN", opened_at: Date.now(), closes_at: null };
   }
   // Stale question guard — the user may have already swiped past this question
-  // (Next/timer) by the time this async round-trip resolves.
-  if (currentQuestion()?.id !== q.id) return;
+  // (Next/Skip/timer) or left the quiz by the time this round-trip resolves. Re-checked
+  // after EVERY await below: resuming onto a question they've left used to skip the next
+  // question outright and could strand a question preview on screen.
+  if (!isStillOnQuestion(q)) return;
 
   // Only an explicit close counts. A passed closes_at used to close the poll for everyone,
   // which meant the first person to reach the question locked out everyone who arrived
   // later — see PollState.closesAt in PollModels.kt.
   const effectiveClosed = opened.status === "CLOSED";
-  state.pollState = opened;
 
   const votes = (await SC.fetchPollVotes(q.id).catch(() => [])) || [];
+  if (!isStillOnQuestion(q)) return;
+  state.pollState = opened;
   const myVote = votes.find((v) => v.voterKey === state.user.id) || null;
 
   if (PL.pollHiddenForNonVoter(effectiveClosed ? "CLOSED" : "OPEN", myVote != null)) {
@@ -1171,6 +1188,7 @@ async function loadPollForCurrentQuestion(q) {
 
 function startTimer() {
   clearInterval(state.timerHandle);
+  if (state.screen !== "quiz") return;
   const q = currentQuestion();
   // Mirrors QuizPreviewViewModel.prepareCurrentQuestion: `if (s0.quizShowTimers && ...)
   // question.timeSec else 0` — quiz-wide, no per-question override. This was never
@@ -1376,7 +1394,12 @@ async function advance(castPollVote) {
     const feedback = buildInstantFeedback(q, state.questionAnswers[q.id] || []);
     state.instantFeedback = feedback;
     render();
-    setTimeout(() => proceedPastQuestion(), feedback.isCorrect ? 1100 : 1900);
+    // Tracked so leaving mid-pause (the X) can cancel it — otherwise the quiz kept going
+    // behind the "closed" screen and could still submit an attempt the taker abandoned.
+    state.feedbackHandle = setTimeout(() => {
+      state.feedbackHandle = null;
+      proceedPastQuestion();
+    }, feedback.isCorrect ? 1100 : 1900);
     return;
   }
   proceedPastQuestion();
@@ -1421,6 +1444,8 @@ function buildInstantFeedback(q, rawKeys) {
 }
 
 function proceedPastQuestion() {
+  // Anything still scheduled after the taker left (or the quiz finished) is a no-op.
+  if (state.screen !== "quiz") return;
   cancelLastQuestionAutoFinish();
   if (state.currentIndex === state.quiz.questions.length - 1) {
     finishQuiz();
@@ -1821,10 +1846,13 @@ function buildRevealStage(quiz, q) {
   const blanks = q.type === "FILL_BLANK" ? q.fillBlankContent : null;
   const text = blanks ? (blanks.title || "").trim() : q.text || "";
   const size = text.length <= 80 ? "lg" : text.length <= 160 ? "md" : "sm";
-  const rtl = FB.isRtlText(text || (blanks ? blanks.template : ""));
+  // The block follows the part laid out word by word — for Fill in the Blanks that's the
+  // sentence, never the heading (an English heading over an Urdu sentence must still flow
+  // right to left). The heading resolves its own direction via dir="auto".
+  const rtl = FB.isRtlText(blanks ? blanks.template : text);
 
   const center = [];
-  if (text) center.push(el("div", { class: "reveal-question " + size }, [renderMarkdown(text)]));
+  if (text) center.push(el("div", { class: "reveal-question " + size, dir: "auto" }, [renderMarkdown(text)]));
   if (blanks) center.push(buildRevealSentence(blanks, !text));
   center.push(el("div", { class: "reveal-bar", "aria-hidden": "true" }, [
     el("div", { class: "reveal-bar-fill", style: `animation-duration:${quiz.questionPreviewSec}s;animation-delay:-${elapsedMs}ms` }, []),
@@ -2470,16 +2498,19 @@ function buildScoreSectionCard(title, subtitle, value, percent, pending) {
  * the bar fills, then the one-line summary settles in — once per result
  * (state.resultAnimated), since render() rebuilds the DOM on every tap.
  *
+ * @param missed Answered wrong — never counting answers still waiting to be marked.
  * @param marks Optional { awarded, total } — only when a marks track is fully graded.
  */
-function buildScoreHero(score, total, marks, pollCount) {
-  const percent = total > 0 ? Math.round((score / total) * 100) : 0;
+function buildScoreHero(score, total, missed, marks, pollCount) {
+  const fraction = total > 0 ? score / total : 0;
+  const percent = Math.round(fraction * 100);
   const animate = !state.resultAnimated && !prefersReducedMotion();
-  const missed = Math.max(0, total - score);
 
+  // Banded on the unrounded fraction, same as Android — 159/200 shows "80%" on both but
+  // is still the "mid" sentence on both.
   const band = score === 0 ? S.RESULT_BAND_ZERO
-    : percent >= 80 ? S.RESULT_BAND_HIGH
-    : percent >= 50 ? S.RESULT_BAND_MID
+    : fraction >= 0.8 ? S.RESULT_BAND_HIGH
+    : fraction >= 0.5 ? S.RESULT_BAND_MID
     : S.RESULT_BAND_LOW;
   const sentence = [band];
   if (missed > 0 && score > 0) sentence.push(S.resultMissed(missed));
@@ -2842,12 +2873,30 @@ function renderResult() {
       S.RESULT_CANDIDATE,
       el("strong", {}, [SC.resolveDisplayName(state.user)]),
     ]),
-    // Nothing marked yet means there is no score — not a zero, not a partial one — so the
-    // score card is replaced outright rather than showing 0/N (mirrors PendingReviewCard).
-    pending > 0 && gradedCount === 0
-      ? buildPendingCard(pending, 0, 0)
-      : buildScoreHero(score, total, marksForScoreCard, pollCount),
   ]);
+
+  // Same order as ResultScreen.kt's scoreHeaderCard: "not marked yet" is a status, shown even
+  // when results are hidden; hidden results show only that the attempt was recorded (never
+  // the score, the stats, the review or a PDF of them); a poll-only quiz has no score at all.
+  const incorrect = answers.filter((a) => !isPendingAnswer(a) && !a.isCorrect).length;
+  const nothingMarked = pending > 0 && gradedCount === 0;
+  const hidden = !quiz.showResult;
+  const pollOnly = total === 0;
+  if (nothingMarked) {
+    content.appendChild(buildPendingCard(pending, 0, 0));
+  } else if (hidden) {
+    content.appendChild(buildResultInfoCard(S.RESULT_HIDDEN_LABEL, S.RESULT_HIDDEN));
+  } else if (pollOnly) {
+    content.appendChild(buildResultInfoCard(S.RESULT_POLL_RESULTS, S.RESULT_YOU_VOTED));
+  } else {
+    content.appendChild(buildScoreHero(score, total, incorrect, marksForScoreCard, pollCount));
+  }
+  if (hidden) {
+    appendResultActions(content, quiz, false);
+    main.appendChild(content);
+    state.resultAnimated = true;
+    return;
+  }
 
   if (pending > 0 && gradedCount > 0) {
     // Some questions were app-checked and some weren't: the score above is real but not
@@ -2859,7 +2908,6 @@ function renderResult() {
   // on screen is just how the taker did (mirrors ResultScreen.kt's ResultExpander).
   // Correct / Incorrect / Total Time / Hints Used — pending answers count under neither
   // verdict (the pending banner above already accounts for them).
-  const incorrect = answers.filter((a) => !isPendingAnswer(a) && !a.isCorrect).length;
   const totalTime = answers.reduce((sum, a) => sum + (a.timeTakenSec || 0), 0);
   const hints = answers.filter((a) => a.usedHint).length;
   const summary = [];
@@ -2891,13 +2939,14 @@ function renderResult() {
     ));
   }
 
-  content.appendChild(buildResultExpander(
-    "summary", S.RESULT_SUMMARY_TITLE, S.RESULT_SUMMARY_SUBTITLE, !!state.resultSummaryOpen, summary
-  ));
+  // A poll-only quiz has nothing to summarize — its polls ARE the review below.
+  if (!pollOnly) {
+    content.appendChild(buildResultExpander(
+      "summary", S.RESULT_SUMMARY_TITLE, S.RESULT_SUMMARY_SUBTITLE, !!state.resultSummaryOpen, summary
+    ));
+  }
 
-  if (!quiz.showResult) {
-    content.appendChild(el("p", { class: "muted", style: "text-align:center" }, [S.RESULT_HIDDEN]));
-  } else {
+  {
     const review = [];
     // Filter tabs — All / Incorrect / Correct / Poll (Poll only when there is one).
     const filter = state.resultFilter || "all";
@@ -2943,8 +2992,16 @@ function renderResult() {
     ));
   }
 
-  // Retake only when the creator allows it and the quiz is still open; PDF is the
-  // browser's own print → Save as PDF (see the @media print rules in style.css).
+  appendResultActions(content, quiz, true);
+
+  main.appendChild(content);
+  if (!state.resultAnimated) runScoreHeroCountUp();
+}
+
+/** Retake only when the creator allows it and the quiz is still open; PDF is the browser's
+ *  own print → Save as PDF (see the @media print rules in style.css) — never offered when
+ *  results are hidden, since it would print them. */
+function appendResultActions(content, quiz, showPdf) {
   const actions = el("div", { class: "result-actions" }, []);
   if (quiz.allowRetake && SC.effectiveStatus(quiz) === "ACTIVE") {
     actions.appendChild(el("button", { class: "primary", onclick: retakeQuizAction }, [
@@ -2952,12 +3009,18 @@ function renderResult() {
     ]));
     if (state.joinError) actions.appendChild(el("p", { class: "muted", style: "color:var(--error);text-align:center" }, [state.joinError]));
   }
-  actions.appendChild(el("button", { class: "outline-btn", onclick: printResult }, [html(PDF_SVG), S.RESULT_PDF]));
+  if (showPdf) actions.appendChild(el("button", { class: "outline-btn", onclick: printResult }, [html(PDF_SVG), S.RESULT_PDF]));
   actions.appendChild(el("button", { class: "text-link", onclick: () => leaveQuiz(S.CLOSED_THANKS) }, [S.DONE]));
   content.appendChild(actions);
+}
 
-  main.appendChild(content);
-  if (!state.resultAnimated) runScoreHeroCountUp();
+/** The solid card that stands in for the score when there isn't one to show — results
+ *  hidden, or a poll-only quiz. Mirrors ResultScreen.kt's SubmittedCard / PollOnlyScoreCard. */
+function buildResultInfoCard(label, message) {
+  return el("div", { class: "score-hero info" }, [
+    el("div", { class: "hero-label" }, [label]),
+    el("div", { class: "hero-info-message" }, [message]),
+  ]);
 }
 
 function buildStatTile(kind, iconSvg, label, value) {
