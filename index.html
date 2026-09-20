@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quizoma — The thoughtful classroom quiz engine</title>
+<meta name="description" content="Quizoma pairs high-precision algorithmic scanning with dedicated teacher-first qualitative reviews. Zero punitive penalties for spelling slips, zero false zeros, uninterrupted offline participation.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="data:image/png;base64,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">
+<link rel="stylesheet" href="styles.css?v=2">
+</head>
+<body>
+
+<!-- ===================== HEADER ===================== -->
+<header class="site-header" id="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <a href="#" class="brand">
+        <span class="brand-mark">
+          <img src="data:image/png;base64,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" alt="" class="brand-icon">
+        </span>
+        <span class="brand-name">Quizoma</span>
+      </a>
+      <nav class="main-nav" id="main-nav">
+        <a href="#pillars">Product</a>
+        <a href="#dual-grading">Dual Grading Engine</a>
+        <a href="#formats">6 Formats</a>
+        <a href="#faq">Architecture &amp; FAQ</a>
+      </nav>
+    </div>
+    <div class="header-right">
+      <a href="/take/" class="btn btn-cream btn-sm">
+        <img src="assets/header_icon_02.svg" alt="" width="15" height="12">
+        <span>Enter Room Code</span>
+      </a>
+      <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+  <nav class="mobile-nav" id="mobile-nav">
+    <a href="#pillars">Product</a>
+    <a href="#dual-grading">Dual Grading Engine</a>
+    <a href="#formats">6 Formats</a>
+    <a href="#faq">Architecture &amp; FAQ</a>
+    <a href="/take/" class="btn btn-cream btn-sm">Enter Room Code</a>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ===================== HERO ===================== -->
+  <section class="hero-wrap">
+    <div class="hero-glow" aria-hidden="true"></div>
+    <div class="container hero-grid" id="hero">
+      <div class="hero-copy">
+        <div class="badge-pill badge-amber">
+          <span class="dot dot-amber"></span>
+          <img src="assets/hero_icon_01.svg" alt="" width="15" height="12">
+          <span>Built for Modern Classrooms</span>
+          <span><span class="sep">•</span> Offline-First Android &amp; Instant Web Client</span>
+        </div>
+
+        <h1 class="h1">The thoughtful classroom quiz<br>engine with <span class="underline-accent">dual smart grading.</span></h1>
+
+        <p class="lead">Quizoma pairs high-precision algorithmic scanning with dedicated teacher-first
+        qualitative reviews. Zero punitive penalties for spelling slips, zero false zeros,
+        and uninterrupted offline participation.</p>
+
+        <div class="cta-row">
+          <a href="/take/" class="btn btn-primary btn-lg btn-hero-cta">
+            <img src="assets/hero_icon_02.svg" alt="" width="17" height="17">
+            <span>Enter Room Code</span>
+          </a>
+          <a href="#" class="play-store-btn">
+            <img src="assets/google-play-badge.png" alt="Get it on Google Play" width="166" height="49">
+          </a>
+        </div>
+
+        <div class="trust-badges">
+          <span><img src="assets/hero_icon_04.svg" alt="" width="13" height="13"> 100% Free Forever</span>
+          <span><img src="assets/hero_icon_05.svg" alt="" width="13" height="11"> Android 7.0+ &amp; Any Browser</span>
+          <span><img src="assets/hero_icon_06.svg" alt="" width="12" height="12"> Local SQLite Cache</span>
+        </div>
+
+        <div class="stat-cards">
+          <div class="stat-card">
+            <div class="stat-top">
+              <span class="stat-title">6 Formats</span>
+              <span class="stat-icon stat-icon-green"><img src="assets/hero_icon_07.svg" alt="" width="13" height="13"></span>
+            </div>
+            <p class="stat-desc">MCQ, Written, Polls &amp; Blanks</p>
+            <span class="tag tag-green"><img src="assets/hero_icon_08.svg" alt="" width="10" height="10"> Versatile</span>
+          </div>
+          <div class="stat-card">
+            <div class="stat-top">
+              <span class="stat-title">Dual Track</span>
+              <span class="stat-icon stat-icon-blue"><img src="assets/hero_icon_09.svg" alt="" width="15" height="15"></span>
+            </div>
+            <p class="stat-desc">Smart Auto + Human Hand Marking</p>
+            <span class="tag tag-blue"><img src="assets/hero_icon_10.svg" alt="" width="9" height="10"> Typo-Tolerant</span>
+          </div>
+          <div class="stat-card">
+            <div class="stat-top">
+              <span class="stat-title">Offline First</span>
+              <span class="stat-icon stat-icon-amber"><img src="assets/hero_icon_11.svg" alt="" width="15" height="13"></span>
+            </div>
+            <p class="stat-desc">100% Free • No Ads • Auto Sync</p>
+            <span class="tag tag-amber"><img src="assets/hero_icon_12.svg" alt="" width="10" height="8"> Android &amp; Web</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-visual">
+        <div class="hero-orb hero-orb-a" aria-hidden="true"></div>
+        <div class="hero-orb hero-orb-b" aria-hidden="true"></div>
+
+        <div class="classroom-card">
+          <img class="classroom-photo" src="assets/hero_photo.jpeg" alt="Teacher and students in warm classroom desk environment reviewing open-ended quizzes with focus and care">
+          <div class="float-pill float-pill-left">
+            <span class="dot dot-green"></span>
+            <strong>Active Room #BIO-402</strong>
+            <span><span class="sep">•</span> <span class="mono accent">CC7Q5V</span></span>
+          </div>
+          <div class="float-pill float-pill-right">
+            <img src="assets/hero_icon_13.svg" alt="" width="13" height="9">
+            <strong id="online-count">28 Online</strong>
+          </div>
+        </div>
+
+        <div class="mini-quiz-card">
+          <div class="mini-quiz-top">
+            <div class="mini-quiz-tags">
+              <span class="chip mono">Q 04 of 12</span>
+              <span class="chip chip-purple"><img src="assets/hero_icon_14.svg" alt="" width="9" height="12"> Track A</span>
+            </div>
+            <div class="mini-quiz-tags">
+              <span class="chip chip-round chip-amber mono"><img src="assets/hero_icon_15.svg" alt="" width="11" height="12"> 14s</span>
+              <span class="chip chip-round chip-green"><img src="assets/hero_icon_16.svg" alt="" width="13" height="12"> Dual Graded</span>
+            </div>
+          </div>
+          <p class="mini-quiz-question">Which organelle is known as the powerhouse of the cell?</p>
+          <div class="mini-quiz-options" id="mini-quiz-options">
+            <button type="button" class="option" aria-pressed="false" data-correct="false">
+              <span>Nucleus</span>
+              <span class="option-letter">A</span>
+            </button>
+            <button type="button" class="option" aria-pressed="false" data-correct="true">
+              <span>Mitochondria</span>
+              <span class="option-letter">B</span>
+            </button>
+            <button type="button" class="option" aria-pressed="false" data-correct="false">
+              <span>Cell Wall</span>
+              <span class="option-letter">C</span>
+            </button>
+          </div>
+          <div class="feedback-banner feedback-banner-hidden" id="mini-quiz-feedback">
+            <span><img src="assets/hero_icon_18.svg" alt="" width="15" height="15"> Typo-tolerant: "mitocondria" accepted • 89% match</span>
+            <span class="feedback-points">+100 Pts</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 4 PILLARS ===================== -->
+  <section class="section section-alt" id="pillars">
+    <div class="container">
+      <div class="section-head center">
+        <span class="eyebrow">PILLARS OF PEDAGOGICAL INTEGRITY</span>
+        <h2 class="h2">Engineered for human scholarship, not metric anxiety.</h2>
+      </div>
+      <div class="pillars-grid">
+        <div class="pillar-card">
+          <div class="pillar-icon bg-green"><img src="assets/pillar_icon_01.svg" alt="" width="23" height="22"></div>
+          <h3 class="h3">100% Free &amp; Ad-Free</h3>
+          <p>Zero banner distractions, predatory data brokers, or subscription gates during timed academic lectures.</p>
+          <div class="pillar-foot foot-green"><img src="assets/pillar_icon_02.svg" alt="" width="11" height="8"> Public Good Guarantee</div>
+        </div>
+        <div class="pillar-card">
+          <div class="pillar-icon bg-blue"><img src="assets/pillar_icon_03.svg" alt="" width="26" height="21"></div>
+          <h3 class="h3">Offline-First Engine</h3>
+          <p>Built-in SQLite ledger caches quizzes on native devices. Unstable campus Wi-Fi never invalidates active student submissions.</p>
+          <div class="pillar-foot foot-blue"><img src="assets/pillar_icon_04.svg" alt="" width="15" height="12"> Automatic Re-sync</div>
+        </div>
+        <div class="pillar-card">
+          <div class="pillar-icon bg-purple"><img src="assets/pillar_icon_05.svg" alt="" width="22" height="21"></div>
+          <h3 class="h3">Dual Scoring Tracks</h3>
+          <p>Separates deterministic factual speed from qualitative depth. Student self-worth is protected through balanced evaluation.</p>
+          <div class="pillar-foot foot-purple"><img src="assets/pillar_icon_06.svg" alt="" width="13" height="11"> Split Ledger Metrics</div>
+        </div>
+        <div class="pillar-card">
+          <div class="pillar-icon bg-amber"><img src="assets/pillar_icon_07.svg" alt="" width="25" height="13"></div>
+          <h3 class="h3">Zero-Friction Access</h3>
+          <p>1-click Google OAuth authentication or instantaneous guest PIN entry. No cumbersome multi-step account creation for students.</p>
+          <div class="pillar-foot foot-amber"><img src="assets/pillar_icon_08.svg" alt="" width="12" height="12"> Instant Participation</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== DUAL-TRACK GRADING DEEP DIVE ===================== -->
+  <section class="section" id="dual-grading">
+    <div class="container">
+      <div class="deep-dive-grid">
+        <div class="deep-dive-art">
+          <img src="assets/dualtrack_photo.jpeg" alt="Ultra crisp minimalist editorial vector illustration explaining dual-track grading concept: automated algorithmic scan vs human empathetic review">
+          <div class="art-caption">
+            <span><span class="dot dot-green"></span> Every answer reviewed twice — machine and teacher</span>
+            <span class="mono text-muted">Auto + Human</span>
+          </div>
+        </div>
+        <div class="deep-dive-copy">
+          <span class="badge-pill badge-purple"><img src="assets/dualtrack_icon_02.svg" alt="" width="12" height="12"> Core Pedagogical Innovation</span>
+          <h2 class="h2">Smart Algorithmic Match <span class="text-muted">vs.</span> Empathetic Hand-Marking</h2>
+          <p class="lead">Standard testing engines mark students entirely wrong for a single transposed letter or synonym variation. Quizoma solves this by splitting answers into two respectful evaluation tracks.</p>
+
+          <div class="track-stack">
+            <div class="track-card track-a">
+              <div class="track-head">
+                <span class="track-title"><span class="track-letter">A</span> Track A: Typo-Tolerant Algorithmic Lens</span>
+                <span class="chip mono">Instant Scan</span>
+              </div>
+              <p>Executes Levenshtein distance calculations (up to 85% typo tolerance), recognizes numeric equivalence (e.g. <span class="chip mono chip-inline">"7" = "seven" = "7.0"</span>), and maps semantic keyword coverage.</p>
+              <div class="track-tags">
+                <span class="tag tag-blue">Equivalence Normalization</span>
+                <span class="tag tag-green">Levenshtein 0.85</span>
+              </div>
+            </div>
+            <div class="track-card track-b">
+              <div class="track-head">
+                <span class="track-title"><span class="track-letter track-letter-b">B</span> Track B: Empathetic Hand-Marking Queue</span>
+                <span class="chip chip-mint mono">Zero False 0%</span>
+              </div>
+              <p>Open-ended thoughts, short essays, and partial-reasoning responses never get auto-failed. They are flagged directly for instructor remarks, margin annotations, and partial credit adjustment.</p>
+              <div class="track-tags">
+                <span class="tag tag-amber">Human Instructor Review</span>
+                <span class="tag tag-purple">Margin Remark Editor</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 6 QUESTION FORMATS + WORKFLOW ===================== -->
+  <section class="section section-formats-intro">
+    <div class="glow glow-purple" aria-hidden="true"></div>
+    <div class="glow glow-mint" aria-hidden="true"></div>
+    <div class="container">
+      <div class="section-head center narrow">
+        <span class="badge-pill badge-blue"><img src="assets/dualtrack_icon_02.svg" alt="" width="13" height="12"> Synchronous Classroom Architecture <span><span class="sep">•</span> Real-Time Pedagogical Loop</span></span>
+        <h2 class="h2">How Teacher Intent Connects<br>with Student Mastery in Real-Time</h2>
+        <p class="lead">From instant question dispatch to dual-path evaluation and dignified feedback—explore the living flow between educator and student.</p>
+        <div class="filter-chips">
+          <span class="chip-pill chip-pill-active">1. Instant Dispatch</span>
+          <span class="chip-pill">2. Live SQLite Response</span>
+          <span class="chip-pill">3. Dual-Track Grading</span>
+          <span class="chip-pill">4. Feedback Dignity Loop</span>
+        </div>
+      </div>
+
+      <div class="stage-grid">
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-icon bg-primary"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg></span>
+            <div>
+              <span class="stage-eyebrow mono text-primary">STAGE 01</span>
+              <h3 class="h3">Teacher Creates &amp; Dispatches</h3>
+            </div>
+          </div>
+          <p class="stage-desc">Launch structured assessments in seconds with high-precision authoring tools and instant distribution.</p>
+          <ul class="feature-list">
+            <li><span class="feature-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"></line><line x1="4" y1="15" x2="20" y2="15"></line><line x1="10" y1="3" x2="8" y2="21"></line><line x1="16" y1="3" x2="14" y2="21"></line></svg></span><div><strong>Instant 6-Digit PIN or QR</strong><span>Zero friction dispatch—students join on any phone or laptop.</span></div></li>
+            <li><span class="feature-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg></span><div><strong>Instant CSV &amp; QTI Import</strong><span>Port existing question banks or test libraries in 1 click.</span></div></li>
+            <li><span class="feature-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg></span><div><strong>6 Academic Question Formats</strong><span>MCQs, written short response, inline blanks, and live polls.</span></div></li>
+          </ul>
+          <div class="stage-foot">
+            <span class="mono foot-green">Web &amp; Android Host</span>
+            <span class="tag tag-blue">Ready to Dispatch</span>
+          </div>
+        </div>
+
+        <div class="flow-connector flow-connector-1" aria-hidden="true">
+          <svg class="flow-svg" viewBox="0 0 100 10" preserveAspectRatio="none">
+            <path class="flow-line-animated" d="M0 5 L100 5" stroke="#3525cd" stroke-width="2.5" fill="none" opacity="0.6"/>
+          </svg>
+          <span class="flow-dot"></span>
+        </div>
+
+        <div class="stage-card stage-card-highlight">
+          <div class="stage-hub">
+            <div class="stage-hub-icon"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"></circle><path d="M16.24 7.76a6 6 0 0 1 0 8.49"></path><path d="M7.76 16.24a6 6 0 0 1 0-8.49"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path><path d="M4.93 19.07a10 10 0 0 1 0-14.14"></path></svg></div>
+            <span class="stage-eyebrow mono text-primary center">STAGE 02</span>
+            <h3 class="h3 center">Quizoma Smart Relay &amp; Engine</h3>
+          </div>
+          <p class="stage-desc center">The resilient core mediating synchronous grading with sub-14ms telemetry and balanced evaluation.</p>
+          <div class="highlight-rows">
+            <div class="highlight-row"><span class="highlight-label"><span class="highlight-icon highlight-icon-primary"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></span>Track A: Typo-Tolerant Auto Scan</span><span class="mono text-primary">85% Match</span></div>
+            <div class="highlight-row"><span class="highlight-label"><span class="highlight-icon highlight-icon-green"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></span>Track B: Empathetic Hand Marking</span><span class="mono foot-green">Zero False 0%</span></div>
+            <div class="highlight-row"><span class="highlight-label"><span class="highlight-icon highlight-icon-muted"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg></span>Offline SQLite Ledger</span><span class="mono text-muted">No Wi-Fi Loss</span></div>
+          </div>
+          <div class="stage-foot center">
+            <span class="dot dot-green"></span>
+            <span class="mono text-muted">Sub-14ms Latency Relay Active</span>
+          </div>
+        </div>
+
+        <div class="flow-connector flow-connector-2" aria-hidden="true">
+          <svg class="flow-svg" viewBox="0 0 100 10" preserveAspectRatio="none">
+            <path class="flow-line-animated" d="M0 5 L100 5" stroke="#3525cd" stroke-width="2.5" fill="none" opacity="0.6"/>
+          </svg>
+          <span class="flow-dot"></span>
+        </div>
+
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-icon bg-green-dark"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3L2 8l10 5 10-5-10-5z"></path><path d="M6 10.5V16c0 1.657 2.686 3 6 3s6-1.343 6-3v-5.5"></path></svg></span>
+            <div>
+              <span class="stage-eyebrow mono foot-green">STAGE 03</span>
+              <h3 class="h3">Student Answers &amp; Learns</h3>
+            </div>
+          </div>
+          <p class="stage-desc">Stress-free participation designed to cultivate focus, dignity, and real-time comprehension.</p>
+          <ul class="feature-list">
+            <li><span class="feature-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg></span><div><strong>No-App Instant Browser Join</strong><span>Opens in any browser. No forced student account creation.</span></div></li>
+            <li><span class="feature-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></span><div><strong>Typo-Tolerant Live Feedback</strong><span>Minor spelling slips and synonyms recognized with partial credit.</span></div></li>
+            <li><span class="feature-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg></span><div><strong>Dignified Score Review</strong><span>Private constructive remarks, mastery badges, and PDF summary.</span></div></li>
+          </ul>
+          <div class="stage-foot">
+            <span class="mono foot-green">100% Offline-Safe</span>
+            <span class="tag tag-green">Participant Ready</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="workflow-banner">
+        <div class="workflow-head">
+          <span class="workflow-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff" stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg></span>
+          <h3 class="h3">Simple 4-Step Workflow</h3>
+          <span class="tag tag-green"><span class="dot dot-green-sm"></span>Effortless &amp; Instant</span>
+          <span class="workflow-status mono foot-green"><span class="dot dot-green"></span>Zero Setup Required</span>
+        </div>
+        <div class="workflow-steps">
+          <div class="workflow-step">
+            <div class="workflow-step-top"><span class="step-tag mono">STEP 1</span><span class="step-icon bg-blue"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#075985" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></span></div>
+            <h4>Create</h4>
+            <p>Type questions in seconds or import directly from CSV/text.</p>
+          </div>
+          <div class="workflow-step">
+            <div class="workflow-step-top"><span class="step-tag mono step-tag-amber">STEP 2</span><span class="step-icon bg-amber"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg></span></div>
+            <h4>Invite</h4>
+            <p>Share an instant 6-digit room PIN or display a QR code.</p>
+          </div>
+          <div class="workflow-step">
+            <div class="workflow-step-top"><span class="step-tag mono step-tag-purple">STEP 3</span><span class="step-icon bg-purple"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b21a8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg></span></div>
+            <h4>Join</h4>
+            <p>Participants join from any mobile or desktop browser.</p>
+          </div>
+          <div class="workflow-step">
+            <div class="workflow-step-top"><span class="step-tag mono step-tag-green">STEP 4</span><span class="step-icon bg-green"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#166534" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></span></div>
+            <h4>Results</h4>
+            <p>Scores, answers, and PDF reports generate automatically.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 6 FORMAT CARDS ===================== -->
+  <section class="section section-alt" id="formats">
+    <div class="container">
+      <div class="section-head split">
+        <div>
+          <span class="eyebrow">VERSATILE ITEM BANKING</span>
+          <h2 class="h2">The 6 Authentic Academic Question Types</h2>
+        </div>
+        <p class="lead max-w-sm">Standardized exams demand diverse evaluation formats. Build structured exams with nuanced multiple selection and qualitative short answers.</p>
+      </div>
+
+      <div class="formats-grid">
+        <div class="format-card">
+          <div class="format-icon bg-blue"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#075985" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="3.5" fill="#075985" stroke="none"></circle></svg></div>
+          <h3 class="h3">Single Choice (MCQ)</h3>
+          <p>Classic factual selection with shuffled answer arrays and decoy distractor analysis.</p>
+          <div class="format-foot"><span class="mono">Deterministic</span><span class="mono text-primary">Track A</span></div>
+        </div>
+        <div class="format-card">
+          <div class="format-icon bg-purple"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b21a8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg></div>
+          <h3 class="h3">Multiple Correct</h3>
+          <p>Select all that apply with configurable partial-credit weighting and anti-guessing logic.</p>
+          <div class="format-foot"><span class="mono">Partial Credit</span><span class="mono text-primary">Track A</span></div>
+        </div>
+        <div class="format-card">
+          <div class="format-icon bg-green"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#166534" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="12" r="5"></circle><path d="M4.7 12l1.5 1.6L9.3 10"></path><circle cx="17" cy="12" r="5"></circle><path d="M14.8 9.8l4.4 4.4M19.2 9.8l-4.4 4.4"></path></svg></div>
+          <h3 class="h3">True / False</h3>
+          <p>Binary factual verification with an optional 'Explain Your Stance' qualitative follow-up.</p>
+          <div class="format-foot"><span class="mono">Fast Recall</span><span class="mono text-primary">Track A</span></div>
+        </div>
+        <div class="format-card">
+          <div class="format-icon bg-amber"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg></div>
+          <h3 class="h3">Written Short Answer</h3>
+          <p>Open responses routed straight to teacher hand-grading with rich inline feedback remarks.</p>
+          <div class="format-foot"><span class="mono">Qualitative</span><span class="mono foot-green">Track B</span></div>
+        </div>
+        <div class="format-card">
+          <div class="format-icon bg-indigo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3525cd" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="7" y2="12"></line><line x1="9.5" y1="12" x2="14.5" y2="12" stroke-dasharray="2.2 2.2"></line><line x1="17" y1="12" x2="21" y2="12"></line></svg></div>
+          <h3 class="h3">Fill in the Blanks</h3>
+          <p>Typo-tolerant inline blanks matching vocabulary, unit conversions, and algebraic formulas.</p>
+          <div class="format-foot"><span class="mono">Smart Lexical</span><span class="mono text-primary">Track A</span></div>
+        </div>
+        <div class="format-card">
+          <div class="format-header-row">
+            <div class="format-icon bg-purple"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b21a8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg></div>
+            <span class="tag tag-blue-soft">Audio/Video Soon</span>
+          </div>
+          <h3 class="h3">Anonymous Live Polls</h3>
+          <p>Zero-stakes live temperature checks and peer sentiment tracking displayed in real-time histograms.</p>
+          <div class="format-foot"><span class="mono">Sentiment</span><span class="mono foot-amber">Ungraded</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ===================== CLOSING BANNER ===================== -->
+  <section class="section">
+    <div class="container">
+      <div class="closing-banner">
+        <div class="closing-glow" aria-hidden="true"></div>
+        <div class="closing-copy">
+          <span class="chip closing-chip mono">Institutional Integrity System</span>
+          <h2 class="h2">Bring speed, accuracy, and grading dignity to your classroom.</h2>
+          <p>Join thousands of university professors, secondary teachers, and independent educators hosting stress-free evaluations today.</p>
+        </div>
+        <div class="closing-actions">
+          <a href="/take/" class="btn btn-cream btn-lg">Join Test Session</a>
+          <a href="#" class="btn btn-primary-dark btn-lg">Educator Portal</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== FAQ ===================== -->
+  <section class="section" id="faq">
+    <div class="container">
+      <div class="section-head center">
+        <span class="eyebrow">TRANSPARENT ENGINEERING</span>
+        <h2 class="h2">Frequently Answered Architecture Questions</h2>
+      </div>
+      <div class="faq-list">
+        <div class="faq-item">
+          <button class="faq-question" type="button">
+            <span>How does Quizoma prevent unfair 0% scores on open responses?</span>
+            <span class="faq-caret">＋</span>
+          </button>
+          <div class="faq-answer"><p>Open responses are routed to Track B, the empathetic hand-marking queue, so no essay or short-answer response is ever auto-failed by the algorithm. A teacher always reviews and grades qualitative work directly.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" type="button">
+            <span>What happens when campus Wi-Fi drops during an active test?</span>
+            <span class="faq-caret">＋</span>
+          </button>
+          <div class="faq-answer"><p>Quizoma's offline-first engine caches quiz state to a local SQLite ledger on-device, so unstable Wi-Fi never invalidates active student submissions. Answers automatically re-sync once connectivity returns.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" type="button">
+            <span>Do students need an active paid license or email account?</span>
+            <span class="faq-caret">＋</span>
+          </button>
+          <div class="faq-answer"><p>No. Students can join instantly with a 6-character room PIN or QR scan — no email, password, or paid license required.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" type="button">
+            <span>Can we export grade reports to Canvas, Schoology, or Google Classroom?</span>
+            <span class="faq-caret">＋</span>
+          </button>
+          <div class="faq-answer"><p>Yes. Scores, answers, and PDF reports generate automatically and can be exported for use with common gradebook and LMS platforms.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ===================== FOOTER ===================== -->
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="#" class="brand">
+          <span class="brand-mark"><img src="data:image/png;base64,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" alt="" class="brand-icon"></span>
+          <span class="brand-name">Quizoma</span>
+        </a>
+        <p>Pedagogical assessment architecture engineered for rigorous institutional integrity, dual-engine evaluation, and human-first learning clarity.</p>
+        <div class="footer-badges">
+          <span class="tag tag-green">Engine v3.8 Operational</span>
+          <span class="tag tag-blue">WCAG 2.1 AAA</span>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Architecture</h4>
+        <a href="#">Dual Grading Engine</a>
+        <a href="#">Six Question Formats</a>
+        <a href="#">Latency Benchmarks</a>
+        <a href="#">Local-First Offline Fallback</a>
+      </div>
+      <div class="footer-col">
+        <h4>Product Suite</h4>
+        <a href="#">Web Client Interface</a>
+        <a href="#">Live Room Dispatch</a>
+        <a href="#">Educator Gradebook</a>
+        <a href="#">Item Banking &amp; Export</a>
+      </div>
+      <div class="footer-col">
+        <h4>Integrity &amp; Standards</h4>
+        <a href="#">FERPA &amp; GDPR Audit</a>
+        <a href="#">Pedagogical Whitepaper</a>
+        <a href="#">Institutional Inquiries</a>
+        <a href="#">System Status</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2025 Quizoma Academic Infrastructure, Inc. Designed for thoughtful scholarship.</p>
+      <div class="footer-links">
+        <a href="/privacy/">Privacy Policy</a>
+        <a href="#">Academic Integrity Policy</a>
+        <a href="#">Security Protocol</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="script.js?v=2"></script>
+</body>
+</html>
