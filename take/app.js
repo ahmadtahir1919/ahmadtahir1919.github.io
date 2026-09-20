@@ -1,12 +1,12 @@
-// ============================================================================
-// Web quiz-taking — mirrors ui/preview/QuizPreviewViewModel.kt's flow: load,
+﻿// ============================================================================
+// Web quiz-taking â€” mirrors ui/preview/QuizPreviewViewModel.kt's flow: load,
 // per-question timer, answer, (optional) instant feedback, advance, score,
 // submit. Poll rendering lands in a later pass (see the plan); it currently
 // shows a "not available on web yet" placeholder with Skip. Fill Blank mirrors
 // the app's inline sentence design exactly (see FillBlankQuestionBody.kt).
 // ============================================================================
 
-// Same palette as ui/theme/QuizThemeColors.kt — keep in sync if it changes.
+// Same palette as ui/theme/QuizThemeColors.kt â€” keep in sync if it changes.
 const QUIZ_THEME_COLORS = {
   Indigo: "#4F46E5", Forest: "#16A34A", Crimson: "#DC2626", Teal: "#0F766E",
   Amber: "#D97706", Rose: "#BE185D", Sky: "#0284C7", Violet: "#7C3AED",
@@ -19,12 +19,12 @@ function themeColorFromName(name) {
 const app = document.getElementById("app");
 
 // A missing global here (evaluator.js/supabase-client.js failed to load or
-// threw during init — e.g. the Supabase CDN script was blocked/slow) used to
+// threw during init â€” e.g. the Supabase CDN script was blocked/slow) used to
 // throw right here and leave the whole page blank with nothing on screen and
 // no clue why. Show it instead of silently dying.
 // strings.js is included in this guard too: every user-facing word on the page comes
 // from it, so a page that loaded without it would render blank labels everywhere. The
-// two failure messages below stay inline literals on purpose — they are the LAST
+// two failure messages below stay inline literals on purpose â€” they are the LAST
 // resort, shown precisely when the string table may be the thing that failed to load.
 if (!window.Evaluator || !window.SupabaseClient || !window.FillBlank || !window.Poll || !window.S) {
   app.innerHTML =
@@ -33,7 +33,7 @@ if (!window.Evaluator || !window.SupabaseClient || !window.FillBlank || !window.
     "A required script failed to load (often a slow/blocked connection to the Supabase library CDN). " +
     "Please check your connection and reload the page." +
     "</div>";
-  throw new Error("Quizoma web: required globals missing (Evaluator/SupabaseClient/FillBlank/Poll/S) — aborting boot.");
+  throw new Error("Quizoma web: required globals missing (Evaluator/SupabaseClient/FillBlank/Poll/S) â€” aborting boot.");
 }
 if (window.SupabaseClient.initError) {
   app.innerHTML =
@@ -41,7 +41,7 @@ if (window.SupabaseClient.initError) {
     "<b>Couldn't connect.</b><br><br>" +
     window.SupabaseClient.initError.message +
     "</div>";
-  throw new Error("Quizoma web: Supabase client failed to initialize — aborting boot.");
+  throw new Error("Quizoma web: Supabase client failed to initialize â€” aborting boot.");
 }
 
 const { evaluate, computeScore, defaultAnswerRule } = window.Evaluator;
@@ -53,7 +53,7 @@ const PL = window.Poll;
 const params = new URLSearchParams(window.location.search);
 const shareCode = (params.get("code") || "").toUpperCase();
 
-// ── State ──────────────────────────────────────────────────────────────────
+// â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const state = {
   screen: "loading", // loading | landing | confirmName | quiz | finishing | result | error
   errorMessage: "",
@@ -63,8 +63,8 @@ const state = {
   currentIndex: 0,
   selectedAnswers: new Set(), // index-strings, same convention as the Kotlin VM
   writtenAnswer: "",
-  fillBlankDraft: [], // FILL_BLANK only — one entry per blank, in template order
-  // POLL only — mirrors QuizPreviewUiState's poll* fields.
+  fillBlankDraft: [], // FILL_BLANK only â€” one entry per blank, in template order
+  // POLL only â€” mirrors QuizPreviewUiState's poll* fields.
   pollState: null, // { status, opened_at, closes_at } | null
   pollDisplayOrder: [], // shuffled option indices, "Other" excluded (always last)
   pollSelected: new Set(), // numeric option indices, PL.POLL_OTHER_INDEX for "Other"
@@ -77,12 +77,12 @@ const state = {
   secondsRemaining: 0,
   totalTimeSec: 0,
   timerHandle: null,
-  autoFinishHandle: null, // setTimeout id — LAST question only, once it's been answered
+  autoFinishHandle: null, // setTimeout id â€” LAST question only, once it's been answered
   // Question preview (quiz.questionPreviewSec): the question shows on its own first, with
-  // no choices and no clock — mirrors QuizPreviewUiState.revealingQuestion.
+  // no choices and no clock â€” mirrors QuizPreviewUiState.revealingQuestion.
   revealing: false,
   revealHandle: null, // setTimeout id ending the preview
-  revealStartedAt: 0, // epoch ms — keeps the fill bar continuous across re-renders
+  revealStartedAt: 0, // epoch ms â€” keeps the fill bar continuous across re-renders
   revealJustEnded: false, // one render: the card settles up and the choices animate in
   questionStartSec: 0,
   questionAnswers: {}, // questionId -> raw keys (index-strings / written text)
@@ -92,20 +92,20 @@ const state = {
   hintUsed: {}, // questionId -> true once its hint was opened (sticky, unlike hintVisible)
   result: null, // { score, total, answers }
   landingTickerHandle: null, // ticks the Scheduled-quiz countdown on the landing card
-  hasJoined: false, // Join clicked (and joined_quizzes recorded) this session — gates Start Quiz
+  hasJoined: false, // Join clicked (and joined_quizzes recorded) this session â€” gates Start Quiz
   // joined_quizzes.last_started_at for this account (epoch ms) or null. With no
-  // existingAttempt it means "started, left without submitting" — see renderLanding.
+  // existingAttempt it means "started, left without submitting" â€” see renderLanding.
   lastStartedAt: null,
   joinError: null,
   joining: false,
-  // Admin maintenance switches (see SC.fetchFeatureFlags) — fetched once in boot() and
+  // Admin maintenance switches (see SC.fetchFeatureFlags) â€” fetched once in boot() and
   // fails open, so an unreached/erroring flags call never blocks a genuine join.
   flags: { joinQuizEnabled: true },
 };
 
 // Fires window.Analytics.screen() once per genuine screen change, not once per
-// re-render (render() is called far more often than state.screen actually changes —
-// e.g. every keystroke while typing a written answer) — same "one event per
+// re-render (render() is called far more often than state.screen actually changes â€”
+// e.g. every keystroke while typing a written answer) â€” same "one event per
 // destination change" granularity as AppNavHost.kt on the Android side.
 let lastTrackedScreen = null;
 
@@ -114,7 +114,7 @@ function render() {
     lastTrackedScreen = state.screen;
     window.Analytics.screen(state.screen);
   }
-  // The landing countdown ticker only makes sense while its own card is on screen —
+  // The landing countdown ticker only makes sense while its own card is on screen â€”
   // torn down the moment anything else renders, so it can never re-render (and wipe)
   // an unrelated screen the user has since navigated to (e.g. mid-typing in the quiz).
   if (state.screen !== "landing" && state.landingTickerHandle) {
@@ -142,7 +142,7 @@ function render() {
   }
 }
 
-/** The screen's content mount — the <main> between the shared header and footer.
+/** The screen's content mount â€” the <main> between the shared header and footer.
  *  Reassigned on every render(); the render* functions append into this, not #app. */
 let main = app;
 
@@ -152,7 +152,7 @@ function headerStatusFor(screen) {
     case "finishing": return S.STATUS_LOADING;
     case "error": return S.STATUS_ERROR;
     case "quiz": return S.STATUS_IN_PROGRESS;
-    // Only these two screens actually offer a join/start action for the chip to reflect —
+    // Only these two screens actually offer a join/start action for the chip to reflect â€”
     // everywhere else (confirmName, result, closed) a taker already got past joining, so
     // the maintenance switch has nothing left to say about their session.
     case "enterCode":
@@ -161,12 +161,15 @@ function headerStatusFor(screen) {
   }
 }
 
-const ROCKET_SVG = `<svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M14.5 4.5c2.2-.9 4.2-1 5-.5.5.8.4 2.8-.5 5-1.1 2.6-3.1 5.3-5.4 7.6l-2.2 2.2-3.7-3.7 2.2-2.2c2.3-2.3 5-4.3 7.6-5.4z" stroke="#fff" stroke-width="1.7" stroke-linejoin="round"/><path d="M8.2 12.4L5 13.5l-1.5 3 3-1.5M11.6 15.8l-1.1 3.2 3 1.5-1.5-3" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="15.5" cy="8.5" r="1.3" fill="#fff"/></svg>`;
+// Same PNG as the page's own favicon (app's launcher icon) — keeps the header brand mark and the browser tab icon identical.
+const BRAND_ICON_DATA_URI = "data:image/png;base64,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";
 
 function buildSiteHeader(status) {
   return el("header", { class: "site-header" }, [
     el("div", { class: "brand" }, [
-      el("span", { class: "brand-tile" }, [html(ROCKET_SVG)]),
+      el("span", { class: "brand-tile" }, [
+        el("img", { src: BRAND_ICON_DATA_URI, alt: "", class: "brand-icon" }, []),
+      ]),
       el("span", { class: "brand-name" }, [S.BRAND]),
     ]),
     el("span", { class: "status-chip" }, [
@@ -186,11 +189,11 @@ function buildSiteFooter() {
   ]);
 }
 
-/** Leaving the flow (Done, or the X mid-quiz) never navigates anywhere — there's
+/** Leaving the flow (Done, or the X mid-quiz) never navigates anywhere â€” there's
  *  no page at the site root, which is exactly what caused the 404. This just
  *  swaps to a plain "you're done" screen; the tab itself is meant to be closed
  *  by hand, or via renderClosed's Close button when the browser will actually
- *  honor window.close() (see that function's doc — most tabs reached via a
+ *  honor window.close() (see that function's doc â€” most tabs reached via a
  *  regular link tap don't qualify, so the button just doesn't render there). */
 function leaveQuiz(message) {
   clearInterval(state.timerHandle);
@@ -204,7 +207,7 @@ function leaveQuiz(message) {
   render();
 }
 
-/** The mid-quiz "are you sure" — mirrors QuizPreviewScreen exit ConfirmActionDialog (the
+/** The mid-quiz "are you sure" â€” mirrors QuizPreviewScreen exit ConfirmActionDialog (the
  *  browser confirm() is this page own dialog pattern; no modal primitive exists here, see
  *  renderQuiz). The wording spells out what leaving costs: nothing is submitted, and with
  *  retakes off there is no way back in. */
@@ -213,7 +216,7 @@ function confirmLeave() {
   return confirm(msg);
 }
 
-// Closing/reloading the tab mid-quiz is the same "left without submitting" as the X — the
+// Closing/reloading the tab mid-quiz is the same "left without submitting" as the X â€” the
 // browser shows its own generic warning (the text cannot be customized), which still beats
 // silently losing an in-progress attempt.
 window.addEventListener("beforeunload", (e) => {
@@ -224,9 +227,9 @@ window.addEventListener("beforeunload", (e) => {
 
 function renderClosed() {
   // window.close() only actually works when the browser considers this tab
-  // "script-closable" — opened via window.open() (window.opener set) or with no
+  // "script-closable" â€” opened via window.open() (window.opener set) or with no
   // navigation history of its own (history.length <= 1, i.e. it never followed a
-  // link to get here). The common case — tapping a regular share-code link — is
+  // link to get here). The common case â€” tapping a regular share-code link â€” is
   // neither, so the button would silently no-op on click. A dead button is worse
   // than no button, so it's only rendered when the heuristic says it'll work.
   const canClose = window.opener != null || window.history.length <= 1;
@@ -257,17 +260,17 @@ function el(tag, props, children) {
   return node;
 }
 
-/** Fragment from an HTML string — used for the small inline SVG icons below. */
+/** Fragment from an HTML string â€” used for the small inline SVG icons below. */
 function html(markup) {
   const t = document.createElement("template");
   t.innerHTML = markup.trim();
   return t.content.firstChild;
 }
 
-// ── Markdown (mirrors MarkdownParser.kt) — question text supports bold/italic/
+// â”€â”€ Markdown (mirrors MarkdownParser.kt) â€” question text supports bold/italic/
 // underline/strikethrough/code inline spans plus #/##/- block prefixes on Android
 // (QuestionText's parseMarkdown), but this page just printed the raw "**text**"
-// asterisks verbatim since none of that existed here at all. ─────────────────────
+// asterisks verbatim since none of that existed here at all. â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const MD_INLINE_MARKERS = [
   { marker: "**", tag: "strong" },
@@ -308,7 +311,7 @@ function appendInlineMarkdown(container, text, depth) {
   flushPlain();
 }
 
-/** Mirrors parseMarkdown() in MarkdownParser.kt. Returns a DOM fragment (not a string —
+/** Mirrors parseMarkdown() in MarkdownParser.kt. Returns a DOM fragment (not a string â€”
  *  building real <strong>/<em> nodes is the only way to get real formatting; this file
  *  has no innerHTML-from-markdown pipeline) ready to drop straight into el()'s children. */
 function renderMarkdown(md) {
@@ -320,7 +323,7 @@ function renderMarkdown(md) {
     let big = false;
     if (line.startsWith("## ")) { big = "sub"; line = line.slice(3); }
     else if (line.startsWith("# ")) { big = "main"; line = line.slice(2); }
-    else if (line.startsWith("- ")) { prefixText = "• "; line = line.slice(2); }
+    else if (line.startsWith("- ")) { prefixText = "â€¢ "; line = line.slice(2); }
     else {
       const numMatch = line.match(/^\d+\. /);
       if (numMatch) { prefixText = numMatch[0]; line = line.slice(numMatch[0].length); }
@@ -334,7 +337,7 @@ function renderMarkdown(md) {
   return frag;
 }
 
-/** Plain-text equivalent — mirrors stripMarkdown() in MarkdownParser.kt, used where a
+/** Plain-text equivalent â€” mirrors stripMarkdown() in MarkdownParser.kt, used where a
  *  full render isn't wanted (short previews, list headers). */
 function stripMarkdownText(md) {
   let s = (md || "")
@@ -348,7 +351,7 @@ function stripMarkdownText(md) {
   return s;
 }
 
-// Official 4-color Google "G" — same colors as LoginScreen.kt's GoogleGLogo
+// Official 4-color Google "G" â€” same colors as LoginScreen.kt's GoogleGLogo
 // (#EA4335 red, #FBBC05 yellow, #34A853 green, #4285F4 blue).
 const GOOGLE_G_SVG = `
 <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
@@ -394,10 +397,10 @@ function renderError() {
   );
 }
 
-// ── Enter code ─────────────────────────────────────────────────────────────
+// â”€â”€ Enter code â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Shown when /take/ is opened without a ?code= (or with one nobody recognises): six
 // one-character boxes, then Join reloads the page with ?code=XXXXXX so boot() takes
-// the exact same path a shared link does — no second way of loading a quiz.
+// the exact same path a shared link does â€” no second way of loading a quiz.
 const CODE_LENGTH = 6;
 const CODE_CHARS = /[^A-Z0-9]/g;
 
@@ -408,14 +411,14 @@ function extractCode(text) {
     const url = new URL(raw.trim());
     const fromParam = url.searchParams.get("code");
     if (fromParam) return fromParam.toUpperCase().replace(CODE_CHARS, "").slice(0, CODE_LENGTH);
-  } catch (e) { /* not a URL — fall through */ }
+  } catch (e) { /* not a URL â€” fall through */ }
   return raw.toUpperCase().replace(CODE_CHARS, "").slice(0, CODE_LENGTH);
 }
 
 function renderEnterCode() {
   const draft = (state.enterCodeDraft || "").padEnd(CODE_LENGTH, " ").slice(0, CODE_LENGTH).split("");
   const boxes = [];
-  // Admin maintenance switch — visibly disables the whole join flow instead of letting
+  // Admin maintenance switch â€” visibly disables the whole join flow instead of letting
   // someone fill in a code that will just fail server-side a moment later.
   const paused = !state.flags.joinQuizEnabled;
 
@@ -450,7 +453,7 @@ function renderEnterCode() {
       autocapitalize: "characters",
       autocomplete: "off",
       spellcheck: "false",
-      placeholder: "•",
+      placeholder: "â€¢",
       "aria-label": S.ENTER_CODE_LABEL,
       value: draft[i].trim(),
       ...(paused ? { disabled: "true" } : {}),
@@ -488,7 +491,7 @@ function renderEnterCode() {
     el("div", { class: "code-boxes" }, boxes),
     errorLine,
   ];
-  // Maintenance notice replaces the ordinary hint line entirely — a taker paused mid-flow
+  // Maintenance notice replaces the ordinary hint line entirely â€” a taker paused mid-flow
   // needs to know joining isn't the problem here, the timing is, not a smaller hint about
   // letter case underneath a button they can still press.
   if (paused) {
@@ -498,7 +501,7 @@ function renderEnterCode() {
   }
   body.push(joinBtn);
   // Only offered where the browser can actually hand the clipboard over (secure
-  // context + API present) — a button that silently does nothing is worse than none.
+  // context + API present) â€” a button that silently does nothing is worse than none.
   // Hidden entirely while paused: pasting a code nobody can submit right now is pointless.
   if (!paused && navigator.clipboard && navigator.clipboard.readText) {
     body.push(el("button", { class: "paste-btn", onclick: async () => {
@@ -527,11 +530,11 @@ function renderLanding() {
 
   const status = SC.effectiveStatus(quiz);
   const n = quiz.questions.length;
-  // Admin maintenance switch — only replaces the actual join/start/retake actions below;
+  // Admin maintenance switch â€” only replaces the actual join/start/retake actions below;
   // signing in and viewing an already-graded result (goToExistingResult) are unaffected,
   // since neither one records a new join.
   const joinPaused = !state.flags.joinQuizEnabled;
-  // Two card headers, one per sign-in state — same card frame underneath. Signed-out
+  // Two card headers, one per sign-in state â€” same card frame underneath. Signed-out
   // leads with the sign-in ask; signed-in leads with a "session ready" strip and the
   // account box, so the taker can see at a glance who they're about to join as.
   const body = state.user
@@ -554,7 +557,7 @@ function renderLanding() {
       ];
 
   // Archived overrides schedule-based status entirely, same rule as the Android app's
-  // ArchivedQuizStatusAction — the creator deliberately took this quiz out of
+  // ArchivedQuizStatusAction â€” the creator deliberately took this quiz out of
   // circulation, distinct from it simply having expired on its own schedule.
   if (quiz.isArchived) {
     body.push(el("p", { class: "muted" }, [S.LANDING_ARCHIVED]));
@@ -564,7 +567,7 @@ function renderLanding() {
 
   if (status === "SCHEDULED") {
     // Ticks every second so a Scheduled quiz flips to Active on its own the moment the
-    // start time arrives — same as JoinViewModel.startStatusTicker on Android — instead
+    // start time arrives â€” same as JoinViewModel.startStatusTicker on Android â€” instead
     // of leaving the visitor stuck on a stale "hasn't started yet" until they reload.
     if (!state.landingTickerHandle) {
       state.landingTickerHandle = setInterval(render, 1000);
@@ -602,7 +605,7 @@ function renderLanding() {
       ])
     );
   } else if (state.existingAttempt && !quiz.allowRetake) {
-    // Same rule as JoinScreen.kt's alreadyDoneAndLocked — a completed attempt
+    // Same rule as JoinScreen.kt's alreadyDoneAndLocked â€” a completed attempt
     // already exists and this quiz doesn't allow retakes, so don't offer Start.
     body.push(
       signedInLine(state.user),
@@ -611,10 +614,10 @@ function renderLanding() {
       signOutRow()
     );
   } else if (state.existingAttempt && quiz.allowRetake) {
-    // Retake is allowed AND this account already has a result — offer both instead of
+    // Retake is allowed AND this account already has a result â€” offer both instead of
     // forcing straight into a fresh attempt. Mirrors JoinScreen.kt's "Your Quizzes" row:
     // the default action there is opening the past RESULT (onOpenJoinedQuiz), with
-    // Retake as its own separate, explicit action — not the other way around.
+    // Retake as its own separate, explicit action â€” not the other way around.
     body.push(
       signedInLine(state.user),
       el("p", { class: "quiz-meta" }, [S.yourScore(state.existingAttempt.score, state.existingAttempt.total)]),
@@ -630,7 +633,7 @@ function renderLanding() {
     }
     body.push(signOutRow());
   } else if (state.lastStartedAt && quiz.allowRetake === false) {
-    // Started earlier (here or in the app) and left without submitting, retakes off — that
+    // Started earlier (here or in the app) and left without submitting, retakes off â€” that
     // one try is used up. Mirrors JoinedQuizItem.isLockedAfterAbandon on Android.
     body.push(
       signedInLine(state.user),
@@ -638,7 +641,7 @@ function renderLanding() {
       signOutRow()
     );
   } else if (state.lastStartedAt) {
-    // Started earlier and left without submitting — nothing counted, so this is a fresh
+    // Started earlier and left without submitting â€” nothing counted, so this is a fresh
     // attempt, labelled as a retake like the app's Joined card.
     body.push(
       signedInLine(state.user),
@@ -654,7 +657,7 @@ function renderLanding() {
     }
     body.push(signOutRow());
   } else if (!state.hasJoined) {
-    // Join is its own step, separate from Start — records membership (joined_quizzes)
+    // Join is its own step, separate from Start â€” records membership (joined_quizzes)
     // right away so the owner's Participants tab sees this person the moment they join,
     // same as joining by code in the app, rather than only once they actually finish
     // answering something.
@@ -671,7 +674,7 @@ function renderLanding() {
   } else {
     body.push(signedInLine(state.user));
     // Reaching here means hasJoined is already true (the membership row exists), so this
-    // is resuming/starting an already-joined quiz, not creating a new join — left
+    // is resuming/starting an already-joined quiz, not creating a new join â€” left
     // unblocked on purpose, same as Home's Joined-tab retake/continue on Android.
     body.push(primaryButton(S.LANDING_START, startQuiz));
     body.push(signOutRow());
@@ -680,11 +683,11 @@ function renderLanding() {
   appendLandingScreen(body);
 }
 
-/** Small, clean version label under the Join card — mirrors the Android app's own
+/** Small, clean version label under the Join card â€” mirrors the Android app's own
  *  drawer version text (BuildConfig.VERSION_NAME), just visible without digging into a
  *  menu since this page has no drawer. Bump WEB_VERSION by hand alongside meaningful
  *  releases. BUILD_NUMBER is read straight off this very file's own `?v=N` cache-buster
- *  (index.html's <script src="app.js?v=N">) via import.meta.url — no separate constant
+ *  (index.html's <script src="app.js?v=N">) via import.meta.url â€” no separate constant
  *  to remember to bump, it just always matches whatever was last deployed, so seeing it
  *  change on screen is a real, unfakeable confirmation that a fresh deploy actually
  *  landed (as opposed to the browser still running a cached copy of this file). */
@@ -693,12 +696,12 @@ function renderLanding() {
 //
 // Hardcoded rather than fetched: this page never calls my_limits(), and it does not need
 // to. The REAL enforcement is the server's own RLS check (see attempt_answers_insert_own
-// and poll_votes_write_own in supabase/schema.sql) — this number only stops the browser
+// and poll_votes_write_own in supabase/schema.sql) â€” this number only stops the browser
 // before a rejection. Do NOT turn this into a fetched value and a second source of truth;
 // if an admin lowers the cap, the server still refuses, which is the behaviour that matters.
 const RESPONSE_MAX_CHARS = 500;
 
-// Mirrors FixedTextLimits.DISPLAY_NAME, and the literal in profiles_update_own's check —
+// Mirrors FixedTextLimits.DISPLAY_NAME, and the literal in profiles_update_own's check â€”
 // without it this page could write a name the server would simply refuse.
 const DISPLAY_NAME_MAX_CHARS = 32;
 
@@ -716,7 +719,7 @@ function primaryButton(label, onclick) {
   return el("button", { class: "primary", onclick }, [label, html(BTN_CHEVRON_SVG)]);
 }
 
-/** Replaces a Join/Start/Retake button while an admin has joining paused for maintenance —
+/** Replaces a Join/Start/Retake button while an admin has joining paused for maintenance â€”
  *  same info-box treatment as the sign-in blurb, so it reads as a status, not an error. */
 function pausedNotice() {
   return el("div", { class: "info-box" }, [html(INFO_SVG), el("span", {}, [S.JOIN_PAUSED])]);
@@ -732,7 +735,7 @@ const CLEAR_X_SVG = `<svg viewBox="0 0 16 16" fill="none" width="14" height="14"
 const TICK_SVG = `<svg viewBox="0 0 16 16" fill="none" width="12" height="12"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const CLIPBOARD_SVG = `<svg viewBox="0 0 20 20" fill="none" width="15" height="15"><rect x="5" y="4" width="10" height="13" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M8 4V3h4v1M8 9h4M8 12h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
 
-/** One-time gate right after a brand-new signup (profiles.name_confirmed = false) —
+/** One-time gate right after a brand-new signup (profiles.name_confirmed = false) â€”
  *  mirrors the Android app's ConfirmNameScreen. Blocking, no skip: some Google
  *  accounts have the wrong/nickname-y name attached, and this is what the quiz
  *  creator and other participants will see this person as everywhere else. */
@@ -800,7 +803,7 @@ function renderConfirmName() {
   main.appendChild(el("div", { class: "screen card-screen" }, [el("div", { class: "card confirm-card" }, body)]));
 }
 
-/** "Cancel & Sign out" — wrong account picked. Back to the signed-out landing card
+/** "Cancel & Sign out" â€” wrong account picked. Back to the signed-out landing card
  *  (signOutAction already re-renders); the draft is dropped so the next account's
  *  Google name is picked up fresh instead of this one's leftover edit. */
 async function cancelConfirmName() {
@@ -835,7 +838,7 @@ function currentQuestion() {
   return state.quiz.questions[state.currentIndex];
 }
 
-/** "SIGNED IN AS" account box — initials avatar (with an online dot) + the display name. */
+/** "SIGNED IN AS" account box â€” initials avatar (with an online dot) + the display name. */
 function signedInLine(user) {
   const name = SC.resolveDisplayName(user);
   return el("div", { class: "signed-in-box" }, [
@@ -856,9 +859,9 @@ function initialsOf(name) {
   return (first + last).toUpperCase();
 }
 
-/** "Sign out" escape hatch — wrong Google account picked, or just wants to switch,
+/** "Sign out" escape hatch â€” wrong Google account picked, or just wants to switch,
  *  shouldn't mean reloading the tab and hunting for a way out. Deliberately its own
- *  full-width row below the primary action (Join/Start), separated by a divider line —
+ *  full-width row below the primary action (Join/Start), separated by a divider line â€”
  *  sitting right next to that button risked a mis-tap signing someone out by accident. */
 function signOutRow() {
   return el("div", { class: "sign-out-row" }, [
@@ -868,13 +871,13 @@ function signOutRow() {
 }
 
 async function signOutAction() {
-  // Tracked (and reset) before signOut actually clears the session — reset() rotates
+  // Tracked (and reset) before signOut actually clears the session â€” reset() rotates
   // the distinct id, so this must still land under the outgoing account, same ordering
   // as SupabaseAuthRepository.signOut() on the Android side.
   window.Analytics.track("signed_out");
   window.Analytics.reset();
   await SC.signOut();
-  // Back to square one on this same landing card — sign-in button reappears, and any
+  // Back to square one on this same landing card â€” sign-in button reappears, and any
   // in-progress Join/Start state for the account that just signed out no longer applies.
   state.user = null;
   state.hasJoined = false;
@@ -887,7 +890,7 @@ async function signOutAction() {
 async function joinQuizAction() {
   if (state.joining) return;
   // The landing card was rendered once when the quiz was still Active and doesn't
-  // re-render on its own while sitting open (only a Scheduled countdown ticks) — so a
+  // re-render on its own while sitting open (only a Scheduled countdown ticks) â€” so a
   // tab left open past the deadline could still fire this write. Re-check live, right
   // before the write, instead of trusting whatever status the button was drawn under.
   if (SC.effectiveStatus(state.quiz) !== "ACTIVE") {
@@ -917,11 +920,11 @@ async function joinQuizAction() {
 }
 
 /** Fetches the existing attempt's full answers and switches straight to the result
- *  screen — shared by boot()'s no-retake auto-redirect and the "See Result" button
+ *  screen â€” shared by boot()'s no-retake auto-redirect and the "See Result" button
  *  offered alongside "Retake Exam" when retake is allowed (see renderLanding). */
 async function goToExistingResult() {
   const answers = await SC.fetchAttemptAnswers(state.existingAttempt.id);
-  // A poll this account skipped that has since closed is hidden from them here too — but one
+  // A poll this account skipped that has since closed is hidden from them here too â€” but one
   // they voted on stays. Same rule as while taking (pruneHiddenPolls / QuizPreviewViewModel).
   await pruneHiddenPolls();
   const pollItems = await buildResultPollItems(state.quiz, state.user);
@@ -929,7 +932,7 @@ async function goToExistingResult() {
   openResultScreen();
 }
 
-/** Every review card starts expanded and the filter on "All" — the review is the point
+/** Every review card starts expanded and the filter on "All" â€” the review is the point
  *  of this screen, so nothing should need a tap to be seen. */
 function openResultScreen() {
   state.resultFilter = "all";
@@ -945,34 +948,34 @@ function openResultScreen() {
   render();
 }
 
-/** "Retake Exam" when retake is allowed and this account already has a result — joins
+/** "Retake Exam" when retake is allowed and this account already has a result â€” joins
  *  first if this session somehow doesn't already show as joined (e.g. a fresh browser/
  *  device that never loaded the join state for this quiz before), same as a first-time
  *  Join would, then starts a fresh attempt exactly like the ordinary Start Quiz button. */
 async function retakeQuizAction() {
   if (!state.hasJoined) {
     await joinQuizAction();
-    if (!state.hasJoined) return; // join failed — joinQuizAction already surfaced why
+    if (!state.hasJoined) return; // join failed â€” joinQuizAction already surfaced why
   }
   startQuiz();
 }
 
 async function startQuiz() {
-  // Same re-check as joinQuizAction, for the same reason — a tab left open past the
+  // Same re-check as joinQuizAction, for the same reason â€” a tab left open past the
   // deadline must not be able to start (and then submit) a quiz that's since ended,
   // just because the button was drawn while it was still Active.
   if (SC.effectiveStatus(state.quiz) !== "ACTIVE") {
     render();
     return;
   }
-  // Drop any poll that's already closed and this person never voted on — nothing for them
+  // Drop any poll that's already closed and this person never voted on â€” nothing for them
   // to do with it, and it shouldn't count in "Question X of N" / the progress bar. Mirrors
   // QuizPreviewViewModel.loadQuiz's pre-filter. Spinner while its reads round-trip.
   state.screen = "loading";
   render();
   await pruneHiddenPolls();
   if (state.quiz.questions.length === 0) {
-    // Poll-only quiz whose every poll has already closed for this person — nothing to answer.
+    // Poll-only quiz whose every poll has already closed for this person â€” nothing to answer.
     leaveQuiz(S.POLL_ALL_CLOSED);
     return;
   }
@@ -988,7 +991,7 @@ async function startQuiz() {
       return;
     }
   }
-  // Stamps joined_quizzes.last_started_at — mirrors QuizPreviewViewModel.loadQuiz calling
+  // Stamps joined_quizzes.last_started_at â€” mirrors QuizPreviewViewModel.loadQuiz calling
   // markQuizStarted, so leaving without submitting is remembered here too (and the owner
   // gets the same "X started your quiz" notification). Never blocks the attempt: a failed
   // stamp is no reason to refuse someone the quiz they are entitled to take.
@@ -996,7 +999,7 @@ async function startQuiz() {
     await SC.markQuizStarted(state.user.id, state.quiz.id);
     state.lastStartedAt = Date.now();
   } catch (e) {
-    /* offline / transient — carry on */
+    /* offline / transient â€” carry on */
   }
   state.currentIndex = 0;
   state.screen = "quiz";
@@ -1005,7 +1008,7 @@ async function startQuiz() {
 }
 
 /** Removes from state.quiz.questions every POLL that's already CLOSED and this user never
- *  voted on — mirrors QuizPreviewViewModel.loadQuiz's pre-filter and the result screen's
+ *  voted on â€” mirrors QuizPreviewViewModel.loadQuiz's pre-filter and the result screen's
  *  own filter (a pruned poll never reaches buildResultPollItems either). Read-only; no-op
  *  without a signed-in user. Fail-safe: a poll whose state we couldn't read counts as OPEN
  *  and stays. */
@@ -1039,7 +1042,7 @@ function prepareCurrentQuestion() {
   state.hintVisible = false;
   state.questionStartSec = Math.floor(Date.now() / 1000);
   if (q.type === "POLL") {
-    // Polls are never previewed — and a preview left over from an earlier question (its
+    // Polls are never previewed â€” and a preview left over from an earlier question (its
     // timeout bails once the question changes) must not keep this one hidden forever.
     clearTimeout(state.revealHandle);
     state.revealHandle = null;
@@ -1062,7 +1065,7 @@ function prepareCurrentQuestion() {
   const previewSec = state.quiz.questionPreviewSec || 0;
   // Mirrors revealsBeforeAnswering: a preview stage that ends by starting a timer makes
   // no sense to show when this question has no timer to start (quiz-wide "Show Timer"
-  // off, or this question's own timeSec is 0) — same as it's skipped when the quiz's
+  // off, or this question's own timeSec is 0) â€” same as it's skipped when the quiz's
   // preview setting itself is off.
   const questionHasTimer = state.quiz.showTimers && (q.timeSec || 0) > 0;
   if (previewSec > 0 && questionHasTimer) {
@@ -1098,13 +1101,13 @@ function startQuestionReveal(q, sec) {
   }, sec * 1000);
 }
 
-/** False once the taker has moved past [q] or left the quiz — async work started for a
+/** False once the taker has moved past [q] or left the quiz â€” async work started for a
  *  question must not act on whatever replaced it. */
 function isStillOnQuestion(q) {
   return state.screen === "quiz" && currentQuestion()?.id === q.id;
 }
 
-/** Opens the poll on first visit (lazy — mirrors PollRepository.ensureOpen:
+/** Opens the poll on first visit (lazy â€” mirrors PollRepository.ensureOpen:
  *  the poll's clock starts the first time ANYONE, on any device, reaches this
  *  question), pre-fills this voter's own existing vote if they've been here
  *  before, and computes the static distribution once closed. Mirrors
@@ -1116,12 +1119,12 @@ async function loadPollForCurrentQuestion(q) {
     opened = await SC.ensurePollOpen(q.id);
   } catch (e) {
     // RLS rejects a non-owner's very first open (poll_states writes are
-    // owner-only — same latent gap the Android app has today, see schema.sql).
+    // owner-only â€” same latent gap the Android app has today, see schema.sql).
     // Falls back to a local-only "just opened now" state so voting still works
     // for this visitor even though it never reaches other devices.
     opened = { status: "OPEN", opened_at: Date.now(), closes_at: null };
   }
-  // Stale question guard — the user may have already swiped past this question
+  // Stale question guard â€” the user may have already swiped past this question
   // (Next/Skip/timer) or left the quiz by the time this round-trip resolves. Re-checked
   // after EVERY await below: resuming onto a question they've left used to skip the next
   // question outright and could strand a question preview on screen.
@@ -1129,7 +1132,7 @@ async function loadPollForCurrentQuestion(q) {
 
   // Only an explicit close counts. A passed closes_at used to close the poll for everyone,
   // which meant the first person to reach the question locked out everyone who arrived
-  // later — see PollState.closesAt in PollModels.kt.
+  // later â€” see PollState.closesAt in PollModels.kt.
   const effectiveClosed = opened.status === "CLOSED";
 
   const votes = (await SC.fetchPollVotes(q.id).catch(() => [])) || [];
@@ -1138,7 +1141,7 @@ async function loadPollForCurrentQuestion(q) {
   const myVote = votes.find((v) => v.voterKey === state.user.id) || null;
 
   if (PL.pollHiddenForNonVoter(effectiveClosed ? "CLOSED" : "OPEN", myVote != null)) {
-    // Closed while this taker was mid-quiz and they never voted — pruneHiddenPolls at Start
+    // Closed while this taker was mid-quiz and they never voted â€” pruneHiddenPolls at Start
     // couldn't have known. Move on like a normal Next (proceedPastQuestion finishes the quiz
     // if this was the last, and re-runs prepareCurrentQuestion so a run of closed polls chains).
     proceedPastQuestion();
@@ -1153,10 +1156,10 @@ async function loadPollForCurrentQuestion(q) {
     state.pollReasonText = myVote.reason || "";
   }
 
-  // Not just CLOSED — re-entering a poll already voted on (e.g. resuming mid-quiz)
+  // Not just CLOSED â€” re-entering a poll already voted on (e.g. resuming mid-quiz)
   // reveals results immediately too, same as a fresh vote does (see advance()).
   // Unless the owner kept the results to themselves: leaving pollDistribution null makes
-  // render() fall through to the voting body, which already shows "✓ You voted".
+  // render() fall through to the voting body, which already shows "âœ“ You voted".
   if ((effectiveClosed || myVote) && PL.pollResultsVisibleToVoters(settings)) {
     const distribution = PL.computePollDistribution(q.options || [], votes);
     state.pollDistribution = distribution;
@@ -1167,9 +1170,9 @@ async function loadPollForCurrentQuestion(q) {
     state.pollDisplayOrder = settings.shuffleOptions
       ? PL.pollShuffledOrder(state.user.id, q.id, optionCount)
       : Array.from({ length: optionCount }, (_, i) => i);
-    // This taker's own countdown, starting now — the same per-question timer every other
+    // This taker's own countdown, starting now â€” the same per-question timer every other
     // question type gets. When it runs out it just advances them; it never closes the poll.
-    // Same quiz-wide "Show Timer" gate as startTimer() — was missing here too.
+    // Same quiz-wide "Show Timer" gate as startTimer() â€” was missing here too.
     const pollTimeSec = (!state.quiz.showTimers || settings.noTimeLimit) ? 0 : (q.timeSec || 0);
     if (pollTimeSec > 0) {
       state.totalTimeSec = pollTimeSec;
@@ -1196,7 +1199,7 @@ function startTimer() {
   if (state.screen !== "quiz") return;
   const q = currentQuestion();
   // Mirrors QuizPreviewViewModel.prepareCurrentQuestion: `if (s0.quizShowTimers && ...)
-  // question.timeSec else 0` — quiz-wide, no per-question override. This was never
+  // question.timeSec else 0` â€” quiz-wide, no per-question override. This was never
   // checked here at all before, so turning "Show Timer" off on the quiz had no effect
   // on web: every question still ran its own timeSec countdown regardless.
   const timeSec = state.quiz.showTimers ? q.timeSec : 0;
@@ -1228,7 +1231,7 @@ function formatSeconds(total) {
 }
 
 /** Mirrors QuizPreviewScreen's TimerChip (top bar) + TimerProgressBar (above the
- *  bottom bar) — both update every tick without a full re-render. */
+ *  bottom bar) â€” both update every tick without a full re-render. */
 function updateTimerDisplay() {
   if (state.totalTimeSec <= 0) return;
   const urgent = state.secondsRemaining <= 10;
@@ -1244,7 +1247,7 @@ function updateTimerDisplay() {
     fill.style.width = `${(state.secondsRemaining / state.totalTimeSec) * 100}%`;
     fill.classList.toggle("urgent", urgent);
   }
-  // Same element-mutation-in-place trick as #timer-fill above (not a full re-render) —
+  // Same element-mutation-in-place trick as #timer-fill above (not a full re-render) â€”
   // this is what lets the CSS transition below actually animate every tick instead of
   // snapping, since the element persists across ticks instead of being torn down.
   const segFill = document.getElementById("current-progress-fill");
@@ -1261,12 +1264,12 @@ function toggleAnswer(optionIndex) {
       state.selectedAnswers.delete(key);
     } else {
       // Always capped at the number of correct options, regardless of
-      // splitPointsAcrossChoices (mirrors QuizPreviewViewModel.onToggleAnswer) —
+      // splitPointsAcrossChoices (mirrors QuizPreviewViewModel.onToggleAnswer) â€”
       // selecting more than that is guaranteed wrong under all-or-nothing scoring
       // too, so this is a pure UX guard with no scoring effect either way. A tap
       // past the cap is a no-op, blocked rather than evicting an earlier pick, so
       // the taker never loses a choice they didn't ask to lose. Skipped when
-      // correctAnswers is empty — a manual-marking question genuinely has none
+      // correctAnswers is empty â€” a manual-marking question genuinely has none
       // marked, and a cap of 0 would block every selection outright.
       const correctCount = (q.correctAnswers || []).length;
       const cap = correctCount > 0 ? correctCount : Infinity;
@@ -1280,7 +1283,7 @@ function toggleAnswer(optionIndex) {
   render();
 }
 
-/** Poll's own toggle — separate from toggleAnswer() since options are already
+/** Poll's own toggle â€” separate from toggleAnswer() since options are already
  *  cast, and this respects allowMultiple + the "Other" sentinel index (-1)
  *  instead of the plain single/multi rule every other question type uses. */
 function togglePollOption(optionIndex) {
@@ -1298,7 +1301,7 @@ function togglePollOption(optionIndex) {
 }
 
 // Skip and Next both advance, but only Next casts whatever's selected on a
-// Poll question — a skipped poll is left unvoted, even if an option was
+// Poll question â€” a skipped poll is left unvoted, even if an option was
 // tapped first, mirroring QuizPreviewViewModel's onSkip()/onNext() split.
 function onNext() { advance(true); }
 function onSkip() { advance(false); }
@@ -1316,7 +1319,7 @@ function hasAnsweredCurrent() {
 }
 
 /** LAST question only: once it's actually answered, submit the quiz after a short grace
- *  period so the taker never has to hunt for "Finish" — the tail end of an answered mid-quiz
+ *  period so the taker never has to hunt for "Finish" â€” the tail end of an answered mid-quiz
  *  question rolling on when its timer ends. Re-armed on every answer change; cancelled by a
  *  manual Finish/Skip, reopening a vote, or leaving. Never armed while the last question is
  *  still unanswered (its own countdown + the Finish button stay as-is). Mirrors
@@ -1335,8 +1338,8 @@ function cancelLastQuestionAutoFinish() {
 }
 
 async function advance(castPollVote) {
-  if (state.instantFeedback) return; // already mid-feedback — ignore stray taps
-  if (state.revealing) return; // question still previewing on its own — nothing to answer yet
+  if (state.instantFeedback) return; // already mid-feedback â€” ignore stray taps
+  if (state.revealing) return; // question still previewing on its own â€” nothing to answer yet
   // A real Finish/Skip tap (or the auto-finish firing) takes over from here.
   cancelLastQuestionAutoFinish();
   const q = currentQuestion();
@@ -1345,7 +1348,7 @@ async function advance(castPollVote) {
   if (q.type === "POLL") {
     const settings = q.pollSettings || {};
     const locked = state.pollHasVoted && settings.allowVoteChange === false;
-    // Only actually cast on a fresh vote or a deliberate re-vote (pollEditingVote) — an
+    // Only actually cast on a fresh vote or a deliberate re-vote (pollEditingVote) â€” an
     // ordinary "Next" tap after the reveal below already has nothing new to cast.
     if (castPollVote && !locked && (!state.pollHasVoted || state.pollEditingVote) &&
         state.pollSelected.size > 0 && state.pollState) {
@@ -1357,7 +1360,7 @@ async function advance(castPollVote) {
         reason: state.pollReasonText || null,
         participantId: settings.anonymous ? null : state.user.id,
       };
-      // Awaited now (was fire-and-forget) — the results reveal right below needs the
+      // Awaited now (was fire-and-forget) â€” the results reveal right below needs the
       // fresh vote list to actually include this vote.
       await SC.castPollVote(vote).catch(() => {});
       window.Analytics.track("poll_voted", { question_id: q.id });
@@ -1369,11 +1372,11 @@ async function advance(castPollVote) {
       }
       state.pollHasVoted = true;
       state.pollEditingVote = false;
-      // Reveal the just-cast results in place instead of snapping straight past them —
+      // Reveal the just-cast results in place instead of snapping straight past them â€”
       // same as a normal consumer poll. A second tap (button now reads Next/Finish, not
       // Vote) actually advances.
       render();
-      // Last question: the vote's in and its results are showing — start the grace period
+      // Last question: the vote's in and its results are showing â€” start the grace period
       // so the taker doesn't have to tap Finish.
       scheduleLastQuestionAutoFinish();
       return;
@@ -1393,13 +1396,13 @@ async function advance(castPollVote) {
   }
 
   const quiz = state.quiz;
-  // Never flash right/wrong on a question the owner marks by hand — nobody has decided
+  // Never flash right/wrong on a question the owner marks by hand â€” nobody has decided
   // yet, so any verdict shown here would be a guess we'd have to take back.
   if (quiz.showCorrectnessInstantly && !requiresManualMarking(q, quiz)) {
     const feedback = buildInstantFeedback(q, state.questionAnswers[q.id] || []);
     state.instantFeedback = feedback;
     render();
-    // Tracked so leaving mid-pause (the X) can cancel it — otherwise the quiz kept going
+    // Tracked so leaving mid-pause (the X) can cancel it â€” otherwise the quiz kept going
     // behind the "closed" screen and could still submit an attempt the taker abandoned.
     state.feedbackHandle = setTimeout(() => {
       state.feedbackHandle = null;
@@ -1428,13 +1431,13 @@ function buildInstantFeedback(q, rawKeys) {
     const expected = q.writtenAnswer || "";
     let correct = false;
     if (userInput.trim()) {
-      // No expected answer was ever set — nothing to grade against, so any attempt
+      // No expected answer was ever set â€” nothing to grade against, so any attempt
       // at all counts as correct rather than being auto-failed.
       if (!expected.trim()) {
         correct = true;
       } else {
         const rule = q.answerRule || defaultAnswerRule();
-        // Math.max(points, 1): see finishQuiz — a no-marks question would otherwise
+        // Math.max(points, 1): see finishQuiz â€” a no-marks question would otherwise
         // multiply every verdict down to zero and always read as wrong.
         correct = computeScore(evaluate(userInput, expected, rule), Math.max(q.points, 1), rule) > 0;
       }
@@ -1461,7 +1464,7 @@ function proceedPastQuestion() {
 }
 
 /** Mirrors Grading.kt's requiresManualMarking: all-or-nothing at the quiz level, no
- *  per-question override. Polls are never hand-marked — nothing to be right about. */
+ *  per-question override. Polls are never hand-marked â€” nothing to be right about. */
 function requiresManualMarking(q, quiz) {
   return q.type !== "POLL" && quiz.manualMarkingDefault === true;
 }
@@ -1470,7 +1473,7 @@ async function finishQuiz() {
   state.screen = "finishing";
   render();
 
-  // Mirrors QuizPreviewViewModel.finishPreview on Android — the landing/Start-Quiz status
+  // Mirrors QuizPreviewViewModel.finishPreview on Android â€” the landing/Start-Quiz status
   // check only ever ran once, when this taker opened the quiz; it has no way to know the
   // owner ended it (manually, or its own schedule ran out) sometime after that, while this
   // taker was still mid-quiz answering. Re-fetch fresh here, right before the submission
@@ -1483,7 +1486,7 @@ async function finishQuiz() {
     return;
   }
   // Same staleness concern as the status check above: state.quiz was only ever fetched once,
-  // at page load (boot()), and never refreshed — an owner flipping manual marking, split-points,
+  // at page load (boot()), and never refreshed â€” an owner flipping manual marking, split-points,
   // time-weightage, or show-timers mid-quiz would otherwise silently score this submission
   // under whatever was current when the tab first loaded. fetchQuizStatus's select() already
   // carries these too, so this reuses that same round-trip rather than firing a second one.
@@ -1494,11 +1497,11 @@ async function finishQuiz() {
     state.quiz.showTimers = liveStatus.showTimers;
   }
 
-  // Mirrors QuizPreviewViewModel.finishPreview on Android — an owner's remove-participant
+  // Mirrors QuizPreviewViewModel.finishPreview on Android â€” an owner's remove-participant
   // action deletes this taker's joined_quizzes row remotely at any point during the quiz,
   // and nothing earlier in this flow would know. `=== false` specifically (not `!== true`):
   // null means the check itself failed (offline/error), which must never itself block a
-  // legitimate submission — only a confirmed "no" does.
+  // legitimate submission â€” only a confirmed "no" does.
   if ((await SC.isJoined(state.quiz.id, state.user.id)) === false) {
     state.errorMessage = S.SUBMIT_REMOVED;
     state.screen = "error";
@@ -1516,16 +1519,16 @@ async function finishQuiz() {
 
     // Hand-marked questions skip evaluation entirely and submit as pending, exactly as
     // QuizPreviewViewModel.finishPreview does. Grading them here would hand the taker a
-    // verdict the owner never gave — and one the owner's marking would then overwrite.
+    // verdict the owner never gave â€” and one the owner's marking would then overwrite.
     const isManual = requiresManualMarking(q, state.quiz);
 
     let isCorrect = false;
     // rawPoints mirrors exactly what awardedPoints was before split-points/time-weightage
-    // existed for every type except a split-points-enabled MULTIPLE_CORRECT — see
+    // existed for every type except a split-points-enabled MULTIPLE_CORRECT â€” see
     // QuizPreviewViewModel.finishPreview's identical comment on the Android side.
     let rawPoints = 0;
     // Populated only for an auto-graded WRITTEN answer with something on both sides to
-    // actually compare — mirrors Android's evalResult, which is likewise null for the
+    // actually compare â€” mirrors Android's evalResult, which is likewise null for the
     // trivial blank-input/blank-expected-answer cases. Used by the review card to show
     // the same status label/points/word-by-word detail Android's WrittenEvalRow does,
     // instead of a flat correct/wrong line with no explanation of *why*.
@@ -1538,20 +1541,20 @@ async function finishQuiz() {
           isCorrect = false;
           rawPoints = 0;
         } else if (!expected.trim()) {
-          // No expected answer was ever set — any attempt counts as correct, for full marks.
+          // No expected answer was ever set â€” any attempt counts as correct, for full marks.
           isCorrect = true;
           rawPoints = q.points;
         } else {
           const rule = q.answerRule || defaultAnswerRule();
           evaluationResult = evaluator.evaluate(userInput, expected, rule);
           // Math.max(points, 1): for a 0-points (correctness-track) question, computeScore
-          // against the real points (0) would always read as 0 regardless of verdict — score
+          // against the real points (0) would always read as 0 regardless of verdict â€” score
           // against a nominal 1 purely to read off correctness.
           const nominalPoints = Math.max(q.points, 1);
           const earned = evaluator.computeScore(evaluationResult, nominalPoints, rule);
           isCorrect = earned > 0;
           // G-01: the marks track's award IS whatever computeScore returned, not a flat
-          // "correct means full marks" — mirrors QuizPreviewViewModel.finishPreview's
+          // "correct means full marks" â€” mirrors QuizPreviewViewModel.finishPreview's
           // identical fix on the Android side. A 0-points question earns 0 either way.
           rawPoints = q.points > 0 ? Math.round(earned) : 0;
         }
@@ -1559,7 +1562,7 @@ async function finishQuiz() {
         isCorrect = q.fillBlankContent ? FB.fillBlankIsQuestionCorrect(q.fillBlankContent, given) : false;
         rawPoints = isCorrect ? q.points : 0;
       } else if (q.type === "MULTIPLE_CORRECT") {
-        // By option position, same as buildInstantFeedback — both verdicts come from
+        // By option position, same as buildInstantFeedback â€” both verdicts come from
         // evaluator.isMultipleCorrectAnswer (mirrors Android's finishPreview).
         const options = q.options || [];
         const correctIdx = options.map((_, i) => i).filter((i) => (q.correctAnswers || []).includes(options[i]));
@@ -1567,7 +1570,7 @@ async function finishQuiz() {
         const acceptAny = !!q.acceptAnyCorrect;
         if (state.quiz.splitPointsAcrossChoices) {
           // Correctness is a set comparison inside scoreSplitMultipleCorrect, not
-          // "rawPoints === q.points" as it used to be — see that function's doc in
+          // "rawPoints === q.points" as it used to be â€” see that function's doc in
           // evaluator.js for the two ways that comparison marked wrong answers correct.
           const scored = evaluator.scoreSplitMultipleCorrect(correctIdx, pickedIdx, q.points, acceptAny);
           rawPoints = scored.rawPoints;
@@ -1583,7 +1586,7 @@ async function finishQuiz() {
       }
     }
 
-    // Uniform across every scored type — no-op when the toggle is off or this question
+    // Uniform across every scored type â€” no-op when the toggle is off or this question
     // has no active timer (see applyTimeWeightage's doc in evaluator.js).
     const elapsedSec = state.questionTimings[q.id] || 0;
     const effectiveTimeLimitSec = state.quiz.showTimers ? q.timeSec : 0;
@@ -1599,14 +1602,14 @@ async function finishQuiz() {
       awardedPoints: isManual ? null : finalPoints,
       maxPoints: q.points,
       usedHint: state.hintUsed[q.id] === true,
-      // In-memory only for this same-session review — attempt_answers has no column for
+      // In-memory only for this same-session review â€” attempt_answers has no column for
       // it (mirrors what's actually persisted), same as Android's evalResult isn't
       // re-derivable after the fact either without re-running the evaluator.
       evaluationResult,
     };
   });
 
-  // Pending answers can't count yet — the owner's marking recomputes this server-side.
+  // Pending answers can't count yet â€” the owner's marking recomputes this server-side.
   const score = answers.filter((a) => a.isCorrect && !a.needsManualMarking).length;
 
   SC.submitAttempt(state.quiz.id, state.user.id, score, scored.length, answers)
@@ -1621,7 +1624,7 @@ async function finishQuiz() {
       openResultScreen();
     })
     .catch((err) => {
-      // Backstop for a race (e.g. two tabs submitting at once) — the landing-page
+      // Backstop for a race (e.g. two tabs submitting at once) â€” the landing-page
       // check above normally catches this first, but the server is the real guard.
       state.errorMessage = err.message === "RETAKE_NOT_ALLOWED"
         ? S.SUBMIT_NO_RETAKE
@@ -1631,14 +1634,14 @@ async function finishQuiz() {
     });
 }
 
-/** Top bar: X close, title + "(Nq)", timer chip (poll chip on a poll) — mirrors
+/** Top bar: X close, title + "(Nq)", timer chip (poll chip on a poll) â€” mirrors
  *  QuizScreenComponents.kt's QuizTopBar. */
 function buildQuizTopBar(quiz, q) {
   const closeBtn = el("button", { class: "icon-btn", onclick: () => { if (confirmLeave()) leaveQuiz(S.QUIZ_CLOSED); } }, []);
   closeBtn.appendChild(html(CLOSE_X_SVG));
 
   // Reserved-width slot either way, so the title stays centered whether or not
-  // this question has a timer. Gated on quiz.showTimers too, not just q.timeSec — an
+  // this question has a timer. Gated on quiz.showTimers too, not just q.timeSec â€” an
   // empty timer-chip pill was rendering (and reserving layout space) even with the
   // quiz-wide "Show Timer" setting off, since this check ignored it entirely.
   let right;
@@ -1661,10 +1664,10 @@ function buildQuizTopBar(quiz, q) {
   return el("div", { class: "quiz-topbar" }, [closeBtn, title, right]);
 }
 
-/** One segment per question (Stories-style) rather than a single continuous bar —
+/** One segment per question (Stories-style) rather than a single continuous bar â€”
  *  answered questions read as fully filled, the current one mid-fill, upcoming
  *  ones empty, so progress through the quiz is legible at a glance. */
-// Tracks which question index last actually played its no-timer fill animation —
+// Tracks which question index last actually played its no-timer fill animation â€”
 // renderQuiz() re-runs (and so re-calls this) on EVERY state change while a question is
 // on screen (picking an option, typing, revealing a hint), not just on advancing to a
 // new one. Without this guard, every full-DOM rebuild (see this file's render() doc)
@@ -1673,11 +1676,11 @@ function buildQuizTopBar(quiz, q) {
 // actually reached.
 let lastAnimatedProgressIndex = -1;
 
-/** Current segment's fill tracks elapsed time within the question (Stories-style — the
+/** Current segment's fill tracks elapsed time within the question (Stories-style â€” the
  *  bar drains AS time passes, not "instantly filled the moment you arrive"), when the
  *  question actually has a timer running. Gets a stable id so updateTimerDisplay can
  *  keep nudging its width every tick the same way it already does #timer-fill, instead
- *  of a one-shot animation — that's what makes it track the countdown continuously
+ *  of a one-shot animation â€” that's what makes it track the countdown continuously
  *  rather than jumping once. Untimed questions (no timer to track) fall back to the
  *  one-shot "just arrived" fill instead, since there's nothing to animate against.
  */
@@ -1702,9 +1705,9 @@ function buildQuestionProgressBar(quiz) {
         fillPct = ((state.totalTimeSec - state.secondsRemaining) / state.totalTimeSec) * 100;
         segId = "current-progress-fill";
       } else {
-        // No timer on this question — nothing to track, so it just reads as "reached"
+        // No timer on this question â€” nothing to track, so it just reads as "reached"
         // the same way completed segments do, via a one-shot @keyframes fill (CSS
-        // `transition` can't animate this — a fresh element every render has nothing to
+        // `transition` can't animate this â€” a fresh element every render has nothing to
         // transition FROM, see the hint-box/instant-correctness fix earlier this session).
         fillPct = 100;
         animate = isNewQuestion;
@@ -1717,11 +1720,11 @@ function buildQuestionProgressBar(quiz) {
   return el("div", { class: "progress-track segmented" }, segments);
 }
 
-/** Bottom action bar: timer progress bar pinned above it, Skip + the tactile Next —
+/** Bottom action bar: timer progress bar pinned above it, Skip + the tactile Next â€”
  *  mirrors QuizScreenComponents.kt's QuizBottomBar. */
 function buildBottomBar(q, isLastQuestion, onSkipFn, onNextFn) {
   const rows = [];
-  // state.totalTimeSec, not q.timeSec — it's already the single source of truth computed
+  // state.totalTimeSec, not q.timeSec â€” it's already the single source of truth computed
   // at question-load time (startTimer/loadPollForCurrentQuestion), correctly folding in
   // quiz.showTimers and a poll's own noTimeLimit; q.timeSec alone ignores both.
   if (state.totalTimeSec > 0) {
@@ -1732,7 +1735,7 @@ function buildBottomBar(q, isLastQuestion, onSkipFn, onNextFn) {
     );
   }
   const disabled = !!state.instantFeedback;
-  // "Vote" instead of Next/Finish while a poll still needs its vote-cast tap — even as
+  // "Vote" instead of Next/Finish while a poll still needs its vote-cast tap â€” even as
   // the last question, since this tap casts and reveals in place rather than moving on
   // (see advance()). Matches PreviewBottomBar's isPollQuestion label on Android.
   const showVoteLabel = q.type === "POLL" && (!state.pollHasVoted || state.pollEditingVote);
@@ -1751,10 +1754,10 @@ function buildBottomBar(q, isLastQuestion, onSkipFn, onNextFn) {
   return el("div", { class: "quiz-bottombar" + (state.revealJustEnded ? " bar-in" : "") }, rows);
 }
 
-/** Mirrors QuizPreviewViewModel.onShowHint — marks this question's hint as used the
+/** Mirrors QuizPreviewViewModel.onShowHint â€” marks this question's hint as used the
  *  moment it's opened (not only if the taker reads all the way through), and reveals it
  *  inline (see renderQuiz's hint-box, right below the question) rather than a popup, to
- *  keep this file's plain-DOM approach — no modal/bottom-sheet primitive exists here. */
+ *  keep this file's plain-DOM approach â€” no modal/bottom-sheet primitive exists here. */
 function showHintAction() {
   if (state.instantFeedback || state.revealing) return;
   const q = currentQuestion();
@@ -1763,7 +1766,7 @@ function showHintAction() {
   render();
 }
 
-/** Inline hint reveal — mirrors HintSheetContent's "Got it" dismiss, just inline instead
+/** Inline hint reveal â€” mirrors HintSheetContent's "Got it" dismiss, just inline instead
  *  of a bottom sheet (see showHintAction's doc for why). */
 function buildHintBox(hint) {
   return el("div", { class: "hint-box" }, [
@@ -1775,7 +1778,7 @@ function buildHintBox(hint) {
   ]);
 }
 
-/** "QUESTION X OF N" + Hint (and Anonymous on a poll) — mirrors the badge row in
+/** "QUESTION X OF N" + Hint (and Anonymous on a poll) â€” mirrors the badge row in
  *  QuizPreviewScreen.kt. The number is gated by quiz.showQuestionNumbers. */
 function buildBadgeRow(quiz, q) {
   const anonymous = q.type === "POLL" && (q.pollSettings || {}).anonymous !== false;
@@ -1796,7 +1799,7 @@ function buildBadgeRow(quiz, q) {
   ]);
 }
 
-/** Question card with the accent bar — mirrors QuizScreenComponents.kt's QuestionCard.
+/** Question card with the accent bar â€” mirrors QuizScreenComponents.kt's QuestionCard.
  *  Fill Blank has an optional heading instead of a mandatory question text: the card
  *  shows just its helper line when the creator left it blank (the sentence itself is
  *  shown, interactively, below). */
@@ -1839,7 +1842,7 @@ function buildQuestionHelper(q) {
   }
 }
 
-/** The question-preview stage — mirrors QuestionRevealStage.kt: number pill top-left, the
+/** The question-preview stage â€” mirrors QuestionRevealStage.kt: number pill top-left, the
  *  question alone in large type (sized down as it gets longer), and a bar that *fills* (no
  *  digits, so it never reads as the answer timer). Entrance animations only play on the
  *  first paint, and a negative animation-delay keeps the bar continuous if anything
@@ -1847,11 +1850,11 @@ function buildQuestionHelper(q) {
 function buildRevealStage(quiz, q) {
   const elapsedMs = Math.max(0, Date.now() - state.revealStartedAt);
   // Fill in the Blanks: the heading (if any) is the big text, and the sentence itself sits
-  // under it read-only, blanks drawn as gaps — filling starts after the preview.
+  // under it read-only, blanks drawn as gaps â€” filling starts after the preview.
   const blanks = q.type === "FILL_BLANK" ? q.fillBlankContent : null;
   const text = blanks ? (blanks.title || "").trim() : q.text || "";
   const size = text.length <= 80 ? "lg" : text.length <= 160 ? "md" : "sm";
-  // The block follows the part laid out word by word — for Fill in the Blanks that's the
+  // The block follows the part laid out word by word â€” for Fill in the Blanks that's the
   // sentence, never the heading (an English heading over an Urdu sentence must still flow
   // right to left). The heading resolves its own direction via dir="auto".
   const rtl = FB.isRtlText(blanks ? blanks.template : text);
@@ -1867,12 +1870,12 @@ function buildRevealStage(quiz, q) {
   if (quiz.showQuestionNumbers) {
     children.push(el("span", { class: "q-badge reveal-pill" }, [S.questionXofN(state.currentIndex + 1, quiz.questions.length)]));
   }
-  // dir on the text block only — the number pill stays top-left either way.
+  // dir on the text block only â€” the number pill stays top-left either way.
   children.push(el("div", { class: "reveal-center", dir: rtl ? "rtl" : "ltr" }, center));
   return el("div", { class: "reveal-stage" + (elapsedMs < 120 ? " entering" : "") }, children);
 }
 
-/** The fill-blank sentence on the preview stage — same word tokens as buildFillBlankSentence,
+/** The fill-blank sentence on the preview stage â€” same word tokens as buildFillBlankSentence,
  *  with each blank an empty gap instead of an input. */
 function buildRevealSentence(content, large) {
   const lines = splitFillBlankIntoTokenLines(FB.parseFillBlankTemplate(content.template, content.blanks));
@@ -1897,7 +1900,7 @@ function renderQuiz() {
   const isLastQuestion = state.currentIndex === quiz.questions.length - 1;
   const fb = state.instantFeedback;
 
-  // Question preview: the question alone, big, with its number pill and a fill bar — no
+  // Question preview: the question alone, big, with its number pill and a fill bar â€” no
   // card, helper text, choices or bottom bar (mirrors QuestionRevealStage.kt).
   if (state.revealing) {
     main.appendChild(el("div", { class: "quiz-screen" }, [
@@ -1925,7 +1928,7 @@ function renderQuiz() {
       questionArea.appendChild(buildPollVoting(q));
     }
   } else if (q.type === "FILL_BLANK") {
-    // The sentence always stays on screen, even during feedback — it's just as much
+    // The sentence always stays on screen, even during feedback â€” it's just as much
     // the answer *display* as it is the input, so it renders its own correct/wrong
     // coloring inline.
     if (q.fillBlankContent) {
@@ -1967,8 +1970,8 @@ function renderQuiz() {
   updateTimerDisplay();
 }
 
-// ── Answer cards (mirrors QuizScreenComponents.kt: ChoiceOptionCard / TrueFalseCard /
-// AnswerInputCard) ───────────────────────────────────────────────────────────
+// â”€â”€ Answer cards (mirrors QuizScreenComponents.kt: ChoiceOptionCard / TrueFalseCard /
+// AnswerInputCard) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function optionLetter(index) {
   return index < 26 ? String.fromCharCode(65 + index) : String(index + 1);
@@ -2046,7 +2049,7 @@ function buildTrueFalseCard(text, index, selected, feedback, onClick) {
   ]);
 }
 
-/** Written answer — the same single <textarea> (maxlength, placeholder, oninput) inside
+/** Written answer â€” the same single <textarea> (maxlength, placeholder, oninput) inside
  *  the "YOUR ANSWER" card. Its value comes from state, so a re-render (opening the hint,
  *  Clear) never wipes what was typed. */
 function buildWrittenAnswer() {
@@ -2082,9 +2085,9 @@ function buildWrittenAnswer() {
   ]);
 }
 
-// ── Poll — voting + results (mirrors PollComponents.kt's PollVotingBody /
+// â”€â”€ Poll â€” voting + results (mirrors PollComponents.kt's PollVotingBody /
 // PollDistributionBody: options in the per-voter shuffled order, "Other" and
-// "Why?" fields, then a static percent-bar distribution once closed). ───────
+// "Why?" fields, then a static percent-bar distribution once closed). â”€â”€â”€â”€â”€â”€â”€
 
 function buildPollVoting(q) {
   const settings = q.pollSettings || {};
@@ -2185,25 +2188,25 @@ function buildPollResults(q) {
 }
 
 /** Fetches every Poll question's votes for the finished/already-taken quiz and builds
- *  the result-screen item for each — mirrors ResultViewModel.kt's loadFromAttempt poll
+ *  the result-screen item for each â€” mirrors ResultViewModel.kt's loadFromAttempt poll
  *  block: live tally regardless of open/closed status (no more "wait for the poll to
  *  close" gate on this screen), and "my vote" matched by voterKey (this account's own
  *  id, always known to itself) rather than participantId (which is nulled out for an
- *  anonymous poll to hide it from OTHER voters/the owner) — so a voter's own choice is
+ *  anonymous poll to hide it from OTHER voters/the owner) â€” so a voter's own choice is
  *  always visible to them even on an anonymous poll. */
 async function buildResultPollItems(quiz, user) {
   const pollQuestions = quiz.questions.filter((q) => q.type === "POLL");
   if (pollQuestions.length === 0) return [];
   const [results, states] = await Promise.all([
     Promise.all(pollQuestions.map((q) => SC.fetchPollVotes(q.id).catch(() => []))),
-    // Open/closed is only a label on the review card ("Poll Closed" / "Poll Open") — a
+    // Open/closed is only a label on the review card ("Poll Closed" / "Poll Open") â€” a
     // failed fetch just leaves it as a plain "Poll", never blocks the result.
     SC.fetchPollStates(pollQuestions.map((q) => q.id)).catch(() => ({})),
   ]);
   return pollQuestions.map((q, i) => {
     const votes = results[i] || [];
     const myVote = user ? votes.find((v) => v.voterKey === user.id) || null : null;
-    // Null when the owner didn't share results — buildPollReviewCard shows a note instead.
+    // Null when the owner didn't share results â€” buildPollReviewCard shows a note instead.
     const distribution = PL.pollResultsVisibleToVoters(q.pollSettings)
       ? PL.computePollDistribution(q.options || [], votes)
       : null;
@@ -2214,7 +2217,7 @@ async function buildResultPollItems(quiz, user) {
 
 const expandedPollReviews = new Set();
 
-/** Mirrors ResultScreen.kt's PollReviewCard — same review-card shell buildReviewCard
+/** Mirrors ResultScreen.kt's PollReviewCard â€” same review-card shell buildReviewCard
  *  uses (accent bar, Q# pill, expand/collapse), swapping the body for the live vote
  *  distribution instead of correct/incorrect. */
 function buildPollReviewCard(item, index) {
@@ -2236,7 +2239,7 @@ function buildPollReviewCard(item, index) {
 
   if (expanded) {
     const dist = item.distribution;
-    // Owner kept the results private — this page is only ever a voter's view, so there's
+    // Owner kept the results private â€” this page is only ever a voter's view, so there's
     // nothing to show but a note (matches ResultScreen.kt's PollReviewCard).
     if (!dist) {
       card.appendChild(el("div", { class: "review-body" }, [
@@ -2264,8 +2267,8 @@ function buildPollReviewCard(item, index) {
 }
 
 function buildPollResultRow(opt, mine, otherEntries) {
-  // poll.js labels the Other bucket with an internal English placeholder — it has no
-  // access to the string table — and documents that the UI must substitute its own
+  // poll.js labels the Other bucket with an internal English placeholder â€” it has no
+  // access to the string table â€” and documents that the UI must substitute its own
   // text by keying off POLL_OTHER_INDEX rather than rendering that literal.
   const label = opt.optionIndex === PL.POLL_OTHER_INDEX ? S.POLL_OTHER : opt.label;
   const labelChildren = [el("span", { class: "label" }, [label])];
@@ -2277,7 +2280,7 @@ function buildPollResultRow(opt, mine, otherEntries) {
     ]),
     el("div", { class: "poll-result-bar" }, [el("div", { class: "poll-result-bar-fill", style: `width:${opt.percent}%` })]),
   ];
-  // "Other" free-text entries — what people actually typed, grouped and counted by
+  // "Other" free-text entries â€” what people actually typed, grouped and counted by
   // computePollDistribution's otherEntries (only ever present when the owner allowed
   // "Other" on this poll).
   if (otherEntries && otherEntries.length > 0) {
@@ -2287,7 +2290,7 @@ function buildPollResultRow(opt, mine, otherEntries) {
       ))
     );
   }
-  // Per-voter "why" text — only collected when the owner turned on Ask Reason.
+  // Per-voter "why" text â€” only collected when the owner turned on Ask Reason.
   if (opt.reasons && opt.reasons.length > 0) {
     children.push(
       el("ul", { class: "poll-reasons" }, opt.reasons.map((reason) => el("li", {}, [S.quotedReason(reason)])))
@@ -2302,7 +2305,7 @@ function consensusText(c) {
   return S.consensusLeading(c.option, c.percent);
 }
 
-/** Shared review-card header — left accent bar, Q# pill, type badge, time, question
+/** Shared review-card header â€” left accent bar, Q# pill, type badge, time, question
  *  text, right-side badges (marks etc.) and the expand chevron. */
 function buildReviewHeader({ stateClass, index, typeLabel, timeSec, text, right, expanded, onToggle }) {
   const meta = el("div", { class: "review-meta" }, [
@@ -2324,13 +2327,13 @@ function buildReviewHeader({ stateClass, index, typeLabel, timeSec, text, right,
 const CLOCK_SMALL_SVG = `<svg viewBox="0 0 16 16" fill="none" width="12" height="12"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v3l2 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const CHEVRON_UP_SVG = `<svg viewBox="0 0 16 16" fill="none" width="14" height="14"><path d="M4 10l4-4 4 4" stroke="#BBBACC" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
-// ── Fill Blank — inline sentence (mirrors QuizPreviewScreen.kt's
+// â”€â”€ Fill Blank â€” inline sentence (mirrors QuizPreviewScreen.kt's
 // FillBlankQuestionBody/InlineBlankField exactly: the blank is a real input
-// embedded directly in the flowing sentence, not a separate field list). ─────
+// embedded directly in the flowing sentence, not a separate field list). â”€â”€â”€â”€â”€
 
 /** Groups parsed template segments into lines on the creator's manual line
  *  breaks, splitting each line's text into individual words so within-line
- *  wrapping is word-by-word — mirrors splitFillBlankSegmentsIntoLines() in
+ *  wrapping is word-by-word â€” mirrors splitFillBlankSegmentsIntoLines() in
  *  QuizPreviewScreen.kt exactly (same reasoning: a flex-wrap row needs each
  *  word as its own child to wrap word-by-word instead of as one ragged block). */
 function splitFillBlankIntoTokenLines(segments) {
@@ -2357,7 +2360,7 @@ function buildFillBlankSentence(q) {
   const ordered = FB.orderedBlanks(content);
   const fb = state.instantFeedback;
 
-  // Populated as inputs are built below, in template order — each input's Enter
+  // Populated as inputs are built below, in template order â€” each input's Enter
   // handler closes over this to hop to the next blank (or blur, on the last).
   const inputRefs = [];
 
@@ -2374,7 +2377,7 @@ function buildFillBlankSentence(q) {
           return el(
             "span",
             { class: "fb-blank-chip " + (correct ? "correct" : "wrong") },
-            [value || "—"]
+            [value || "â€”"]
           );
         }
         const isLast = token.orderIndex === ordered.length - 1;
@@ -2388,11 +2391,11 @@ function buildFillBlankSentence(q) {
   ]);
 }
 
-/** One blank, embedded directly in the sentence as just another flowing child —
+/** One blank, embedded directly in the sentence as just another flowing child â€”
  *  a hidden mirror span measures the typed text so the visible input can grow
  *  to fit it (plain <input> has no native "size to content" everywhere), capped
  *  via CSS max-width so one very long answer scrolls internally instead of
- *  blowing out the sentence's layout — same behavior as the Android app's
+ *  blowing out the sentence's layout â€” same behavior as the Android app's
  *  capped InlineBlankField. */
 function buildFillBlankInput(orderIndex, isLast, inputRefs) {
   const value = state.fillBlankDraft[orderIndex] || "";
@@ -2408,7 +2411,7 @@ function buildFillBlankInput(orderIndex, isLast, inputRefs) {
     autocomplete: "off",
     autocapitalize: "off",
     spellcheck: "false",
-    // Its own direction from what's typed (or the placeholder), not the sentence's — an
+    // Its own direction from what's typed (or the placeholder), not the sentence's â€” an
     // English answer or placeholder inside an Urdu sentence would otherwise read backwards.
     dir: "auto",
     enterkeyhint: isLast ? "done" : "next",
@@ -2419,7 +2422,7 @@ function buildFillBlankInput(orderIndex, isLast, inputRefs) {
       mirror.textContent = v || placeholder;
       input.classList.toggle("filled", v.trim().length > 0);
       // mirror.offsetWidth forces a synchronous reflow of the (out-of-flow,
-      // absolutely-positioned) mirror — cheap for a single short span, and
+      // absolutely-positioned) mirror â€” cheap for a single short span, and
       // avoids a one-frame lag where the input hasn't grown yet.
       input.style.width = Math.min(220, Math.max(92, mirror.offsetWidth + 20)) + "px";
     },
@@ -2437,13 +2440,13 @@ function buildFillBlankInput(orderIndex, isLast, inputRefs) {
 
 const expandedReviews = new Set();
 
-/** Mirrors Grading.kt's List&lt;AnswerResult&gt;.scoreBreakdown() — splits answers into two
+/** Mirrors Grading.kt's List&lt;AnswerResult&gt;.scoreBreakdown() â€” splits answers into two
  *  tracks that never get blended into one number: questions carrying points (maxPoints
  *  &gt; 0) are scored as marksAwarded/marksTotal, everything else as plain
- *  correctCount/total right-or-wrong. Was entirely missing on web before — the result
+ *  correctCount/total right-or-wrong. Was entirely missing on web before â€” the result
  *  screen only ever showed the correctness-track count (via buildScoreCard), so a quiz
  *  where questions carry real points (e.g. "20/40") never showed that anywhere. */
-/** True while an answer is still waiting on the owner's manual mark — shared by
+/** True while an answer is still waiting on the owner's manual mark â€” shared by
  *  computeScoreBreakdown, the headline score recompute in renderResult, and the review
  *  card's own pending styling, so all three always agree on what "not graded yet" means. */
 function isPendingAnswer(a) {
@@ -2476,7 +2479,7 @@ function computeScoreBreakdown(answers) {
   };
 }
 
-/** Mirrors ResultScreen.kt's ScoreSectionCard — title/subtitle on the left, "N / Total"
+/** Mirrors ResultScreen.kt's ScoreSectionCard â€” title/subtitle on the left, "N / Total"
  *  and percent (suppressed while anything in this track is still pending marking, same
  *  as Android) on the right. */
 function buildScoreSectionCard(title, subtitle, value, percent, pending) {
@@ -2493,25 +2496,25 @@ function buildScoreSectionCard(title, subtitle, value, percent, pending) {
   ]);
 }
 
-/** Mirrors ResultScreen.kt's ScoreCard — same gradient, trophy badge, big score +
+/** Mirrors ResultScreen.kt's ScoreCard â€” same gradient, trophy badge, big score +
  *  accuracy%, and progress track. No "Passed"/"Not passed" status label anymore (a 60%-
- *  threshold pass/fail read as needlessly harsh on an otherwise-decent score) — only a
+ *  threshold pass/fail read as needlessly harsh on an otherwise-decent score) â€” only a
  *  genuine zero-correct result gets called out as "Failed", same as Android. */
 /**
- * The score, big, on one solid block of the quiz's color — mirrors ResultScreen.kt's
+ * The score, big, on one solid block of the quiz's color â€” mirrors ResultScreen.kt's
  * ScoreHero. No gradient, disc or badge: the number carries the card. It counts up while
- * the bar fills, then the one-line summary settles in — once per result
+ * the bar fills, then the one-line summary settles in â€” once per result
  * (state.resultAnimated), since render() rebuilds the DOM on every tap.
  *
- * @param missed Answered wrong — never counting answers still waiting to be marked.
- * @param marks Optional { awarded, total } — only when a marks track is fully graded.
+ * @param missed Answered wrong â€” never counting answers still waiting to be marked.
+ * @param marks Optional { awarded, total } â€” only when a marks track is fully graded.
  */
 function buildScoreHero(score, total, missed, marks, pollCount) {
   const fraction = total > 0 ? score / total : 0;
   const percent = Math.round(fraction * 100);
   const animate = !state.resultAnimated && !prefersReducedMotion();
 
-  // Banded on the unrounded fraction, same as Android — 159/200 shows "80%" on both but
+  // Banded on the unrounded fraction, same as Android â€” 159/200 shows "80%" on both but
   // is still the "mid" sentence on both.
   const band = score === 0 ? S.RESULT_BAND_ZERO
     : fraction >= 0.8 ? S.RESULT_BAND_HIGH
@@ -2521,7 +2524,7 @@ function buildScoreHero(score, total, missed, marks, pollCount) {
   if (missed > 0 && score > 0) sentence.push(S.resultMissed(missed));
   if (pollCount > 0) sentence.push(S.resultPolls(pollCount));
 
-  const footer = [el("div", { class: "hero-sentence" }, [sentence.join("  ·  ")])];
+  const footer = [el("div", { class: "hero-sentence" }, [sentence.join("  Â·  ")])];
   if (marks) footer.push(el("div", { class: "hero-marks" }, [S.marksLine(marks.awarded, marks.total)]));
 
   return el("div", {
@@ -2571,8 +2574,8 @@ function runScoreHeroCountUp() {
   requestAnimationFrame(tick);
 }
 
-/** A plain collapsible section under the hero — mirrors ResultScreen.kt's ResultExpander.
- *  The body is always in the DOM (hidden when closed) so Print → PDF can show it. */
+/** A plain collapsible section under the hero â€” mirrors ResultScreen.kt's ResultExpander.
+ *  The body is always in the DOM (hidden when closed) so Print â†’ PDF can show it. */
 function buildResultExpander(key, title, subtitle, open, body) {
   const justToggled = state.resultJustToggled === key;
   const head = el("button", {
@@ -2600,7 +2603,7 @@ const EXPANDER_CHEVRON_SVG = `<svg class="expander-chevron" viewBox="0 0 20 20" 
 
 
 /**
- * "Waiting to be marked" — mirrors ResultScreen.kt's PendingReviewCard.
+ * "Waiting to be marked" â€” mirrors ResultScreen.kt's PendingReviewCard.
  *
  * Doubles as the partial-marking banner: when some questions WERE app-checked
  * ([gradedCount] > 0) it renders under the score card and reports that part too, since
@@ -2622,7 +2625,7 @@ function buildReviewCard(answer, index) {
   const q = state.quiz.questions.find((qq) => qq.id === answer.questionId);
   if (!q) return null;
   const isCorrect = answer.isCorrect;
-  // An unmarked answer isn't wrong, it's undecided — red here would tell the taker they
+  // An unmarked answer isn't wrong, it's undecided â€” red here would tell the taker they
   // got something wrong that nobody has actually looked at yet.
   const isPending = answer.needsManualMarking === true && answer.awardedPoints == null;
   const stateClass = isPending ? "pending" : isCorrect ? "correct" : "wrong";
@@ -2660,7 +2663,7 @@ function buildReviewCard(answer, index) {
     } else {
       bodyEl.appendChild(buildChoiceReview(q, answer, isPending));
     }
-    // Creator-written explanation — only when one exists, and never while the answer is
+    // Creator-written explanation â€” only when one exists, and never while the answer is
     // still waiting to be marked (it would reveal the reference before the judgment).
     if (!isPending && q.reason && q.reason.trim()) {
       bodyEl.appendChild(el("div", { class: "reason-box" }, [
@@ -2685,7 +2688,7 @@ function questionTypeLabel(q) {
 }
 
 /** "Your Typed Answer" box (red/green/amber) + "Accepted Answers" box (hidden while
- *  pending — it's the owner's marking reference). The verdict chip comes from the
+ *  pending â€” it's the owner's marking reference). The verdict chip comes from the
  *  evaluator's status when this result was just graded in this tab; a result reloaded
  *  later only has isCorrect, so it degrades to Match / Mismatch. */
 function buildWrittenReview(q, answer, isPending, isCorrect) {
@@ -2723,7 +2726,7 @@ function buildWrittenReview(q, answer, isPending, isCorrect) {
   return wrap;
 }
 
-/** The sentence with each blank rendered as the taker's own text — green when it
+/** The sentence with each blank rendered as the taker's own text â€” green when it
  *  matched, red (with the accepted answer chip right after it) when it didn't; amber
  *  and unrevealed for manual marking. */
 function buildFillBlankReview(q, answer, isPending, isCorrect) {
@@ -2750,7 +2753,7 @@ function buildFillBlankReview(q, answer, isPending, isCorrect) {
   return el("div", { class: "fb-review-sentence" }, children);
 }
 
-/** TRUE / FALSE as two tiles — the picked one carries the verdict, the other reads
+/** TRUE / FALSE as two tiles â€” the picked one carries the verdict, the other reads
  *  "Not Selected" (or "Correct Answer" when it was the right one). */
 function buildTrueFalseReview(q, answer, isPending) {
   const given = answer.givenAnswers || [];
@@ -2775,7 +2778,7 @@ function buildTrueFalseReview(q, answer, isPending) {
   return el("div", { class: "tf-tiles" }, tiles);
 }
 
-/** Single / multiple choice — every option as a row with a radio/checkbox marker and a
+/** Single / multiple choice â€” every option as a row with a radio/checkbox marker and a
  *  right-aligned tag saying what it was to this taker. Pending: only what they picked. */
 function buildChoiceReview(q, answer, isPending) {
   const given = answer.givenAnswers || [];
@@ -2841,27 +2844,27 @@ function renderResult() {
   const { answers } = state.result;
   const total = answers.length;
 
-  // Recomputed fresh from the current answers, NOT state.result.score — that field can
+  // Recomputed fresh from the current answers, NOT state.result.score â€” that field can
   // come straight from the attempts.score column (goToExistingResult, viewing a result
   // some time after it was graded), which pushGrades() DOES update, but only when
   // grading actually recomputed AnswerResult.isCorrect correctly, and every write here
   // is best-effort with no guaranteed consistency check. Answers, by contrast, are
   // fetched fresh every time and are what the Marks/Correctness sections below are
-  // already computed from — deriving the headline from the same source they use keeps
+  // already computed from â€” deriving the headline from the same source they use keeps
   // the top of the screen from ever contradicting its own breakdown (e.g. showing
   // "Failed, 0/2" while Marks says "11/20"). Mirrors ResultViewModel.kt's own
-  // score = gradedReviews.count { it.answer.isCorrect } — recomputed from re-evaluated
+  // score = gradedReviews.count { it.answer.isCorrect } â€” recomputed from re-evaluated
   // answers, not trusted from a stored field, for exactly this reason.
   const score = answers.filter((a) => !isPendingAnswer(a) && a.isCorrect).length;
 
   const pending = answers.filter(isPendingAnswer).length;
   const gradedCount = answers.length - pending;
 
-  // Marks vs plain correctness — two different currencies (see computeScoreBreakdown's
+  // Marks vs plain correctness â€” two different currencies (see computeScoreBreakdown's
   // doc). Computed before the score card so a fully-graded marks track can be folded
   // straight into it below instead of only ever living in its own separate card.
   const breakdown = computeScoreBreakdown(answers);
-  // Only once nothing in that track is still pending — a percentage that could still
+  // Only once nothing in that track is still pending â€” a percentage that could still
   // move (or a 0/40 line while everything's unmarked) belongs in the plain white
   // section below, same as before, not baked into the headline card.
   const marksForScoreCard = breakdown.hasMarks && breakdown.marksPending === 0
@@ -2909,9 +2912,9 @@ function renderResult() {
     content.appendChild(buildPendingCard(pending, score, gradedCount));
   }
 
-  // Everything below the score is detail — folded into two expanders so the first thing
+  // Everything below the score is detail â€” folded into two expanders so the first thing
   // on screen is just how the taker did (mirrors ResultScreen.kt's ResultExpander).
-  // Correct / Incorrect / Total Time / Hints Used — pending answers count under neither
+  // Correct / Incorrect / Total Time / Hints Used â€” pending answers count under neither
   // verdict (the pending banner above already accounts for them).
   const totalTime = answers.reduce((sum, a) => sum + (a.timeTakenSec || 0), 0);
   const hints = answers.filter((a) => a.usedHint).length;
@@ -2944,7 +2947,7 @@ function renderResult() {
     ));
   }
 
-  // A poll-only quiz has nothing to summarize — its polls ARE the review below.
+  // A poll-only quiz has nothing to summarize â€” its polls ARE the review below.
   if (!pollOnly) {
     content.appendChild(buildResultExpander(
       "summary", S.RESULT_SUMMARY_TITLE, S.RESULT_SUMMARY_SUBTITLE, !!state.resultSummaryOpen, summary
@@ -2953,7 +2956,7 @@ function renderResult() {
 
   {
     const review = [];
-    // Filter tabs — All / Incorrect / Correct / Poll (Poll only when there is one).
+    // Filter tabs â€” All / Incorrect / Correct / Poll (Poll only when there is one).
     const filter = state.resultFilter || "all";
     const tabs = [
       ["all", S.tabAll(total + pollCount)],
@@ -2969,7 +2972,7 @@ function renderResult() {
     )));
 
     // Poll questions interleaved at their original position in the quiz, same as
-    // ResultScreen.kt's resultItems (Scored + PollItem, sortedBy index) — a poll
+    // ResultScreen.kt's resultItems (Scored + PollItem, sortedBy index) â€” a poll
     // sitting between two scored questions shows up between them here too, not
     // dumped at the end.
     const answerByQid = new Map(answers.map((a) => [a.questionId, a]));
@@ -3004,7 +3007,7 @@ function renderResult() {
 }
 
 /** Retake only when the creator allows it and the quiz is still open; PDF is the browser's
- *  own print → Save as PDF (see the @media print rules in style.css) — never offered when
+ *  own print â†’ Save as PDF (see the @media print rules in style.css) â€” never offered when
  *  results are hidden, since it would print them. */
 function appendResultActions(content, quiz, showPdf) {
   const actions = el("div", { class: "result-actions" }, []);
@@ -3019,7 +3022,7 @@ function appendResultActions(content, quiz, showPdf) {
   content.appendChild(actions);
 }
 
-/** The solid card that stands in for the score when there isn't one to show — results
+/** The solid card that stands in for the score when there isn't one to show â€” results
  *  hidden, or a poll-only quiz. Mirrors ResultScreen.kt's SubmittedCard / PollOnlyScoreCard. */
 function buildResultInfoCard(label, message) {
   return el("div", { class: "score-hero info" }, [
@@ -3038,7 +3041,7 @@ function buildStatTile(kind, iconSvg, label, value) {
   ]);
 }
 
-/** Print → Save as PDF. While printing, every card is expanded and the filter ignored
+/** Print â†’ Save as PDF. While printing, every card is expanded and the filter ignored
  *  (the `printing` class on <body> drives that in CSS), then restored afterwards. */
 function printResult() {
   const savedFilter = state.resultFilter;
@@ -3072,14 +3075,14 @@ const CHECK_STAT_SVG = `<svg viewBox="0 0 16 16" fill="none" width="14" height="
 const REFRESH_SVG = `<svg viewBox="0 0 20 20" fill="none" width="16" height="16"><path d="M16 10a6 6 0 01-10.5 4M4 10a6 6 0 0110.5-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14.5 3v3.5H11M5.5 17v-3.5H9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const PDF_SVG = `<svg viewBox="0 0 20 20" fill="none" width="16" height="16"><path d="M5 3h7l4 4v10H5V3z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 3v4h4M7.5 11h5M7.5 14h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
 
-// ── Boot ───────────────────────────────────────────────────────────────────
+// â”€â”€ Boot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function boot() {
   try {
     if (!shareCode) {
       state.screen = "enterCode";
       render();
       // Fetched after the first paint so a slow/offline flags call never delays showing
-      // the code-entry boxes — the screen just re-renders once it lands (fail-open default
+      // the code-entry boxes â€” the screen just re-renders once it lands (fail-open default
       // in the meantime, same as everywhere else this is read).
       state.flags = await SC.fetchFeatureFlags();
       render();
@@ -3088,7 +3091,7 @@ async function boot() {
 
     render(); // loading
 
-    // Runs alongside the quiz fetch rather than after it — a paused join should be known
+    // Runs alongside the quiz fetch rather than after it â€” a paused join should be known
     // by the time the enter-code/landing screen first paints, not flicker in a beat later.
     const [quiz, flags] = await Promise.all([
       SC.fetchQuizByShareCode(shareCode),
@@ -3111,16 +3114,16 @@ async function boot() {
       window.Analytics.identify(state.user.id);
       state.existingAttempt = await SC.fetchExistingAttempt(quiz.id, state.user.id);
       // With no existingAttempt, a non-null stamp means this account started the quiz
-      // (here or in the app) and left without submitting — Retake, or locked when the
+      // (here or in the app) and left without submitting â€” Retake, or locked when the
       // creator does not allow retakes. Mirrors JoinedQuizItem.hasAbandonedStart.
       state.lastStartedAt = await SC.fetchLastStartedAt(quiz.id, state.user.id);
-      // Started before means membership already exists — no separate Join step needed.
+      // Started before means membership already exists â€” no separate Join step needed.
       if (state.lastStartedAt) state.hasJoined = true;
     }
 
     // No retake and already completed: land straight on the real result screen (score
     // breakdown, review cards) instead of a one-line "you've already completed this"
-    // blurb with no way to actually see it — mirrors what re-opening a finished attempt
+    // blurb with no way to actually see it â€” mirrors what re-opening a finished attempt
     // in the Android app shows. Only auto-redirects when there's genuinely nothing left
     // to do here (retake off); when retake IS allowed, the landing screen offers both
     // "See Result" and "Retake Exam" instead (see renderLanding).
@@ -3132,15 +3135,15 @@ async function boot() {
     // The Google sign-in redirect leaves an extra "in transit" history entry
     // (this page -> Google -> back here) and a #access_token=... fragment in
     // the address bar. Now that the session has definitely been read out of
-    // it, collapse it into a clean current URL — pressing Back later goes to
+    // it, collapse it into a clean current URL â€” pressing Back later goes to
     // wherever the user actually came from (WhatsApp's browser, the join
-    // page, …), not back into that OAuth hop, and the token stops sitting
+    // page, â€¦), not back into that OAuth hop, and the token stops sitting
     // visibly in the address bar.
     if (window.location.hash) {
       window.history.replaceState(null, "", window.location.pathname + window.location.search);
     }
 
-    // Some Google accounts have a wrong/nickname-y name attached — a brand-new
+    // Some Google accounts have a wrong/nickname-y name attached â€” a brand-new
     // signup (mirrors the same one-time gate the Android app now has) is asked
     // to confirm/correct it once before taking the quiz, since that name is
     // what the quiz creator and other participants will see them as.
@@ -3153,7 +3156,7 @@ async function boot() {
     state.screen = "landing";
     render();
   } catch (e) {
-    // Any unexpected failure (network drop, a Supabase error, …) now shows a
+    // Any unexpected failure (network drop, a Supabase error, â€¦) now shows a
     // message instead of leaving the loading spinner stuck forever.
     state.errorMessage = e?.message || String(e);
     state.screen = "error";
