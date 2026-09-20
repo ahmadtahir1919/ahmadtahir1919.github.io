@@ -59,6 +59,12 @@
     })();
     window.Analytics.screen("JoinLanding");
 
+    // Desktop has no Play Store to send anyone to, so there's nothing to choose between —
+    // skip this card entirely and go straight to the browser flow. Only Android/iOS (where
+    // the app is actually installable) get asked.
+    var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (!isMobile) document.querySelector('.card').style.visibility = 'hidden';
+
     // Two ways in:
     //   ?code=XXXXXX — the plain code, used by the text share message.
     //   ?t=<token>   — the encrypted token a QR carries (see QrCodePayloadCodec.kt).
@@ -102,13 +108,16 @@
         .catch(function () { return null; });
     }
 
+    // The ?t= path already charset-checks inside decryptToken; the plain ?code= path
+    // did not. Reject anything that isn't a share code so a long/odd string can't be
+    // reflected into the page or the Play/browser/redirect links.
+    function validCode(rawCode) {
+      if (!rawCode) return null;
+      var code = String(rawCode).toUpperCase();
+      return /^[A-Z0-9]{4,8}$/.test(code) ? code : null;
+    }
+
     function showCode(code) {
-      if (!code) return;
-      code = String(code).toUpperCase();
-      // The ?t= path already charset-checks inside decryptToken; the plain ?code= path
-      // did not. Reject anything that isn't a share code so a long/odd string can't be
-      // reflected into the page or the Play/browser links.
-      if (!/^[A-Z0-9]{4,8}$/.test(code)) return;
       document.getElementById('code').textContent = code;
       // Carries the code through to Play Store as a referrer, so once the app IS
       // installed from here it can pick this same code back up automatically
@@ -118,14 +127,23 @@
       document.getElementById('takeInBrowserLink').href = '/take/?code=' + encodeURIComponent(code);
     }
 
+    function handleCode(rawCode) {
+      var code = validCode(rawCode);
+      if (isMobile) {
+        // Leaves the "------" placeholder up if the code can't be read — the Play Store
+        // and browser links still work, the visitor just doesn't get a prefilled code.
+        if (code) showCode(code);
+      } else {
+        window.location.replace(code ? '/take/?code=' + encodeURIComponent(code) : '/take/');
+      }
+    }
+
     var params = new URLSearchParams(window.location.search);
     var plainCode = params.get('code');
     if (plainCode) {
-      showCode(plainCode);
+      handleCode(plainCode);
     } else {
-      // Leaves the "------" placeholder up if the token can't be read — the Play Store
-      // and browser links still work, the visitor just doesn't get a prefilled code.
-      decryptToken(params.get('t')).then(showCode);
+      decryptToken(params.get('t')).then(handleCode);
     }
   </script>
 </body>
