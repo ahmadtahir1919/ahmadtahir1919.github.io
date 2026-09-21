@@ -97,9 +97,13 @@ document.addEventListener('DOMContentLoaded', function () {
     btn.addEventListener('click', function () {
       var isOpen = item.classList.contains('open');
       document.querySelectorAll('.faq-item.open').forEach(function (open) {
-        if (open !== item) open.classList.remove('open');
+        if (open === item) return;
+        open.classList.remove('open');
+        var openBtn = open.querySelector('.faq-question');
+        if (openBtn) openBtn.setAttribute('aria-expanded', 'false');
       });
       item.classList.toggle('open', !isOpen);
+      btn.setAttribute('aria-expanded', !isOpen ? 'true' : 'false');
     });
   });
 
