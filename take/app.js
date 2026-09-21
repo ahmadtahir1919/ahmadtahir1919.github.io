@@ -128,7 +128,14 @@ function render() {
   app.appendChild(buildSiteHeader(headerStatusFor(state.screen)));
   main = el("main", { class: "site-main" }, []);
   app.appendChild(main);
-  app.appendChild(buildSiteFooter());
+  // The footer's Terms/Privacy links navigate away from the page entirely — skip it
+  // while a quiz is actually in progress (or mid-submit) so a stray tap near the
+  // bottom of a phone screen can't silently abandon an attempt. The X in the quiz's
+  // own top bar (buildQuizTopBar) is still the one deliberate way out, and it
+  // already confirms before leaving (see confirmLeave()).
+  if (state.screen !== "quiz" && state.screen !== "finishing") {
+    app.appendChild(buildSiteFooter());
+  }
   switch (state.screen) {
     case "loading": return renderLoading();
     case "enterCode": return renderEnterCode();
