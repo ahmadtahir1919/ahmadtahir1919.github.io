@@ -247,6 +247,11 @@ document.addEventListener('DOMContentLoaded', function () {
   // Picking always shows a check — it IS checked, right or wrong — but the row only turns
   // green when it's both picked AND actually correct. A picked wrong row stays neutral
   // rather than turning red: the "zero punitive penalties" pitch shown, not just claimed.
+  //
+  // Also self-plays like the Single Choice slide (slide 1) so it still feels alive before
+  // anyone touches it: checks the correct rows one at a time, holds so the feedback banner
+  // is readable, then clears and repeats. A real tap pauses it, same isAuto skip-vibrate
+  // convention as slide 1's activateQuizOption.
   var checklistGroup = document.getElementById('demo-checklist');
   if (checklistGroup) {
     var checklistRows = Array.prototype.slice.call(checklistGroup.querySelectorAll('.demo-check-row'));
@@ -272,34 +277,117 @@ document.addEventListener('DOMContentLoaded', function () {
       checklistFeedbackPoints.textContent = '+' + points + ' Pts';
     }
 
+    function setRowPicked(row, picked) {
+      row.classList.toggle('is-picked', picked);
+      row.setAttribute('aria-pressed', picked ? 'true' : 'false');
+    }
+
     checklistRows.forEach(function (row) {
       row.addEventListener('click', function () {
         formatAutoplayPausedUntil = Date.now() + 8000;
-        var picked = row.classList.toggle('is-picked');
-        row.setAttribute('aria-pressed', picked ? 'true' : 'false');
+        checklistAutoplayPausedUntil = Date.now() + 8000;
+        setRowPicked(row, !row.classList.contains('is-picked'));
         if (navigator.vibrate) navigator.vibrate(15);
         updateChecklistFeedback();
       });
     });
+
+    var checklistReduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var checklistAutoplayTimer = null;
+    var checklistAutoplayPausedUntil = 0;
+    var checklistAutoStep = 0; // 0..N-1 = check the Nth correct row next; N = hold, then reset
+
+    function scheduleChecklistAutoplay() {
+      if (checklistReduceMotion) return;
+      if (checklistAutoplayTimer) clearTimeout(checklistAutoplayTimer);
+      var atRest = checklistAutoStep === 0;
+      checklistAutoplayTimer = setTimeout(function () {
+        if (Date.now() < checklistAutoplayPausedUntil || document.hidden) {
+          scheduleChecklistAutoplay();
+          return;
+        }
+        if (checklistAutoStep >= correctChecklistRows.length) {
+          checklistRows.forEach(function (row) { setRowPicked(row, false); });
+          updateChecklistFeedback();
+          checklistAutoStep = 0;
+        } else {
+          setRowPicked(correctChecklistRows[checklistAutoStep], true);
+          updateChecklistFeedback();
+          checklistAutoStep++;
+        }
+        scheduleChecklistAutoplay();
+        // Long pause once both are checked and the banner is showing (readable time);
+        // short pause between individual picks (feels like someone actively ticking boxes).
+      }, atRest ? 2400 : 900);
+    }
+
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) scheduleChecklistAutoplay();
+    });
+
+    scheduleChecklistAutoplay();
   }
 
   // Hero mini-quiz card, slide 3 (True / False): tap either side to answer — only one
   // selection at a time, same correct/incorrect colors as the Single Choice slide so every
-  // "pick an answer" slide in the carousel reads as one consistent system.
+  // "pick an answer" slide in the carousel reads as one consistent system. Also self-plays
+  // like slide 1: picks the correct side, holds, clears, repeats — pausing on a real tap.
   var tfRow = document.getElementById('demo-tf-row');
   if (tfRow) {
     var tfButtons = Array.prototype.slice.call(tfRow.querySelectorAll('.demo-tf-btn'));
+
+    function clearTfButtons() {
+      tfButtons.forEach(function (other) {
+        other.classList.remove('is-picked-correct', 'is-picked-incorrect', 'option-pop', 'option-shake');
+        other.setAttribute('aria-pressed', 'false');
+      });
+    }
+
+    function pickTfButton(btn, isAuto) {
+      var isCorrect = btn.dataset.correct === 'true';
+      clearTfButtons();
+      void btn.offsetWidth; // restart the animation if tapped/played again
+      btn.classList.add(isCorrect ? 'is-picked-correct' : 'is-picked-incorrect');
+      btn.classList.add(isCorrect ? 'option-pop' : 'option-shake');
+      btn.setAttribute('aria-pressed', 'true');
+      if (!isAuto && navigator.vibrate) navigator.vibrate(isCorrect ? [30, 40, 30] : 60);
+    }
+
+    var tfReduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var tfAutoplayTimer = null;
+    var tfAutoplayPausedUntil = 0;
+    var tfAutoShowing = false; // false = cleared (about to show), true = showing (about to clear)
+
+    function scheduleTfAutoplay() {
+      if (tfReduceMotion) return;
+      if (tfAutoplayTimer) clearTimeout(tfAutoplayTimer);
+      tfAutoplayTimer = setTimeout(function () {
+        if (Date.now() < tfAutoplayPausedUntil || document.hidden) {
+          scheduleTfAutoplay();
+          return;
+        }
+        if (tfAutoShowing) {
+          clearTfButtons();
+        } else {
+          var correctBtn = tfButtons.filter(function (b) { return b.dataset.correct === 'true'; })[0];
+          pickTfButton(correctBtn, true);
+        }
+        tfAutoShowing = !tfAutoShowing;
+        scheduleTfAutoplay();
+      }, tfAutoShowing ? 2400 : 1000);
+    }
+
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) scheduleTfAutoplay();
+    });
+
+    scheduleTfAutoplay();
+
     tfButtons.forEach(function (btn) {
       btn.addEventListener('click', function () {
         formatAutoplayPausedUntil = Date.now() + 8000;
-        var isCorrect = btn.dataset.correct === 'true';
-        tfButtons.forEach(function (other) {
-          other.classList.remove('is-picked-correct', 'is-picked-incorrect', 'option-pop', 'option-shake');
-          other.setAttribute('aria-pressed', 'false');
-        });
-        void btn.offsetWidth; // restart the animation if tapped again
-        btn.classList.add(isCorrect ? 'is-picked-correct' : 'is-picked-incorrect');
-        btn.classList.add(isCorrect ? 'option-pop' : 'option-shake');
+        tfAutoplayPausedUntil = Date.now() + 8000;
+        pickTfButton(btn, false);
         btn.setAttribute('aria-pressed', 'true');
         if (navigator.vibrate) navigator.vibrate(isCorrect ? [30, 40, 30] : 60);
       });

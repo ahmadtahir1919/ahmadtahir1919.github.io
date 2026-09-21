@@ -401,6 +401,12 @@ h1, h2, h3, h4 { margin: 0; font-family: var(--font-sans); }
   min-width: 0;
 }
 .stat-top { display: flex; align-items: center; justify-content: space-between; }
+/* Pins the tag pill to the card's bottom edge regardless of how many lines the
+   description wraps to — otherwise a 2-line description ("Smart Auto + Human Hand
+   Marking") leaves its tag sitting higher than the 1-line cards next to it. Same
+   pinned-footer idea as .mini-quiz-slide's feedback banner, just via margin-top:auto
+   since this card has three stacked children instead of two. */
+.stat-card > .tag { margin-top: auto; }
 .stat-title { font-weight: 700; font-size: 17px; letter-spacing: -0.25px; }
 .stat-icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .stat-icon-green { background: var(--color-green-bg); }
