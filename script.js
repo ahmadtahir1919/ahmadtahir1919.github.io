@@ -207,4 +207,70 @@ document.addEventListener('DOMContentLoaded', function () {
 
     scheduleQuizAutoplay();
   }
+
+  // Hero mini-quiz card, part 2: a slider cycling through all 6 question
+  // formats (Single Choice, Multiple Correct, True/False, Written Answer,
+  // Fill in the Blank, Live Poll), each with a small "now showing" pill and
+  // a matching animated example — so the hero shows the full range Quizoma
+  // supports, not just one MCQ.
+  var quizSlider = document.getElementById('mini-quiz-slider');
+  var quizTrack = document.getElementById('mini-quiz-track');
+  if (quizSlider && quizTrack) {
+    var formatSlides = Array.prototype.slice.call(quizTrack.querySelectorAll('.mini-quiz-slide'));
+    var formatDots = Array.prototype.slice.call(document.querySelectorAll('#mini-quiz-indicators .mq-dot'));
+    var formatPillIcon = document.getElementById('format-pill-icon');
+    var formatPillLabel = document.getElementById('format-pill-label');
+
+    var ICON_STROKE = 'fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"';
+    var FORMATS = [
+      { label: 'Single Choice', icon: '<svg width="14" height="14" viewBox="0 0 24 24" ' + ICON_STROKE + '><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="3.5" fill="#fff" stroke="none"></circle></svg>' },
+      { label: 'Multiple Correct', icon: '<svg width="14" height="14" viewBox="0 0 24 24" ' + ICON_STROKE + '><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>' },
+      { label: 'True / False', icon: '<svg width="14" height="14" viewBox="0 0 24 24" ' + ICON_STROKE + '><circle cx="7" cy="12" r="5"></circle><path d="M4.7 12l1.5 1.6L9.3 10"></path><circle cx="17" cy="12" r="5"></circle><path d="M14.8 9.8l4.4 4.4M19.2 9.8l-4.4 4.4"></path></svg>' },
+      { label: 'Written Answer', icon: '<svg width="14" height="14" viewBox="0 0 24 24" ' + ICON_STROKE + '><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>' },
+      { label: 'Fill in the Blank', icon: '<svg width="14" height="14" viewBox="0 0 24 24" ' + ICON_STROKE + '><line x1="3" y1="12" x2="7" y2="12"></line><line x1="9.5" y1="12" x2="14.5" y2="12" stroke-dasharray="2.2 2.2"></line><line x1="17" y1="12" x2="21" y2="12"></line></svg>' },
+      { label: 'Live Poll', icon: '<svg width="14" height="14" viewBox="0 0 24 24" ' + ICON_STROKE + '><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>' }
+    ];
+
+    var formatReduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var currentFormatSlide = 0;
+    var formatAutoplayTimer = null;
+    var formatAutoplayPausedUntil = 0;
+
+    function goToFormatSlide(index) {
+      currentFormatSlide = index;
+      var step = 100 / formatSlides.length;
+      quizTrack.style.transform = 'translateX(-' + (index * step) + '%)';
+      formatSlides.forEach(function (slide, i) { slide.classList.toggle('slide-active', i === index); });
+      formatDots.forEach(function (dot, i) { dot.classList.toggle('active', i === index); });
+      if (formatPillIcon) formatPillIcon.innerHTML = FORMATS[index].icon;
+      if (formatPillLabel) formatPillLabel.textContent = FORMATS[index].label;
+    }
+
+    function scheduleFormatAutoplay() {
+      if (formatReduceMotion) return;
+      if (formatAutoplayTimer) clearTimeout(formatAutoplayTimer);
+      formatAutoplayTimer = setTimeout(function () {
+        if (Date.now() < formatAutoplayPausedUntil || document.hidden) {
+          scheduleFormatAutoplay();
+          return;
+        }
+        goToFormatSlide((currentFormatSlide + 1) % formatSlides.length);
+        scheduleFormatAutoplay();
+      }, 4500);
+    }
+
+    formatDots.forEach(function (dot, i) {
+      dot.addEventListener('click', function () {
+        formatAutoplayPausedUntil = Date.now() + 8000;
+        goToFormatSlide(i);
+      });
+    });
+
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) scheduleFormatAutoplay();
+    });
+
+    goToFormatSlide(0);
+    scheduleFormatAutoplay();
+  }
 });

@@ -441,10 +441,111 @@ h1, h2, h3, h4 { margin: 0; font-family: var(--font-sans); }
   gap: 11px;
   z-index: 2;
 }
-.mini-quiz-top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
-.mini-quiz-tags { display: flex; align-items: center; gap: 8px; }
+/* Format pill row: shows which of the 6 question formats the slider is
+   currently demoing. */
+.format-pill-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.format-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--color-primary); color: #fff;
+  padding: 5px 12px 5px 8px;
+  border-radius: var(--radius-pill);
+  font-size: 11px; font-weight: 700; letter-spacing: 0.33px;
+  box-shadow: var(--shadow-card);
+  transition: opacity 150ms ease;
+}
+.format-pill-icon { width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.format-pill-icon svg { display: block; }
+.format-live-badge { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: var(--color-text-body); }
+
+/* Carousel: 6 slides (one per question format), sliding horizontally.
+   Each .mini-quiz-slide stretches (flex default) to the tallest slide's
+   content height, and space-between keeps the feedback banner pinned to
+   the bottom regardless of how tall the middle demo content is — so
+   switching slides never jumps or leaves a ragged card height. */
+.mini-quiz-slider { overflow: hidden; }
+.mini-quiz-track { display: flex; width: 600%; transition: transform 500ms cubic-bezier(0.65, 0, 0.35, 1); }
+.mini-quiz-slide {
+  flex: 0 0 16.6667%;
+  width: 16.6667%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  padding-right: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mini-quiz-track { transition: none; }
+}
 .mini-quiz-question { font-size: 15px; font-weight: 700; letter-spacing: -0.15px; line-height: 1.4; }
 .mini-quiz-options { display: flex; flex-direction: column; gap: 8px; }
+
+/* Indicator dots */
+.mini-quiz-indicators { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.mq-dot { width: 6px; height: 6px; padding: 0; border: none; border-radius: 50%; background: var(--color-border); cursor: pointer; transition: background 200ms ease, width 200ms ease; }
+.mq-dot.active { width: 18px; border-radius: var(--radius-pill); background: var(--color-primary); }
+
+/* Multiple Correct demo */
+.demo-checklist { display: flex; flex-direction: column; gap: 8px; }
+.demo-check-row { display: flex; align-items: center; gap: 10px; background: var(--color-bg-alt); border-radius: var(--radius-md); padding: 10px 12px; font-size: 13px; color: var(--color-text-body); }
+.demo-checkbox { width: 18px; height: 18px; border-radius: 5px; border: 2px solid var(--color-border); flex-shrink: 0; position: relative; transition: background 200ms ease, border-color 200ms ease, transform 200ms ease; }
+.demo-check-correct .demo-checkbox { border-color: var(--color-green-accent); }
+.demo-check-correct { color: var(--color-text-dark); font-weight: 600; }
+.mini-quiz-slide.slide-active .demo-check-correct .demo-checkbox {
+  background: var(--color-green-accent);
+  border-color: var(--color-green-accent);
+  transform: scale(1.08);
+}
+.demo-checkbox::after {
+  content: '';
+  position: absolute; left: 5px; top: 1px;
+  width: 4px; height: 8px;
+  border: solid #fff; border-width: 0 2px 2px 0;
+  transform: rotate(45deg) scale(0);
+  transition: transform 200ms ease 100ms;
+}
+.mini-quiz-slide.slide-active .demo-check-correct .demo-checkbox::after { transform: rotate(45deg) scale(1); }
+
+/* True / False demo */
+.demo-tf-row { display: flex; gap: 10px; }
+.demo-tf-btn {
+  flex: 1;
+  text-align: center;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-alt);
+  color: var(--color-text-body);
+  font-weight: 700; font-size: 14px;
+  border: 2px solid transparent;
+  transition: transform 200ms ease, background 200ms ease, border-color 200ms ease, color 200ms ease;
+}
+.mini-quiz-slide.slide-active .demo-tf-selected {
+  background: #ecfdf5; border-color: #10b981; color: var(--color-green-text-dark);
+  transform: scale(1.04);
+}
+
+/* Written answer demo */
+.demo-written-box { background: var(--color-bg-alt); border-radius: var(--radius-md); padding: 14px; }
+.demo-written-box p { font-size: 13px; font-style: italic; color: var(--color-text-body); line-height: 1.5; margin: 0; }
+
+/* Fill in the blank demo */
+.demo-blank {
+  display: inline-block;
+  background: #ecfdf5; color: var(--color-green-text-dark);
+  border: 1.5px dashed #10b981;
+  border-radius: 6px;
+  padding: 1px 8px;
+  font-weight: 700;
+}
+.demo-blank-hint { font-size: 12px; color: var(--color-text-body); background: var(--color-bg-alt); border-radius: var(--radius-md); padding: 10px 12px; }
+
+/* Live poll demo */
+.demo-poll { display: flex; flex-direction: column; gap: 8px; }
+.demo-poll-row { display: flex; align-items: center; gap: 10px; font-size: 12px; }
+.demo-poll-label { width: 92px; flex-shrink: 0; color: var(--color-text-body); font-weight: 600; }
+.demo-poll-bar { flex: 1; height: 8px; background: var(--color-bg-alt); border-radius: var(--radius-pill); overflow: hidden; }
+.demo-poll-bar span { display: block; height: 100%; width: 0; border-radius: var(--radius-pill); background: var(--color-primary); transition: width 900ms cubic-bezier(0.22, 1, 0.36, 1); }
+.mini-quiz-slide.slide-active .demo-poll-bar span { width: var(--target); }
+.demo-poll-pct { width: 32px; flex-shrink: 0; text-align: right; font-weight: 700; color: var(--color-text-dark); font-family: var(--font-mono); }
 .option {
   background: var(--color-bg-alt);
   border: 2px solid transparent;
