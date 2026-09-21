@@ -3,6 +3,16 @@
 // FAQ accordion, filter chip switching).
 
 document.addEventListener('DOMContentLoaded', function () {
+  // Footer "Cookie Settings" link — lets a visitor re-open the consent banner
+  // to change their mind at any time (see cookie-consent.js).
+  var cookieSettingsLink = document.getElementById('cookie-settings-link');
+  if (cookieSettingsLink) {
+    cookieSettingsLink.addEventListener('click', function (e) {
+      e.preventDefault();
+      if (window.QuizomaConsent) window.QuizomaConsent.openSettings();
+    });
+  }
+
   // PostHog: record the page view, then track every CTA tagged with
   // data-analytics (see analytics.js for the window.Analytics contract).
   if (window.Analytics) {
