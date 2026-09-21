@@ -236,10 +236,20 @@ document.addEventListener('DOMContentLoaded', function () {
     var formatAutoplayTimer = null;
     var formatAutoplayPausedUntil = 0;
 
+    // Size each slide to the slider's actual pixel width (not a CSS percentage
+    // of the track) so there's no ambiguity about what the track's own width
+    // resolves against — recomputed on resize since the card is fluid-width.
+    function layoutFormatSlides() {
+      var slideWidth = quizSlider.offsetWidth;
+      formatSlides.forEach(function (slide) { slide.style.width = slideWidth + 'px'; });
+      quizTrack.style.width = (slideWidth * formatSlides.length) + 'px';
+      quizTrack.style.transform = 'translateX(-' + (currentFormatSlide * slideWidth) + 'px)';
+    }
+
     function goToFormatSlide(index) {
       currentFormatSlide = index;
-      var step = 100 / formatSlides.length;
-      quizTrack.style.transform = 'translateX(-' + (index * step) + '%)';
+      var slideWidth = quizSlider.offsetWidth;
+      quizTrack.style.transform = 'translateX(-' + (index * slideWidth) + 'px)';
       formatSlides.forEach(function (slide, i) { slide.classList.toggle('slide-active', i === index); });
       formatDots.forEach(function (dot, i) { dot.classList.toggle('active', i === index); });
       if (formatPillIcon) formatPillIcon.innerHTML = FORMATS[index].icon;
@@ -270,6 +280,9 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!document.hidden) scheduleFormatAutoplay();
     });
 
+    window.addEventListener('resize', layoutFormatSlides, { passive: true });
+
+    layoutFormatSlides();
     goToFormatSlide(0);
     scheduleFormatAutoplay();
   }
