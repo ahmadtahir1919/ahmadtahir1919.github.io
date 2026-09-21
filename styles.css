@@ -467,8 +467,23 @@ h1, h2, h3, h4 { margin: 0; font-family: var(--font-sans); }
    content height, and space-between keeps the feedback banner pinned to
    the bottom regardless of how tall the middle demo content is — so
    switching slides never jumps or leaves a ragged card height. */
-.mini-quiz-slider { overflow: hidden; width: 100%; min-width: 0; }
-.mini-quiz-track { display: flex; transition: transform 500ms cubic-bezier(0.65, 0, 0.35, 1); }
+.mini-quiz-slider {
+  overflow: hidden;
+  width: 100%;
+  min-width: 0;
+  /* Lets the browser keep handling vertical page scroll with a finger on this element;
+     script.js only takes over once it sees the drag is mostly horizontal. Without this,
+     the very first touchmove is ambiguous and a vertical scroll gesture here can stutter. */
+  touch-action: pan-y;
+}
+.mini-quiz-track {
+  display: flex;
+  transition: transform 500ms cubic-bezier(0.65, 0, 0.35, 1);
+  /* While a pointer is actively dragging it, script.js sets transform directly per frame
+     and must not fight this transition — see .is-dragging below. */
+  cursor: grab;
+}
+.mini-quiz-track.is-dragging { transition: none; cursor: grabbing; }
 .mini-quiz-slide {
   flex: 0 0 auto;
   width: 100%;
@@ -490,17 +505,25 @@ h1, h2, h3, h4 { margin: 0; font-family: var(--font-sans); }
 .mq-dot { width: 6px; height: 6px; padding: 0; border: none; border-radius: 50%; background: var(--color-border); cursor: pointer; transition: background 200ms ease, width 200ms ease; }
 .mq-dot.active { width: 18px; border-radius: var(--radius-pill); background: var(--color-primary); }
 
-/* Multiple Correct demo */
+/* Multiple Correct demo — real buttons, tappable like the Single Choice slide. Picking a
+   row always shows a check (it IS checked, right or wrong); the row only turns green once
+   picked AND correct. Picking the wrong row stays neutral rather than turning red — the
+   product's own "zero punitive penalties" pitch, shown rather than just claimed. */
 .demo-checklist { display: flex; flex-direction: column; gap: 6px; }
-.demo-check-row { display: flex; align-items: center; gap: 8px; background: var(--color-bg-alt); border-radius: var(--radius-md); padding: 7px 10px; font-size: 12px; color: var(--color-text-body); }
-.demo-checkbox { width: 18px; height: 18px; border-radius: 5px; border: 2px solid var(--color-border); flex-shrink: 0; position: relative; transition: background 200ms ease, border-color 200ms ease, transform 200ms ease; }
-.demo-check-correct .demo-checkbox { border-color: var(--color-green-accent); }
-.demo-check-correct { color: var(--color-text-dark); font-weight: 600; }
-.mini-quiz-slide.slide-active .demo-check-correct .demo-checkbox {
-  background: var(--color-green-accent);
-  border-color: var(--color-green-accent);
-  transform: scale(1.08);
+.demo-check-row {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--color-bg-alt); border-radius: var(--radius-md); padding: 7px 10px;
+  font-size: 12px; color: var(--color-text-body);
+  /* Button reset: this used to be a <div>, kept looking identical as a <button> so it can
+     receive real clicks/taps and keyboard focus. */
+  border: none; width: 100%; text-align: left; font-family: inherit; cursor: pointer;
+  transition: background 150ms ease, color 150ms ease;
 }
+.demo-check-row:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.demo-checkbox { width: 18px; height: 18px; border-radius: 5px; border: 2px solid var(--color-border); flex-shrink: 0; position: relative; transition: background 200ms ease, border-color 200ms ease, transform 200ms ease; }
+.demo-check-row.is-picked .demo-checkbox { background: var(--color-border); border-color: var(--color-border); transform: scale(1.08); }
+.demo-check-row.is-picked[data-correct="true"] { color: var(--color-text-dark); font-weight: 600; }
+.demo-check-row.is-picked[data-correct="true"] .demo-checkbox { background: var(--color-green-accent); border-color: var(--color-green-accent); }
 .demo-checkbox::after {
   content: '';
   position: absolute; left: 5px; top: 1px;
@@ -509,9 +532,10 @@ h1, h2, h3, h4 { margin: 0; font-family: var(--font-sans); }
   transform: rotate(45deg) scale(0);
   transition: transform 200ms ease 100ms;
 }
-.mini-quiz-slide.slide-active .demo-check-correct .demo-checkbox::after { transform: rotate(45deg) scale(1); }
+.demo-check-row.is-picked .demo-checkbox::after { transform: rotate(45deg) scale(1); }
 
-/* True / False demo */
+/* True / False demo — same tap-and-see pattern, matching Single Choice's correct/incorrect
+   colors so every "pick an answer" slide in the carousel feels like one system. */
 .demo-tf-row { display: flex; gap: 10px; }
 .demo-tf-btn {
   flex: 1;
@@ -522,11 +546,13 @@ h1, h2, h3, h4 { margin: 0; font-family: var(--font-sans); }
   color: var(--color-text-body);
   font-weight: 700; font-size: 13px;
   border: 2px solid transparent;
+  font-family: inherit;
+  cursor: pointer;
   transition: transform 200ms ease, background 200ms ease, border-color 200ms ease, color 200ms ease;
 }
-.mini-quiz-slide.slide-active .demo-tf-selected {
-  background: #ecfdf5; border-color: #10b981; color: var(--color-green-text-dark);
-}
+.demo-tf-btn:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.demo-tf-btn.is-picked-correct { background: #ecfdf5; border-color: #10b981; color: var(--color-green-text-dark); }
+.demo-tf-btn.is-picked-incorrect { background: rgba(251,113,133,0.12); border-color: #fb7185; }
 
 /* Written answer demo */
 .demo-written-box { background: var(--color-bg-alt); border-radius: var(--radius-md); padding: 10px 12px; }

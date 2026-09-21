@@ -142,6 +142,12 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
+  // Shared by all three tappable slides below (Single Choice, Multiple Correct,
+  // True/False) AND the slider's own autoplay: any real tap on any of them should
+  // pause the format-switching autoplay for a bit, so a visitor mid-interaction
+  // never gets yanked to the next slide.
+  var formatAutoplayPausedUntil = 0;
+
   // Hero mini-quiz card: click an option to see the dual-track grading in
   // action (typo-tolerant correct answer vs. gentle, non-punitive wrong-answer
   // feedback that resets itself).
@@ -237,6 +243,69 @@ document.addEventListener('DOMContentLoaded', function () {
     scheduleQuizAutoplay();
   }
 
+  // Hero mini-quiz card, slide 2 (Multiple Correct): tap a row to check/uncheck it.
+  // Picking always shows a check — it IS checked, right or wrong — but the row only turns
+  // green when it's both picked AND actually correct. A picked wrong row stays neutral
+  // rather than turning red: the "zero punitive penalties" pitch shown, not just claimed.
+  var checklistGroup = document.getElementById('demo-checklist');
+  if (checklistGroup) {
+    var checklistRows = Array.prototype.slice.call(checklistGroup.querySelectorAll('.demo-check-row'));
+    var checklistFeedback = document.getElementById('demo-checklist-feedback');
+    var checklistFeedbackText = document.getElementById('demo-checklist-feedback-text');
+    var checklistFeedbackPoints = document.getElementById('demo-checklist-feedback-points');
+    var correctChecklistRows = checklistRows.filter(function (row) { return row.dataset.correct === 'true'; });
+
+    function updateChecklistFeedback() {
+      var pickedCorrect = correctChecklistRows.filter(function (row) { return row.classList.contains('is-picked'); }).length;
+      var pickedWrong = checklistRows.some(function (row) { return row.dataset.correct !== 'true' && row.classList.contains('is-picked'); });
+      var anyPicked = checklistRows.some(function (row) { return row.classList.contains('is-picked'); });
+
+      if (!anyPicked) {
+        checklistFeedback.classList.add('feedback-banner-hidden');
+        return;
+      }
+      checklistFeedback.classList.remove('feedback-banner-hidden');
+      checklistFeedbackText.textContent = pickedCorrect + ' of ' + correctChecklistRows.length + ' correct' +
+        (pickedWrong ? ' — one pick doesn’t match, no penalty' : ' — partial credit enabled');
+      // Split-points demo: each correct option worth an even share of 100.
+      var points = Math.round((pickedCorrect / correctChecklistRows.length) * 100);
+      checklistFeedbackPoints.textContent = '+' + points + ' Pts';
+    }
+
+    checklistRows.forEach(function (row) {
+      row.addEventListener('click', function () {
+        formatAutoplayPausedUntil = Date.now() + 8000;
+        var picked = row.classList.toggle('is-picked');
+        row.setAttribute('aria-pressed', picked ? 'true' : 'false');
+        if (navigator.vibrate) navigator.vibrate(15);
+        updateChecklistFeedback();
+      });
+    });
+  }
+
+  // Hero mini-quiz card, slide 3 (True / False): tap either side to answer — only one
+  // selection at a time, same correct/incorrect colors as the Single Choice slide so every
+  // "pick an answer" slide in the carousel reads as one consistent system.
+  var tfRow = document.getElementById('demo-tf-row');
+  if (tfRow) {
+    var tfButtons = Array.prototype.slice.call(tfRow.querySelectorAll('.demo-tf-btn'));
+    tfButtons.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        formatAutoplayPausedUntil = Date.now() + 8000;
+        var isCorrect = btn.dataset.correct === 'true';
+        tfButtons.forEach(function (other) {
+          other.classList.remove('is-picked-correct', 'is-picked-incorrect', 'option-pop', 'option-shake');
+          other.setAttribute('aria-pressed', 'false');
+        });
+        void btn.offsetWidth; // restart the animation if tapped again
+        btn.classList.add(isCorrect ? 'is-picked-correct' : 'is-picked-incorrect');
+        btn.classList.add(isCorrect ? 'option-pop' : 'option-shake');
+        btn.setAttribute('aria-pressed', 'true');
+        if (navigator.vibrate) navigator.vibrate(isCorrect ? [30, 40, 30] : 60);
+      });
+    });
+  }
+
   // Hero mini-quiz card, part 2: a slider cycling through all 6 question
   // formats (Single Choice, Multiple Correct, True/False, Written Answer,
   // Fill in the Blank, Live Poll), each with a small "now showing" pill and
@@ -263,7 +332,6 @@ document.addEventListener('DOMContentLoaded', function () {
     var formatReduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var currentFormatSlide = 0;
     var formatAutoplayTimer = null;
-    var formatAutoplayPausedUntil = 0;
 
     // Size each slide to the slider's actual pixel width (not a CSS percentage
     // of the track) so there's no ambiguity about what the track's own width
@@ -310,6 +378,82 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     window.addEventListener('resize', layoutFormatSlides, { passive: true });
+
+    // Manual swipe/drag, on top of the autoplay above — Pointer Events cover touch, mouse
+    // and pen with one code path instead of separate touchstart/mousedown handlers.
+    var dragStartX = 0, dragStartY = 0, dragDeltaX = 0, dragPointerId = null;
+    var dragIntent = null; // null (undecided) | 'horizontal' (we own it) | 'vertical' (let the page scroll)
+    var DRAG_INTENT_THRESHOLD = 6; // px of movement before committing to a direction
+    var DRAG_COMMIT_THRESHOLD = 0.18; // fraction of slide width to trigger a slide change
+
+    function onDragStart(e) {
+      // Ignore a second finger, and ignore the start of a new drag mid-animation.
+      if (dragPointerId !== null) return;
+      dragPointerId = e.pointerId;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      dragDeltaX = 0;
+      dragIntent = null;
+    }
+
+    function onDragMove(e) {
+      if (e.pointerId !== dragPointerId) return;
+      var dx = e.clientX - dragStartX;
+      var dy = e.clientY - dragStartY;
+
+      if (dragIntent === null) {
+        if (Math.abs(dx) < DRAG_INTENT_THRESHOLD && Math.abs(dy) < DRAG_INTENT_THRESHOLD) return;
+        // Whichever axis moved further decides the gesture — this is what lets a vertical
+        // page-scroll swipe pass through untouched instead of fighting the slider.
+        dragIntent = Math.abs(dx) > Math.abs(dy) ? 'horizontal' : 'vertical';
+        if (dragIntent === 'horizontal') {
+          quizTrack.classList.add('is-dragging');
+          formatAutoplayPausedUntil = Date.now() + 8000;
+        }
+      }
+      if (dragIntent !== 'horizontal') return;
+
+      // Now that we own the gesture, stop the browser from also trying to scroll/select.
+      e.preventDefault();
+      dragDeltaX = dx;
+      var slideWidth = quizSlider.offsetWidth;
+      var baseX = -(currentFormatSlide * slideWidth);
+      // Rubber-band resistance past the first/last slide, so dragging past either end
+      // still moves (feels responsive) but visibly resists (signals "that's the end").
+      var atStart = currentFormatSlide === 0 && dx > 0;
+      var atEnd = currentFormatSlide === formatSlides.length - 1 && dx < 0;
+      var appliedDx = (atStart || atEnd) ? dx * 0.35 : dx;
+      quizTrack.style.transform = 'translateX(' + (baseX + appliedDx) + 'px)';
+    }
+
+    function onDragEnd(e) {
+      if (e.pointerId !== dragPointerId) return;
+      dragPointerId = null;
+      quizTrack.classList.remove('is-dragging');
+
+      if (dragIntent !== 'horizontal') {
+        dragIntent = null;
+        return;
+      }
+      dragIntent = null;
+
+      var slideWidth = quizSlider.offsetWidth;
+      var movedFraction = dragDeltaX / slideWidth;
+      var next = currentFormatSlide;
+      if (movedFraction <= -DRAG_COMMIT_THRESHOLD && currentFormatSlide < formatSlides.length - 1) {
+        next = currentFormatSlide + 1;
+      } else if (movedFraction >= DRAG_COMMIT_THRESHOLD && currentFormatSlide > 0) {
+        next = currentFormatSlide - 1;
+      }
+      // goToFormatSlide restores the transition and snaps to the resolved slide — same
+      // path whether that's the next slide or back to where we started.
+      goToFormatSlide(next);
+    }
+
+    quizSlider.addEventListener('pointerdown', onDragStart);
+    quizSlider.addEventListener('pointermove', onDragMove);
+    quizSlider.addEventListener('pointerup', onDragEnd);
+    quizSlider.addEventListener('pointercancel', onDragEnd);
 
     layoutFormatSlides();
     goToFormatSlide(0);

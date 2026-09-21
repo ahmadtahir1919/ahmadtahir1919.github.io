@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quizoma — The thoughtful classroom quiz engine</title>
-<meta name="description" content="Quizoma pairs high-precision algorithmic scanning with dedicated teacher-first qualitative reviews. Zero punitive penalties for spelling slips, zero false zeros, uninterrupted offline participation.">
+<meta name="description" content="Quizoma checks simple answers instantly and lets you grade the rest yourself. No unfair marks for a spelling slip, no false zeros, and it keeps working even when the Wi-Fi doesn't.">
 <link rel="canonical" href="https://quizoma.com/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -34,7 +34,7 @@
         <a href="#pillars">Product</a>
         <a href="#dual-grading">Dual Grading Engine</a>
         <a href="#formats">6 Formats</a>
-        <a href="#faq">Architecture &amp; FAQ</a>
+        <a href="#faq">FAQ</a>
       </nav>
     </div>
     <div class="header-right">
@@ -51,7 +51,7 @@
     <a href="#pillars">Product</a>
     <a href="#dual-grading">Dual Grading Engine</a>
     <a href="#formats">6 Formats</a>
-    <a href="#faq">Architecture &amp; FAQ</a>
+    <a href="#faq">FAQ</a>
     <a href="/take/" class="btn btn-cream btn-sm" data-analytics="home_enter_room_code_clicked" data-analytics-props='{"location":"mobile_nav"}'>Enter Room Code</a>
   </nav>
 </header>
@@ -65,9 +65,9 @@
       <div class="hero-copy">
         <h1 class="h1">The thoughtful classroom quiz<br>engine with <span class="underline-accent typewriter" id="typewriter-word">dual smart grading.</span></h1>
 
-        <p class="lead">Quizoma pairs high-precision algorithmic scanning with dedicated teacher-first
-        qualitative reviews. Zero punitive penalties for spelling slips, zero false zeros,
-        and uninterrupted offline participation.</p>
+        <p class="lead">Quizoma grades the easy stuff instantly and hands you the rest.
+        No marks lost over a typo, no zeros that aren't real, and it never stops working
+        just because the Wi-Fi did.</p>
 
         <div class="cta-row">
           <a href="/take/" class="btn btn-primary btn-lg btn-hero-cta" data-analytics="home_enter_room_code_clicked" data-analytics-props='{"location":"hero"}'>
@@ -168,23 +168,23 @@
               <!-- Slide 2: Multiple Correct -->
               <div class="mini-quiz-slide">
                 <p class="mini-quiz-question">Select all statements that are true about photosynthesis.</p>
-                <div class="demo-checklist">
-                  <div class="demo-check-row demo-check-correct"><span class="demo-checkbox"></span> Occurs inside chloroplasts</div>
-                  <div class="demo-check-row demo-check-correct"><span class="demo-checkbox"></span> Produces oxygen as a byproduct</div>
-                  <div class="demo-check-row"><span class="demo-checkbox"></span> Only happens at night</div>
+                <div class="demo-checklist" id="demo-checklist">
+                  <button type="button" class="demo-check-row" data-correct="true" aria-pressed="false"><span class="demo-checkbox"></span> Occurs inside chloroplasts</button>
+                  <button type="button" class="demo-check-row" data-correct="true" aria-pressed="false"><span class="demo-checkbox"></span> Produces oxygen as a byproduct</button>
+                  <button type="button" class="demo-check-row" data-correct="false" aria-pressed="false"><span class="demo-checkbox"></span> Only happens at night</button>
                 </div>
-                <div class="feedback-banner">
-                  <span><img src="assets/hero_icon_18.svg" alt="" width="15" height="15"> 2 of 2 correct — partial credit enabled</span>
-                  <span class="feedback-points">+100 Pts</span>
+                <div class="feedback-banner feedback-banner-hidden" id="demo-checklist-feedback">
+                  <span><img src="assets/hero_icon_18.svg" alt="" width="15" height="15"> <span id="demo-checklist-feedback-text">2 of 2 correct — partial credit enabled</span></span>
+                  <span class="feedback-points" id="demo-checklist-feedback-points">+100 Pts</span>
                 </div>
               </div>
 
               <!-- Slide 3: True / False -->
               <div class="mini-quiz-slide">
                 <p class="mini-quiz-question">True or False: Mitochondria are found only in animal cells.</p>
-                <div class="demo-tf-row">
-                  <span class="demo-tf-btn">True</span>
-                  <span class="demo-tf-btn demo-tf-selected">False</span>
+                <div class="demo-tf-row" id="demo-tf-row">
+                  <button type="button" class="demo-tf-btn" data-correct="false" aria-pressed="false">True</button>
+                  <button type="button" class="demo-tf-btn" data-correct="true" aria-pressed="false">False</button>
                 </div>
                 <div class="feedback-banner">
                   <span><img src="assets/hero_icon_18.svg" alt="" width="15" height="15"> Optional "Explain Your Stance" follow-up available</span>
@@ -248,33 +248,33 @@
   <section class="section section-alt" id="pillars">
     <div class="container">
       <div class="section-head center">
-        <span class="eyebrow">PILLARS OF PEDAGOGICAL INTEGRITY</span>
-        <h2 class="h2">Engineered for human scholarship, not metric anxiety.</h2>
+        <span class="eyebrow">WHY TEACHERS USE QUIZOMA</span>
+        <h2 class="h2">Built for real classrooms, not test-taking anxiety.</h2>
       </div>
       <div class="pillars-grid">
         <div class="pillar-card">
           <div class="pillar-icon bg-green"><img src="assets/pillar_icon_01.svg" alt="" width="23" height="22"></div>
           <h3 class="h3">100% Free &amp; Ad-Free</h3>
-          <p>Zero banner distractions, predatory data brokers, or subscription gates during timed academic lectures.</p>
-          <div class="pillar-foot foot-green"><img src="assets/pillar_icon_02.svg" alt="" width="11" height="8"> Public Good Guarantee</div>
+          <p>No ads, no selling your data, no subscription to unlock features. Just a quiz tool that works.</p>
+          <div class="pillar-foot foot-green"><img src="assets/pillar_icon_02.svg" alt="" width="11" height="8"> Free for Everyone</div>
         </div>
         <div class="pillar-card">
           <div class="pillar-icon bg-blue"><img src="assets/pillar_icon_03.svg" alt="" width="26" height="21"></div>
-          <h3 class="h3">Offline-First Engine</h3>
-          <p>Quizzes are saved securely on the device itself. Unstable campus Wi-Fi never invalidates active student submissions.</p>
-          <div class="pillar-foot foot-blue"><img src="assets/pillar_icon_04.svg" alt="" width="15" height="12"> Automatic Re-sync</div>
+          <h3 class="h3">Works Without Wi-Fi</h3>
+          <p>Answers save right on the device, so when the Wi-Fi drops, nothing does. Everything syncs back the second it's online again.</p>
+          <div class="pillar-foot foot-blue"><img src="assets/pillar_icon_04.svg" alt="" width="15" height="12"> Syncs Automatically</div>
         </div>
         <div class="pillar-card">
           <div class="pillar-icon bg-purple"><img src="assets/pillar_icon_05.svg" alt="" width="22" height="21"></div>
-          <h3 class="h3">Dual Scoring Tracks</h3>
-          <p>Separates deterministic factual speed from qualitative depth. Student self-worth is protected through balanced evaluation.</p>
-          <div class="pillar-foot foot-purple"><img src="assets/pillar_icon_06.svg" alt="" width="13" height="11"> Split Ledger Metrics</div>
+          <h3 class="h3">Two Ways to Grade</h3>
+          <p>Quick questions grade themselves in an instant. Anything open-ended waits patiently for you — no shortcuts, no guesswork.</p>
+          <div class="pillar-foot foot-purple"><img src="assets/pillar_icon_06.svg" alt="" width="13" height="11"> Auto + Manual</div>
         </div>
         <div class="pillar-card">
           <div class="pillar-icon bg-amber"><img src="assets/pillar_icon_07.svg" alt="" width="25" height="13"></div>
-          <h3 class="h3">Zero-Friction Access</h3>
-          <p>1-click Google OAuth authentication or instantaneous guest PIN entry. No cumbersome multi-step account creation for students.</p>
-          <div class="pillar-foot foot-amber"><img src="assets/pillar_icon_08.svg" alt="" width="12" height="12"> Instant Participation</div>
+          <h3 class="h3">Easy to Join</h3>
+          <p>One tap with Google, or skip it entirely and join as a guest with just a PIN. No forms, no fuss.</p>
+          <div class="pillar-foot foot-amber"><img src="assets/pillar_icon_08.svg" alt="" width="12" height="12"> Join in Seconds</div>
         </div>
       </div>
     </div>
@@ -292,31 +292,31 @@
           </div>
         </div>
         <div class="deep-dive-copy">
-          <span class="badge-pill badge-purple"><img src="assets/dualtrack_icon_02.svg" alt="" width="12" height="12"> Core Pedagogical Innovation</span>
-          <h2 class="h2">Smart Algorithmic Match <span class="text-muted">vs.</span> Empathetic Hand-Marking</h2>
-          <p class="lead">Standard testing engines mark students entirely wrong for a single transposed letter or synonym variation. Quizoma solves this by splitting answers into two respectful evaluation tracks.</p>
+          <span class="badge-pill badge-purple"><img src="assets/dualtrack_icon_02.svg" alt="" width="12" height="12"> The Idea Behind Quizoma</span>
+          <h2 class="h2">Auto-Grading <span class="text-muted">+</span> Real Teacher Review</h2>
+          <p class="lead">Most quiz apps mark an answer wrong for one typo or a word swapped for its synonym. Quizoma splits grading into two fair tracks instead.</p>
 
           <div class="track-stack">
             <div class="track-card track-a">
               <div class="track-head">
-                <span class="track-title"><span class="track-letter">A</span> Track A: Typo-Tolerant Algorithmic Lens</span>
-                <span class="chip mono">Instant Scan</span>
+                <span class="track-title"><span class="track-letter">A</span> Track A: Typo-Tolerant Auto-Grading</span>
+                <span class="chip mono">Instant</span>
               </div>
-              <p>Executes Levenshtein distance calculations (up to 85% typo tolerance), recognizes numeric equivalence (e.g. <span class="chip mono chip-inline">"7" = "seven" = "7.0"</span>), and maps semantic keyword coverage.</p>
+              <p>A close spelling still counts. Numbers match in any form (<span class="chip mono chip-inline">"7" = "seven" = "7.0"</span>). Said it in different words? Still recognized.</p>
               <div class="track-tags">
-                <span class="tag tag-blue">Equivalence Normalization</span>
-                <span class="tag tag-green">Levenshtein 0.85</span>
+                <span class="tag tag-blue">Accepts Number Words</span>
+                <span class="tag tag-green">85% Typo Match</span>
               </div>
             </div>
             <div class="track-card track-b">
               <div class="track-head">
-                <span class="track-title"><span class="track-letter track-letter-b">B</span> Track B: Empathetic Hand-Marking Queue</span>
+                <span class="track-title"><span class="track-letter track-letter-b">B</span> Track B: You Grade It Yourself</span>
                 <span class="chip chip-mint mono">Zero False 0%</span>
               </div>
-              <p>Open-ended thoughts, short essays, and partial-reasoning responses never get auto-failed. They are flagged directly for instructor remarks, margin annotations, and partial credit adjustment.</p>
+              <p>Essays and open-ended answers are never auto-marked wrong. They go straight to you — because that's a call only a person should make.</p>
               <div class="track-tags">
-                <span class="tag tag-amber">Human Instructor Review</span>
-                <span class="tag tag-purple">Margin Remark Editor</span>
+                <span class="tag tag-amber">You're in Control</span>
+                <span class="tag tag-purple">Add a Note</span>
               </div>
             </div>
           </div>
@@ -331,14 +331,14 @@
     <div class="glow glow-mint" aria-hidden="true"></div>
     <div class="container">
       <div class="section-head center narrow">
-        <span class="badge-pill badge-blue"><img src="assets/dualtrack_icon_02.svg" alt="" width="13" height="12"> Synchronous Classroom Architecture <span><span class="sep">•</span> Real-Time Pedagogical Loop</span></span>
-        <h2 class="h2">How Teacher Intent Connects<br>with Student Mastery in Real-Time</h2>
-        <p class="lead">From instant question dispatch to dual-path evaluation and dignified feedback—explore the living flow between educator and student.</p>
+        <span class="badge-pill badge-blue"><img src="assets/dualtrack_icon_02.svg" alt="" width="13" height="12"> Live in the Classroom <span><span class="sep">•</span> Instant Updates</span></span>
+        <h2 class="h2">From Question to Result<br>in Real Time</h2>
+        <p class="lead">Here's what happens from the moment you send a question to the moment a student sees their result.</p>
         <div class="filter-chips">
-          <span class="chip-pill chip-pill-active">1. Instant Dispatch</span>
-          <span class="chip-pill">2. Instant Offline-Safe Response</span>
-          <span class="chip-pill">3. Dual-Track Grading</span>
-          <span class="chip-pill">4. Feedback Dignity Loop</span>
+          <span class="chip-pill chip-pill-active">1. Send</span>
+          <span class="chip-pill">2. Answer</span>
+          <span class="chip-pill">3. Grade</span>
+          <span class="chip-pill">4. Review</span>
         </div>
       </div>
 
@@ -347,19 +347,19 @@
           <div class="stage-head">
             <span class="stage-icon bg-primary"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg></span>
             <div>
-              <span class="stage-eyebrow mono text-primary">STAGE 01</span>
-              <h3 class="h3">Teacher Creates &amp; Dispatches</h3>
+              <span class="stage-eyebrow mono text-primary">STEP 1</span>
+              <h3 class="h3">You Create the Quiz</h3>
             </div>
           </div>
-          <p class="stage-desc">Launch structured assessments in seconds with high-precision authoring tools and instant distribution.</p>
+          <p class="stage-desc">Write your questions in the app, or import them from a file — either way, it's ready to share in seconds.</p>
           <ul class="feature-list">
-            <li><span class="feature-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"></line><line x1="4" y1="15" x2="20" y2="15"></line><line x1="10" y1="3" x2="8" y2="21"></line><line x1="16" y1="3" x2="14" y2="21"></line></svg></span><div><strong>Instant 6-Digit PIN or QR</strong><span>Zero friction dispatch—students join on any phone or laptop.</span></div></li>
-            <li><span class="feature-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg></span><div><strong>Instant CSV &amp; QTI Import</strong><span>Port existing question banks or test libraries in 1 click.</span></div></li>
-            <li><span class="feature-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg></span><div><strong>6 Academic Question Formats</strong><span>MCQs, written short response, inline blanks, and live polls.</span></div></li>
+            <li><span class="feature-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"></line><line x1="4" y1="15" x2="20" y2="15"></line><line x1="10" y1="3" x2="8" y2="21"></line><line x1="16" y1="3" x2="14" y2="21"></line></svg></span><div><strong>6-Digit PIN or QR Code</strong><span>Students join instantly on any phone or laptop.</span></div></li>
+            <li><span class="feature-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg></span><div><strong>Import from a Text or CSV File</strong><span>Already have your questions written down? Bring them in with one tap.</span></div></li>
+            <li><span class="feature-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg></span><div><strong>6 Question Types</strong><span>Multiple choice, written answers, fill-in-the-blank, polls, and more.</span></div></li>
           </ul>
           <div class="stage-foot">
-            <span class="mono foot-green">Web &amp; Android Host</span>
-            <span class="tag tag-blue">Ready to Dispatch</span>
+            <span class="mono foot-green">Web &amp; Android</span>
+            <span class="tag tag-blue">Ready to Share</span>
           </div>
         </div>
 
@@ -373,18 +373,18 @@
         <div class="stage-card stage-card-highlight">
           <div class="stage-hub">
             <div class="stage-hub-icon"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"></circle><path d="M16.24 7.76a6 6 0 0 1 0 8.49"></path><path d="M7.76 16.24a6 6 0 0 1 0-8.49"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path><path d="M4.93 19.07a10 10 0 0 1 0-14.14"></path></svg></div>
-            <span class="stage-eyebrow mono text-primary center">STAGE 02</span>
-            <h3 class="h3 center">Quizoma Smart Relay &amp; Engine</h3>
+            <span class="stage-eyebrow mono text-primary center">STEP 2</span>
+            <h3 class="h3 center">Quizoma Grades It</h3>
           </div>
-          <p class="stage-desc center">The resilient core mediating real-time grading with balanced, dual-track evaluation.</p>
+          <p class="stage-desc center">Every answer is checked the moment it comes in — automatically where it can be, and set aside for you where it can't.</p>
           <div class="highlight-rows">
-            <div class="highlight-row"><span class="highlight-label"><span class="highlight-icon highlight-icon-primary"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></span>Track A: Typo-Tolerant Auto Scan</span><span class="mono text-primary">85% Match</span></div>
-            <div class="highlight-row"><span class="highlight-label"><span class="highlight-icon highlight-icon-green"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></span>Track B: Empathetic Hand Marking</span><span class="mono foot-green">Zero False 0%</span></div>
-            <div class="highlight-row"><span class="highlight-label"><span class="highlight-icon highlight-icon-muted"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg></span>Offline Auto-Save</span><span class="mono text-muted">No Wi-Fi Loss</span></div>
+            <div class="highlight-row"><span class="highlight-label"><span class="highlight-icon highlight-icon-primary"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></span>Track A: Auto-Graded</span><span class="mono text-primary">85% Typo Match</span></div>
+            <div class="highlight-row"><span class="highlight-label"><span class="highlight-icon highlight-icon-green"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></span>Track B: You Grade It</span><span class="mono foot-green">Zero False 0%</span></div>
+            <div class="highlight-row"><span class="highlight-label"><span class="highlight-icon highlight-icon-muted"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg></span>Saves Automatically</span><span class="mono text-muted">Even Offline</span></div>
           </div>
           <div class="stage-foot center">
             <span class="dot dot-green"></span>
-            <span class="mono text-muted">Real-Time Relay Active</span>
+            <span class="mono text-muted">Grading Live</span>
           </div>
         </div>
 
@@ -399,19 +399,19 @@
           <div class="stage-head">
             <span class="stage-icon bg-green-dark"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3L2 8l10 5 10-5-10-5z"></path><path d="M6 10.5V16c0 1.657 2.686 3 6 3s6-1.343 6-3v-5.5"></path></svg></span>
             <div>
-              <span class="stage-eyebrow mono foot-green">STAGE 03</span>
-              <h3 class="h3">Student Answers &amp; Learns</h3>
+              <span class="stage-eyebrow mono foot-green">STEP 3</span>
+              <h3 class="h3">Student Sees Their Result</h3>
             </div>
           </div>
-          <p class="stage-desc">Stress-free participation designed to cultivate focus, dignity, and real-time comprehension.</p>
+          <p class="stage-desc">A calm, clear result screen — no pressure, no surprises, just what they got right and why.</p>
           <ul class="feature-list">
-            <li><span class="feature-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg></span><div><strong>No-App Instant Browser Join</strong><span>Opens in any browser. No forced student account creation.</span></div></li>
-            <li><span class="feature-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></span><div><strong>Typo-Tolerant Live Feedback</strong><span>Minor spelling slips and synonyms recognized with partial credit.</span></div></li>
-            <li><span class="feature-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg></span><div><strong>Dignified Score Review</strong><span>Private constructive remarks, mastery badges, and PDF summary.</span></div></li>
+            <li><span class="feature-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg></span><div><strong>No App Needed to Join</strong><span>Opens in any browser. No account required to take part.</span></div></li>
+            <li><span class="feature-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></span><div><strong>Small Typos Are Okay</strong><span>A spelling slip or a synonym still counts, with partial credit where it fits.</span></div></li>
+            <li><span class="feature-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg></span><div><strong>Private, Kind Feedback</strong><span>Your notes, right there with the score, plus a PDF summary to keep.</span></div></li>
           </ul>
           <div class="stage-foot">
-            <span class="mono foot-green">100% Offline-Safe</span>
-            <span class="tag tag-green">Participant Ready</span>
+            <span class="mono foot-green">Works Offline</span>
+            <span class="tag tag-green">Ready to Go</span>
           </div>
         </div>
       </div>
@@ -419,9 +419,9 @@
       <div class="workflow-banner">
         <div class="workflow-head">
           <span class="workflow-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff" stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg></span>
-          <h3 class="h3">Simple 4-Step Workflow</h3>
-          <span class="tag tag-green"><span class="dot dot-green-sm"></span>Effortless &amp; Instant</span>
-          <span class="workflow-status mono foot-green"><span class="dot dot-green"></span>Zero Setup Required</span>
+          <h3 class="h3">4 Simple Steps</h3>
+          <span class="tag tag-green"><span class="dot dot-green-sm"></span>Fast &amp; Easy</span>
+          <span class="workflow-status mono foot-green"><span class="dot dot-green"></span>Nothing to Set Up</span>
         </div>
         <div class="workflow-steps">
           <div class="workflow-step" style="animation-delay: 0s">
@@ -457,42 +457,42 @@
     <div class="container">
       <div class="section-head split">
         <div>
-          <span class="eyebrow">VERSATILE ITEM BANKING</span>
-          <h2 class="h2">The 6 Authentic Academic Question Types</h2>
+          <span class="eyebrow">SIX QUESTION TYPES</span>
+          <h2 class="h2">Every Format Your Classroom Needs</h2>
         </div>
-        <p class="lead max-w-sm">Standardized exams demand diverse evaluation formats. Build structured exams with nuanced multiple selection and qualitative short answers.</p>
+        <p class="lead max-w-sm">From quick multiple-choice checks to long written answers — build the exact quiz your lesson needs.</p>
       </div>
 
       <div class="formats-grid">
         <div class="format-card">
           <div class="format-icon bg-blue"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#075985" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="3.5" fill="#075985" stroke="none"></circle></svg></div>
           <h3 class="h3">Single Choice (MCQ)</h3>
-          <p>Classic factual selection with shuffled answer arrays and decoy distractor analysis.</p>
-          <div class="format-foot"><span class="mono">Deterministic</span><span class="mono text-primary">Track A</span></div>
+          <p>Pick the one correct answer. Options can shuffle so nobody memorizes the pattern.</p>
+          <div class="format-foot"><span class="mono">Auto-Graded</span><span class="mono text-primary">Track A</span></div>
         </div>
         <div class="format-card">
           <div class="format-icon bg-purple"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b21a8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg></div>
           <h3 class="h3">Multiple Correct</h3>
-          <p>Select all that apply with configurable partial-credit weighting and anti-guessing logic.</p>
+          <p>Select every correct option. Students get credit for what they got right, and guessing every box isn't rewarded.</p>
           <div class="format-foot"><span class="mono">Partial Credit</span><span class="mono text-primary">Track A</span></div>
         </div>
         <div class="format-card">
           <div class="format-icon bg-green"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#166534" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="12" r="5"></circle><path d="M4.7 12l1.5 1.6L9.3 10"></path><circle cx="17" cy="12" r="5"></circle><path d="M14.8 9.8l4.4 4.4M19.2 9.8l-4.4 4.4"></path></svg></div>
           <h3 class="h3">True / False</h3>
-          <p>Binary factual verification with an optional 'Explain Your Stance' qualitative follow-up.</p>
+          <p>A simple true-or-false question, with an optional box for students to explain their answer.</p>
           <div class="format-foot"><span class="mono">Fast Recall</span><span class="mono text-primary">Track A</span></div>
         </div>
         <div class="format-card">
           <div class="format-icon bg-amber"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg></div>
           <h3 class="h3">Written Short Answer</h3>
-          <p>Open responses routed straight to teacher hand-grading with rich inline feedback remarks.</p>
-          <div class="format-foot"><span class="mono">Qualitative</span><span class="mono foot-green">Track B</span></div>
+          <p>Students write their own answer in their own words. You read each one and grade it yourself, with a personal note if you want.</p>
+          <div class="format-foot"><span class="mono">You Grade It</span><span class="mono foot-green">Track B</span></div>
         </div>
         <div class="format-card">
           <div class="format-icon bg-indigo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3525cd" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="7" y2="12"></line><line x1="9.5" y1="12" x2="14.5" y2="12" stroke-dasharray="2.2 2.2"></line><line x1="17" y1="12" x2="21" y2="12"></line></svg></div>
           <h3 class="h3">Fill in the Blanks</h3>
-          <p>Typo-tolerant inline blanks matching vocabulary, unit conversions, and algebraic formulas.</p>
-          <div class="format-foot"><span class="mono">Smart Lexical</span><span class="mono text-primary">Track A</span></div>
+          <p>Students type the missing word into a sentence. Small typos and close spellings are still accepted.</p>
+          <div class="format-foot"><span class="mono">Typo-Tolerant</span><span class="mono text-primary">Track A</span></div>
         </div>
         <div class="format-card">
           <div class="format-header-row">
@@ -500,8 +500,8 @@
             <span class="tag tag-blue-soft">Audio/Video Soon</span>
           </div>
           <h3 class="h3">Anonymous Live Polls</h3>
-          <p>Zero-stakes live temperature checks and peer sentiment tracking displayed in real-time histograms.</p>
-          <div class="format-foot"><span class="mono">Sentiment</span><span class="mono foot-amber">Ungraded</span></div>
+          <p>A quick, ungraded poll to check how the class feels. Results show up live as a simple bar chart.</p>
+          <div class="format-foot"><span class="mono">No Names Shown</span><span class="mono foot-amber">Ungraded</span></div>
         </div>
       </div>
     </div>
@@ -515,8 +515,8 @@
         <div class="closing-glow" aria-hidden="true"></div>
         <div class="closing-copy">
           <span class="chip closing-chip mono">100% Free — No Hidden Fees</span>
-          <h2 class="h2">Bring speed, accuracy, and grading dignity to your classroom.</h2>
-          <p>Built for teachers and students who want fair, fast grading — join a quiz instantly from your browser, or get the Android app to start hosting.</p>
+          <h2 class="h2">Fast, fair grading for your classroom.</h2>
+          <p>Built for teachers and students who want quizzes graded properly — join a quiz instantly from your browser, or get the Android app to start creating your own.</p>
         </div>
         <div class="closing-actions">
           <a href="/take/" class="btn btn-cream btn-lg" data-analytics="home_join_quiz_clicked" data-analytics-props='{"location":"closing_banner"}'>Join a Quiz</a>
@@ -530,37 +530,37 @@
   <section class="section" id="faq">
     <div class="container">
       <div class="section-head center">
-        <span class="eyebrow">TRANSPARENT ENGINEERING</span>
-        <h2 class="h2">Frequently Answered Architecture Questions</h2>
+        <span class="eyebrow">COMMON QUESTIONS</span>
+        <h2 class="h2">Frequently Asked Questions</h2>
       </div>
       <div class="faq-list">
         <div class="faq-item">
           <button class="faq-question" type="button" aria-expanded="false">
-            <span>How does Quizoma prevent unfair 0% scores on open responses?</span>
+            <span>Can a student get an unfair zero for a small mistake?</span>
             <span class="faq-caret">＋</span>
           </button>
-          <div class="faq-answer"><p>Open responses are routed to Track B, the empathetic hand-marking queue, so no essay or short-answer response is ever auto-failed by the algorithm. A teacher always reviews and grades qualitative work directly.</p></div>
+          <div class="faq-answer"><p>No. Written and open-ended answers are never auto-marked wrong — they always go to you to read and grade yourself. Only simple questions (like multiple choice) are graded automatically, and those allow for small typos too.</p></div>
         </div>
         <div class="faq-item">
           <button class="faq-question" type="button" aria-expanded="false">
-            <span>What happens when campus Wi-Fi drops during an active test?</span>
+            <span>What happens if the Wi-Fi drops during a test?</span>
             <span class="faq-caret">＋</span>
           </button>
-          <div class="faq-answer"><p>Quizoma's offline-first engine saves quiz progress securely on the device itself, so unstable Wi-Fi never invalidates active student submissions. Answers automatically re-sync once connectivity returns.</p></div>
+          <div class="faq-answer"><p>Answers are saved on the device as students work, so a dropped connection never loses their progress. Everything syncs back up automatically once they're online again.</p></div>
         </div>
         <div class="faq-item">
           <button class="faq-question" type="button" aria-expanded="false">
-            <span>Do students need an active paid license or email account?</span>
+            <span>Do students need to pay or make an account?</span>
             <span class="faq-caret">＋</span>
           </button>
-          <div class="faq-answer"><p>No. Students can join instantly with a 6-character room PIN or QR scan — no email, password, or paid license required.</p></div>
+          <div class="faq-answer"><p>No. Students can join instantly with a room PIN or by scanning a QR code — no email, password, or payment needed.</p></div>
         </div>
         <div class="faq-item">
           <button class="faq-question" type="button" aria-expanded="false">
-            <span>Can we export grade reports to Canvas, Schoology, or Google Classroom?</span>
+            <span>Can I get a report of the results?</span>
             <span class="faq-caret">＋</span>
           </button>
-          <div class="faq-answer"><p>Yes. Scores, answers, and PDF reports generate automatically and can be exported for use with common gradebook and LMS platforms.</p></div>
+          <div class="faq-answer"><p>Yes. Scores, answers, and a full PDF report are generated automatically for every quiz, ready to save or share.</p></div>
         </div>
       </div>
     </div>
