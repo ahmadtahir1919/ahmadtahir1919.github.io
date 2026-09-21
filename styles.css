@@ -383,7 +383,7 @@ h1, h2, h3, h4 { margin: 0; font-family: var(--font-sans); }
   gap: 40px;
   align-items: center;
 }
-.hero-copy { display: flex; flex-direction: column; gap: 20px; align-items: flex-start; max-width: 655px; }
+.hero-copy { display: flex; flex-direction: column; gap: 20px; align-items: flex-start; max-width: 655px; min-width: 0; }
 .cta-row { display: flex; flex-wrap: wrap; gap: 16px; }
 .trust-badges { display: flex; flex-wrap: wrap; gap: 16px; }
 .trust-badges span { display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 500; color: var(--color-text-body); letter-spacing: 0.12px; }
@@ -408,7 +408,11 @@ h1, h2, h3, h4 { margin: 0; font-family: var(--font-sans); }
 .stat-icon-amber { background: var(--color-amber-bg); }
 .stat-desc { font-size: 12px; color: var(--color-text-body); letter-spacing: 0.12px; }
 
-.hero-visual { position: relative; }
+/* min-width: 0 defeats the CSS Grid "blowout" bug — a grid item's automatic
+   min-width is its content's min-content size, so a wide/overflowing
+   descendant (like the mini-quiz slider track) can otherwise force this
+   whole 5fr column, and the grid, way past the container's real width. */
+.hero-visual { position: relative; min-width: 0; }
 .hero-orb { position: absolute; border-radius: 50%; filter: blur(32px); pointer-events: none; }
 .hero-orb-a { top: -40px; right: -40px; width: 288px; height: 288px; background: rgba(224,242,254,0.7); }
 .hero-orb-b { bottom: 0; left: -40px; width: 256px; height: 256px; background: rgba(243,232,255,0.5); }
@@ -430,15 +434,16 @@ h1, h2, h3, h4 { margin: 0; font-family: var(--font-sans); }
 
 .mini-quiz-card {
   position: relative;
+  min-width: 0;
   margin-top: -48px;
   margin-left: 4px; margin-right: 4px;
   background: #fff;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-xl);
-  padding: 24px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
-  gap: 11px;
+  gap: 8px;
   z-index: 2;
 }
 /* Format pill row: shows which of the 6 question formats the slider is
@@ -462,23 +467,23 @@ h1, h2, h3, h4 { margin: 0; font-family: var(--font-sans); }
    content height, and space-between keeps the feedback banner pinned to
    the bottom regardless of how tall the middle demo content is — so
    switching slides never jumps or leaves a ragged card height. */
-.mini-quiz-slider { overflow: hidden; width: 100%; }
+.mini-quiz-slider { overflow: hidden; width: 100%; min-width: 0; }
 .mini-quiz-track { display: flex; transition: transform 500ms cubic-bezier(0.65, 0, 0.35, 1); }
 .mini-quiz-slide {
-  flex: 0 0 100%;
+  flex: 0 0 auto;
   width: 100%;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 12px;
-  padding-right: 3px;
+  gap: 8px;
+  padding-right: 8px;
   box-sizing: border-box;
 }
 @media (prefers-reduced-motion: reduce) {
   .mini-quiz-track { transition: none; }
 }
-.mini-quiz-question { font-size: 15px; font-weight: 700; letter-spacing: -0.15px; line-height: 1.4; }
-.mini-quiz-options { display: flex; flex-direction: column; gap: 8px; }
+.mini-quiz-question { font-size: 13.5px; font-weight: 700; letter-spacing: -0.1px; line-height: 1.35; }
+.mini-quiz-options { display: flex; flex-direction: column; gap: 6px; }
 
 /* Indicator dots */
 .mini-quiz-indicators { display: flex; align-items: center; justify-content: center; gap: 6px; }
@@ -486,8 +491,8 @@ h1, h2, h3, h4 { margin: 0; font-family: var(--font-sans); }
 .mq-dot.active { width: 18px; border-radius: var(--radius-pill); background: var(--color-primary); }
 
 /* Multiple Correct demo */
-.demo-checklist { display: flex; flex-direction: column; gap: 8px; }
-.demo-check-row { display: flex; align-items: center; gap: 10px; background: var(--color-bg-alt); border-radius: var(--radius-md); padding: 10px 12px; font-size: 13px; color: var(--color-text-body); }
+.demo-checklist { display: flex; flex-direction: column; gap: 6px; }
+.demo-check-row { display: flex; align-items: center; gap: 8px; background: var(--color-bg-alt); border-radius: var(--radius-md); padding: 7px 10px; font-size: 12px; color: var(--color-text-body); }
 .demo-checkbox { width: 18px; height: 18px; border-radius: 5px; border: 2px solid var(--color-border); flex-shrink: 0; position: relative; transition: background 200ms ease, border-color 200ms ease, transform 200ms ease; }
 .demo-check-correct .demo-checkbox { border-color: var(--color-green-accent); }
 .demo-check-correct { color: var(--color-text-dark); font-weight: 600; }
@@ -511,22 +516,21 @@ h1, h2, h3, h4 { margin: 0; font-family: var(--font-sans); }
 .demo-tf-btn {
   flex: 1;
   text-align: center;
-  padding: 14px;
+  padding: 10px;
   border-radius: var(--radius-md);
   background: var(--color-bg-alt);
   color: var(--color-text-body);
-  font-weight: 700; font-size: 14px;
+  font-weight: 700; font-size: 13px;
   border: 2px solid transparent;
   transition: transform 200ms ease, background 200ms ease, border-color 200ms ease, color 200ms ease;
 }
 .mini-quiz-slide.slide-active .demo-tf-selected {
   background: #ecfdf5; border-color: #10b981; color: var(--color-green-text-dark);
-  transform: scale(1.04);
 }
 
 /* Written answer demo */
-.demo-written-box { background: var(--color-bg-alt); border-radius: var(--radius-md); padding: 14px; }
-.demo-written-box p { font-size: 13px; font-style: italic; color: var(--color-text-body); line-height: 1.5; margin: 0; }
+.demo-written-box { background: var(--color-bg-alt); border-radius: var(--radius-md); padding: 10px 12px; }
+.demo-written-box p { font-size: 12px; font-style: italic; color: var(--color-text-body); line-height: 1.45; margin: 0; }
 
 /* Fill in the blank demo */
 .demo-blank {
@@ -537,7 +541,7 @@ h1, h2, h3, h4 { margin: 0; font-family: var(--font-sans); }
   padding: 1px 8px;
   font-weight: 700;
 }
-.demo-blank-hint { font-size: 12px; color: var(--color-text-body); background: var(--color-bg-alt); border-radius: var(--radius-md); padding: 10px 12px; }
+.demo-blank-hint { font-size: 11.5px; color: var(--color-text-body); background: var(--color-bg-alt); border-radius: var(--radius-md); padding: 7px 10px; }
 
 /* Live poll demo */
 .demo-poll { display: flex; flex-direction: column; gap: 8px; }
@@ -551,9 +555,9 @@ h1, h2, h3, h4 { margin: 0; font-family: var(--font-sans); }
   background: var(--color-bg-alt);
   border: 2px solid transparent;
   border-radius: var(--radius-md);
-  padding: 12px 16px;
+  padding: 9px 14px;
   display: flex; align-items: center; justify-content: space-between;
-  font-size: 14px;
+  font-size: 13px;
   width: 100%;
   font-family: inherit;
   color: inherit;
@@ -980,6 +984,9 @@ h1, h2, h3, h4 { margin: 0; font-family: var(--font-sans); }
   .stage-card { padding: 18px; }
   .workflow-banner { padding: 18px; }
   .simulator-actions { flex-direction: column; align-items: stretch; }
+  .demo-poll-label { width: 74px; font-size: 11px; }
+  .demo-poll-pct { width: 28px; }
+  .format-pill-row { gap: 6px; }
 
   /* The two floating pills over the classroom photo are wide enough on a
      phone-sized card that they'd otherwise overlap each other — stack them

@@ -3,6 +3,21 @@
 // FAQ accordion, filter chip switching).
 
 document.addEventListener('DOMContentLoaded', function () {
+  // PostHog: record the page view, then track every CTA tagged with
+  // data-analytics (see analytics.js for the window.Analytics contract).
+  if (window.Analytics) {
+    window.Analytics.screen('Home');
+    document.querySelectorAll('[data-analytics]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        var props = {};
+        if (el.dataset.analyticsProps) {
+          try { props = JSON.parse(el.dataset.analyticsProps); } catch (e) {}
+        }
+        window.Analytics.track(el.dataset.analytics, props);
+      });
+    });
+  }
+
   // Shrink the sticky header once the page scrolls, so it stays compact
   // instead of permanently taking up a tall fixed band.
   var siteHeader = document.getElementById('site-header');
@@ -46,7 +61,7 @@ document.addEventListener('DOMContentLoaded', function () {
       var delta = Math.floor(Math.random() * 7) - 3; // small drift, -3..+3
       currentOnline = Math.min(100, Math.max(20, currentOnline + delta));
       onlineCount.textContent = currentOnline + ' Online';
-    }, 4000);
+    }, 300000); // 5 minutes — shouldn't feel like it's updating in real time
   }
 
   // Mobile hamburger nav toggle
