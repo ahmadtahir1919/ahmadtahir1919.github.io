@@ -732,7 +732,7 @@ h1, h2, h3, h4 { margin: 0; font-family: var(--font-sans); }
 .stage-hub-icon .icon-empty { background: rgba(255,255,255,0.85); border-radius: 6px; }
 .icon-empty-lg { width: 34%; height: 34%; }
 
-/* Animated connecting lines between the 3 stage cards — Teacher → Engine → Student */
+/* Animated connecting lines between the 3 stage cards — Teacher → Engine → Participant */
 .flow-connector {
   position: absolute;
   top: 65px;
