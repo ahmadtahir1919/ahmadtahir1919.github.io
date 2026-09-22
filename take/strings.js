@@ -225,7 +225,7 @@ const S = {
   RESULT_YOUR_VOTE: "Your Vote",
   pollPctVotes: (pct, n) => `${pct}% (${n} vote${n === 1 ? "" : "s"})`,
   pollRespondents: (n) => `Total respondents: ${n}`,
-  POLL_UNSCORED: "Unscored reflection question",
+  POLL_UNSCORED: "Doesn't affect your score",
   consensusStrong: (pct, option) => `🔥 Strong agreement — ${pct}% chose "${option}"`,
   consensusDivided: (a, b) => `⚖️ Split — "${a}" vs "${b}"`,
   consensusLeading: (option, pct) => `📊 "${option}" is leading with ${pct}%`,
