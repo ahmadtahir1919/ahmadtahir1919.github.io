@@ -2855,7 +2855,13 @@ function buildResultExpander(key, title, subtitle, open, body) {
       el("span", { class: "expander-title" }, [title]),
       el("span", { class: "expander-sub" }, [subtitle]),
     ]),
-    html(EXPANDER_CHEVRON_SVG),
+    // A labelled chip rather than a bare chevron. On a 1440px row the glyph sits a
+    // long way from the title it belongs to, with nothing around it to say the row is
+    // a control at all — "Hide ^" names both the target and what clicking does.
+    el("span", { class: "expander-toggle" }, [
+      el("span", { class: "expander-toggle-label" }, [open ? S.EXPANDER_HIDE : S.EXPANDER_SHOW]),
+      html(EXPANDER_CHEVRON_SVG),
+    ]),
   ]);
   const bodyEl = el("div", { class: "expander-body" + (justToggled && open ? " opening" : "") }, body);
   return el("div", { class: "result-expander" + (open ? " open" : "") }, [head, bodyEl]);

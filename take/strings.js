@@ -198,6 +198,10 @@ const S = {
   RESULT_SUMMARY_SUBTITLE: "Correct, incorrect, time and hints",
   RESULT_REVIEW_TITLE: "Review answers",
   RESULT_REVIEW_EXPANDER_SUBTITLE: "Each question with the right answer",
+  // The label on each result expander's toggle chip — what the click will DO, so it
+  // reads "Hide" while the section is open.
+  EXPANDER_SHOW: "Show",
+  EXPANDER_HIDE: "Hide",
   RESULT_PENDING_TITLE: "Waiting to be marked",
   RESULT_PENDING_BODY:
     "Your answers have been submitted. The quiz admin still has to mark them by hand, so there's no result to show yet. Check back a little later.",
