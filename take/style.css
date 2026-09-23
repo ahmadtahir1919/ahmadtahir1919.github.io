@@ -142,6 +142,79 @@ button, input, textarea { font-family: inherit; }
 @media (max-width: 899px) {
   .header-actions .header-btn { display: none; }
 }
+/* ── Header account control ─────────────────────────────────────────────────
+   Initials avatar + dropdown, far right of the shared header. Unlike .header-btn
+   above this is NOT desktop-only: knowing who you are signed in as, and being able
+   to get out, matters just as much on a phone. */
+.account-control { position: relative; flex-shrink: 0; }
+.account-avatar {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease;
+}
+.account-avatar:hover { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+.account-avatar:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.account-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 30;
+  min-width: 210px;
+  max-width: min(280px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  border: 1px solid #E6E7EF;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 16px 40px rgba(30, 30, 60, 0.16);
+}
+.account-menu-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px 10px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--divider);
+}
+/* Both ellipsise: a Google display name or an email can be far wider than the menu. */
+.account-menu-name,
+.account-menu-email { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account-menu-name { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+.account-menu-email { font-size: 12px; color: var(--text-secondary); }
+.account-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.account-menu-item:hover { background: var(--background); }
+.account-menu-item svg { flex-shrink: 0; color: var(--text-secondary); }
+.account-menu-item.danger { color: var(--error); }
+.account-menu-item.danger svg { color: var(--error); }
+.account-menu-item.danger:hover { background: var(--error-bg); }
+
 /* Real browser fullscreen (the second header button → requestFullscreen on
    <html>). The fullscreened element gets a UA-default black background, which would
    show through the dotted paper backdrop — repaint it, and make sure the app still

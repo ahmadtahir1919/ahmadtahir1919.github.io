@@ -28,7 +28,7 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
 <link rel="preload" href="/fonts/plus-jakarta-sans-latin-var.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="styles.css?v=6">
+<link rel="stylesheet" href="styles.css?v=7">
 <!-- Preload the LCP image. Without this the browser cannot discover it until
      the stylesheet has parsed and the hero has laid out, which on mobile is
      most of a second of dead time on the metric that matters most. -->
@@ -137,6 +137,10 @@
         <img src="assets/header_icon_02.svg" alt="" width="15" height="12">
         <span>Join Quiz</span>
       </a>
+      <!-- Filled by /account.js: a Sign in button, or the initials avatar and its
+           menu once signed in. Left empty in the markup on purpose — the signed-in
+           state is only known at runtime, and a placeholder would flash. -->
+      <div class="account-slot" data-account-slot></div>
       <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
         <span></span><span></span><span></span>
       </button>
@@ -730,5 +734,9 @@
 </footer>
 
 <script src="script.js?v=4" defer></script>
+<!-- Header account control (Sign in / avatar + menu). Shared with the other root
+     pages, hence the absolute path, same as /cookie-consent.js. Deliberately does NOT
+     pull in supabase-js on load — see the header comment in that file. -->
+<script src="/account.js?v=1" defer></script>
 </body>
 </html>

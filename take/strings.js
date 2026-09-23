@@ -101,6 +101,10 @@ const S = {
   SIGNED_IN_AS_LABEL: "SIGNED IN AS",
   SIGN_OUT_PREFIX: "Not you? ",
   SIGN_OUT: "Sign out",
+  // Header account control (buildAccountControl). ACCOUNT_MENU is the avatar
+  // button's aria-label — the button's only visible content is two initials.
+  ACCOUNT_MENU: "Account menu",
+  EDIT_NAME: "Edit name",
 
   // ── Confirm name ───────────────────────────────────────────────────────
   CONFIRM_NAME_KICKER: "ONE QUICK THING",
@@ -111,7 +115,12 @@ const S = {
   CONFIRM_NAME_PLACEHOLDER: "Your name",
   CONFIRM_NAME_SYNCED: "Synced from Google account",
   CONFIRM_NAME_SUBMIT: "Confirm & Continue",
+  // Two different cancels for the same screen: the first-login gate's only way out is
+  // to sign out and pick another Google account, but reaching it again from the account
+  // menu must be abandonable without losing the session. See state.nameEditReturn.
   CONFIRM_NAME_CANCEL: "Cancel & Sign out",
+  CONFIRM_NAME_CANCEL_EDIT: "Cancel",
+  EDIT_NAME_TITLE: "Edit your display name",
 
   // ── Taking a quiz ──────────────────────────────────────────────────────
   SELECT_ALL_THAT_APPLY: "Select all that apply",

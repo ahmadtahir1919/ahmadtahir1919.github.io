@@ -329,6 +329,98 @@ h1, h2, h3, h4 { margin: 0; font-family: var(--font-sans); }
 .site-header.is-scrolled .brand-name { font-size: 17px; }
 .header-left { display: flex; align-items: center; gap: 32px; min-width: 0; }
 .header-right { display: flex; align-items: center; gap: 16px; }
+
+/* ---- Account control (filled by /account.js) ---- */
+.account-slot { position: relative; flex-shrink: 0; }
+/* Empty until the script runs; without this the flex gap reserves space for nothing. */
+.account-slot:empty { display: none; }
+.account-signin {
+  height: 36px;
+  padding: 0 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-white);
+  color: var(--color-text-dark);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 150ms ease, color 150ms ease;
+}
+.account-signin:hover:not(:disabled) { border-color: var(--color-primary); color: var(--color-primary); }
+.account-signin:disabled { opacity: 0.6; cursor: default; }
+.account-avatar {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: var(--color-white);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: box-shadow 150ms ease;
+}
+.account-avatar:hover { box-shadow: 0 0 0 3px rgba(53, 37, 205, 0.18); }
+/* The header shrinks on scroll (.is-scrolled), so these shrink with it. */
+.site-header.is-scrolled .account-avatar,
+.site-header.is-scrolled .account-signin { height: 32px; }
+.site-header.is-scrolled .account-avatar { width: 32px; }
+.account-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 60;
+  min-width: 210px;
+  max-width: min(280px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-white);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.16);
+  text-align: left;
+}
+.account-menu-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px 10px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--color-border);
+}
+/* A Google display name or an email is routinely wider than the menu. */
+.account-menu-name,
+.account-menu-email { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account-menu-name { font-size: 14px; font-weight: 700; color: var(--color-text-dark); }
+.account-menu-email { font-size: 12px; color: var(--color-text-muted); }
+.account-menu-item {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--color-text-dark);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.account-menu-item:hover { background: var(--color-bg-alt); }
+.account-menu-item.danger { color: #b91c1c; }
+.account-menu-item.danger:hover { background: #fef2f2; }
+/* Note this slot is deliberately NOT swept up by the `.header-right .btn-sm { display:
+   none }` rule in the 768px block below — the Join Quiz CTA collapses into the burger
+   menu on a phone, but the account control stays in the corner where it belongs. */
 .brand { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 /* Just a sizing box. It used to paint an indigo rounded square with a hard 3px
    drop shadow behind the mark, which was right when the icon was a bare

@@ -52,6 +52,9 @@ const PL = window.Poll;
 
 const params = new URLSearchParams(window.location.search);
 const shareCode = (params.get("code") || "").toUpperCase();
+// The home page's account menu links here as /take/?edit=name — it has no name editor
+// of its own, so it delegates to this app's confirm-name screen. See boot().
+const wantsNameEdit = params.get("edit") === "name";
 
 // ── State ──────────────────────────────────────────────────────────────────
 const state = {
@@ -104,6 +107,11 @@ const state = {
   // Desktop layout toggle (the header's first button). false = wide, which is the
   // default; see readCompactView for why it starts out of localStorage.
   compactView: false,
+  accountMenuOpen: false, // header avatar's dropdown — see buildAccountControl
+  // Which screen to return to when the confirm-name screen is entered as an EDIT from
+  // the account menu. null means the original first-login gate, whose only exit is
+  // signing out — see cancelConfirmName.
+  nameEditReturn: null,
 };
 
 // Fires window.Analytics.screen() once per genuine screen change, not once per
@@ -257,6 +265,79 @@ function buildHeaderBtn(label, svg, onClick) {
   return btn;
 }
 
+/** Avatar + dropdown for the signed-in account, in the header's right-hand corner.
+ *
+ *  Deliberately NOT rendered on the quiz/finishing screens (see buildSiteHeader) — it
+ *  carries Sign out, and nothing that can end an attempt belongs under the taker's
+ *  thumb mid-quiz. Same reasoning as render()'s footer suppression.
+ *
+ *  Open/closed lives in state, not the DOM: render() wipes #app on every state change,
+ *  so a menu toggled by mutating the DOM directly would vanish on the next render. */
+function buildAccountControl(user) {
+  const name = SC.resolveDisplayName(user);
+  const avatar = el("button", {
+    class: "account-avatar",
+    type: "button",
+    title: name,
+    "aria-haspopup": "menu",
+    "aria-expanded": String(!!state.accountMenuOpen),
+    onclick: (e) => {
+      // Without this the click bubbles to the document listener registered below,
+      // which would close the menu in the same tick it opened.
+      e.stopPropagation();
+      state.accountMenuOpen = !state.accountMenuOpen;
+      render();
+    },
+  }, [initialsOf(name)]);
+  avatar.setAttribute("aria-label", S.ACCOUNT_MENU);
+
+  const wrap = el("div", { class: "account-control" }, [avatar]);
+  if (!state.accountMenuOpen) return wrap;
+
+  wrap.appendChild(el("div", { class: "account-menu", role: "menu", onclick: (e) => e.stopPropagation() }, [
+    el("div", { class: "account-menu-head" }, [
+      el("span", { class: "account-menu-name" }, [name]),
+      // Only worth a second line when it differs from the name — a taker whose Google
+      // account has no full name set already reads their email as the name above.
+      ...(user.email && user.email !== name ? [el("span", { class: "account-menu-email" }, [user.email])] : []),
+    ]),
+    el("button", { class: "account-menu-item", type: "button", role: "menuitem", onclick: openNameEditor }, [
+      html(EDIT_PENCIL_SVG), S.EDIT_NAME,
+    ]),
+    el("button", { class: "account-menu-item danger", type: "button", role: "menuitem", onclick: () => {
+      state.accountMenuOpen = false;
+      signOutAction();
+    } }, [html(SIGN_OUT_SVG), S.SIGN_OUT]),
+  ]));
+  return wrap;
+}
+
+/** Re-opens the confirm-name screen as an EDIT rather than the first-login gate, and
+ *  remembers where to come back to — see state.nameEditReturn / cancelConfirmName. */
+function openNameEditor() {
+  state.accountMenuOpen = false;
+  state.nameEditReturn = state.screen;
+  state.confirmNameDraft = null;
+  state.confirmNameError = null;
+  state.screen = "confirmName";
+  render();
+}
+
+/** Any click that isn't on the menu closes it. Registered ONCE at boot — render()
+ *  rebuilds the header constantly, so binding per render would stack listeners. */
+function watchAccountMenuDismiss() {
+  document.addEventListener("click", () => {
+    if (!state.accountMenuOpen) return;
+    state.accountMenuOpen = false;
+    render();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape" || !state.accountMenuOpen) return;
+    state.accountMenuOpen = false;
+    render();
+  });
+}
+
 function buildSiteHeader(status) {
   const actions = [
     buildHeaderBtn(
@@ -277,6 +358,11 @@ function buildSiteHeader(status) {
     el("span", { class: "status-dot" }, []),
     status,
   ]));
+  // Last, so the avatar sits in the far corner. Suppressed mid-attempt — see
+  // buildAccountControl's doc.
+  if (state.user && state.screen !== "quiz" && state.screen !== "finishing") {
+    actions.push(buildAccountControl(state.user));
+  }
 
   return el("header", { class: "site-header" }, [
     el("div", { class: "brand" }, [
@@ -479,6 +565,7 @@ const EXPAND_WIDE_SVG = `<svg viewBox="0 0 24 24" fill="none"><path d="M9 12H3M3
 const COLLAPSE_NARROW_SVG = `<svg viewBox="0 0 24 24" fill="none"><path d="M3 12h6M9 12L6 9M9 12l-3 3M21 12h-6M15 12l3-3M15 12l3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const FULLSCREEN_ENTER_SVG = `<svg viewBox="0 0 24 24" fill="none"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const FULLSCREEN_EXIT_SVG = `<svg viewBox="0 0 24 24" fill="none"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const SIGN_OUT_SVG = `<svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M15 17l5-5-5-5M20 12H9M12 4H6a1 1 0 00-1 1v14a1 1 0 001 1h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const CLOCK_SVG = `<svg viewBox="0 0 20 20" fill="none" width="13" height="13"><circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="1.6"/><path d="M10 6v4l2.6 2.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
 const CHEVRON_RIGHT_SVG = `<svg viewBox="0 0 16 16" fill="none" width="14" height="14"><path d="M6 3l5 5-5 5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 // Quiz-taking screen icons (Material Rounded/Outlined equivalents used on Android).
@@ -897,7 +984,7 @@ function renderConfirmName() {
   const body = [
     el("span", { class: "pill dotted" }, [S.CONFIRM_NAME_KICKER]),
     el("div", { class: "title-row" }, [
-      el("h1", { class: "quiz-title" }, [S.CONFIRM_NAME_TITLE]),
+      el("h1", { class: "quiz-title" }, [state.nameEditReturn ? S.EDIT_NAME_TITLE : S.CONFIRM_NAME_TITLE]),
       el("span", { class: "title-badge" }, [html(USER_SVG)]),
     ]),
     el("p", { class: "quiz-meta" }, [S.CONFIRM_NAME_BLURB]),
@@ -913,18 +1000,33 @@ function renderConfirmName() {
   }
   body.push(
     saveBtn,
-    el("button", { class: "text-link", onclick: () => cancelConfirmName() }, [S.CONFIRM_NAME_CANCEL])
+    el("button", { class: "text-link", onclick: () => cancelConfirmName() }, [
+      state.nameEditReturn ? S.CONFIRM_NAME_CANCEL_EDIT : S.CONFIRM_NAME_CANCEL,
+    ])
   );
 
   main.appendChild(el("div", { class: "screen card-screen" }, [el("div", { class: "card confirm-card" }, body)]));
 }
 
-/** "Cancel & Sign out" — wrong account picked. Back to the signed-out landing card
- *  (signOutAction already re-renders); the draft is dropped so the next account's
- *  Google name is picked up fresh instead of this one's leftover edit. */
+/** Cancel has two meanings on this one screen.
+ *
+ *  As the first-login GATE (nameEditReturn == null) it is "Cancel & Sign out" — wrong
+ *  account picked. Back to the signed-out landing card (signOutAction already
+ *  re-renders); the draft is dropped so the next account's Google name is picked up
+ *  fresh instead of this one's leftover edit.
+ *
+ *  Reached as an EDIT from the account menu, signing out would be a trap: changing your
+ *  mind about your name must not cost you your session. Then it just goes back. */
 async function cancelConfirmName() {
+  const returnTo = state.nameEditReturn;
   state.confirmNameDraft = null;
   state.confirmNameError = null;
+  state.nameEditReturn = null;
+  if (returnTo) {
+    state.screen = returnTo;
+    render();
+    return;
+  }
   state.screen = "landing";
   await signOutAction();
 }
@@ -941,7 +1043,11 @@ async function submitConfirmedName() {
     // screen right after this reflects the corrected name without a re-fetch.
     state.user.user_metadata = { ...(state.user.user_metadata || {}), full_name: name, name };
     state.confirmNameSaving = false;
-    state.screen = "landing";
+    // Back where the edit was opened from — "landing" is only right for the first-login
+    // gate, which is the sole caller that leaves nameEditReturn null.
+    state.screen = state.nameEditReturn || "landing";
+    state.nameEditReturn = null;
+    state.confirmNameDraft = null;
     render();
   } catch (e) {
     state.confirmNameSaving = false;
@@ -3198,14 +3304,27 @@ async function boot() {
   state.compactView = readCompactView();
   applyViewMode();
   watchFullscreenChanges();
+  watchAccountMenuDismiss();
   try {
     if (!shareCode) {
       state.screen = "enterCode";
       render();
-      // Fetched after the first paint so a slow/offline flags call never delays showing
-      // the code-entry boxes — the screen just re-renders once it lands (fail-open default
-      // in the meantime, same as everywhere else this is read).
-      state.flags = await SC.fetchFeatureFlags();
+      // Both fetched after the first paint so a slow/offline call never delays showing
+      // the code-entry boxes — the screen just re-renders once they land (fail-open
+      // default in the meantime, same as everywhere else this is read).
+      //
+      // The user is read here purely for the header avatar: this branch has no quiz to
+      // join, but someone arriving from the home page signed in should still see their
+      // account in the corner rather than an anonymous header.
+      const [flags, user] = await Promise.all([SC.fetchFeatureFlags(), SC.getCurrentUser()]);
+      state.flags = flags;
+      state.user = user;
+      // ...and to service the home page's "Edit name" deep link, which lands here with
+      // no code at all.
+      if (state.user && wantsNameEdit) {
+        state.nameEditReturn = "enterCode";
+        state.screen = "confirmName";
+      }
       render();
       return;
     }
@@ -3269,6 +3388,16 @@ async function boot() {
     // to confirm/correct it once before taking the quiz, since that name is
     // what the quiz creator and other participants will see them as.
     if (state.user && !(await SC.fetchNameConfirmed(state.user.id))) {
+      state.screen = "confirmName";
+      render();
+      return;
+    }
+
+    // ?edit=name is the deep link the home page's account menu uses — that page has no
+    // name editor of its own, so it hands the job here. nameEditReturn makes it an edit
+    // (cancellable, returns to the landing screen) rather than the gate above.
+    if (state.user && wantsNameEdit) {
+      state.nameEditReturn = "landing";
       state.screen = "confirmName";
       render();
       return;
