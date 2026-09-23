@@ -65,11 +65,12 @@ button, input, textarea { font-family: inherit; }
    4K monitor. */
 #app.compact-view { --shell-max: 480px; }
 @media (min-width: 900px) {
-  /* Laptops and up: use the screen instead of pretending to be a phone. Not 100% —
-     the quiz keeps a deliberate frame of background around it (see the wide-quiz
-     block near .quiz-screen), and a line of option text stretched across a 2560px
-     monitor is unreadable. */
-  #app { --shell-max: 1040px; }
+  /* Laptops and up: use the screen instead of pretending to be a phone. Still capped
+     rather than full-bleed — on a 2560px monitor an edge-to-edge review card is as bad
+     to read as the narrow ribbon this replaced. The content inside handles the width
+     by going multi-column (see the wide-quiz block near .quiz-screen), not by letting
+     single lines of text run the whole way across. */
+  #app { --shell-max: 1440px; }
 }
 
 .site-header {
@@ -157,20 +158,21 @@ button, input, textarea { font-family: inherit; }
   align-items: center;
   justify-content: center;
   padding: 0;
-  border: 1px solid #E6E7EF;
+  border: 1px solid var(--primary);
   border-radius: 50%;
-  background: #fff;
-  color: var(--text-secondary);
+  background: var(--primary-container);
+  color: var(--primary);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.2px;
   cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 }
+/* Hover still has to say something, and the resting state has already spent the
+   border and the tint — so it deepens rather than adds. */
 .account-avatar:hover {
-  border-color: var(--primary);
-  background: var(--primary-container);
-  color: var(--primary);
+  background: var(--primary);
+  color: #fff;
 }
 .account-avatar:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .account-menu {
@@ -1423,6 +1425,13 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
   .site-header, .site-footer, .filter-tabs, .result-actions, .review-right svg { display: none !important; }
   .site-main { padding: 0 !important; }
   .screen.result-screen { max-width: none; }
+  /* This block un-caps the result width, which would otherwise let the desktop
+     auto-fill grid above decide it has room for three columns ON PAPER. Everything
+     that goes multi-column on screen is forced back to one column here. */
+  .review-list { display: flex !important; flex-direction: column !important; }
+  .stat-grid { grid-template-columns: 1fr 1fr !important; }
+  .quiz-screen .choice-list { display: flex !important; flex-direction: column !important; }
+  .score-hero { display: block !important; }
   .review-card, .stat-tile, .score-hero { box-shadow: none !important; break-inside: avoid; }
   .score-hero { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .result-expander .expander-body { display: flex !important; }
@@ -1474,11 +1483,12 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
   #app:not(.compact-view) .quiz-screen .quiz-topbar .title { font-size: 17px; }
   #app:not(.compact-view) .quiz-screen .progress-track.segmented { padding: 0 28px; margin: 16px 0 6px; }
 
-  /* Centered reading column. 820px is roughly the widest a line of option text can
-     be before the eye loses the start of the next line. */
+  /* Centered content column. It used to cap at 820px because a single stacked column
+     of options gets unreadable past roughly that width — the options now go
+     two-across (below), which is what buys the extra room back. */
   #app:not(.compact-view) .quiz-screen .quiz-body {
     width: 100%;
-    max-width: 820px;
+    max-width: 1180px;
     margin: 0 auto;
     padding: 28px 32px 40px;
     /* The surface now fills a 1080px-tall viewport, so a short question would leave a
@@ -1494,10 +1504,36 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
      only the Skip/Next row lines up with the reading column above it. */
   #app:not(.compact-view) .quiz-screen .quiz-bottombar .bar-row {
     width: 100%;
-    max-width: 820px;
+    max-width: 1180px;
     margin: 0 auto;
     padding: 16px 32px calc(16px + env(safe-area-inset-bottom, 0px));
   }
+
+  /* Options two across. This is the whole reason the card can be this wide: at 1180px
+     a single column of option rows is a line length nobody can scan, and halving the
+     rows roughly halves the scrolling too. Reading order stays A B / C D.
+     TRUE_FALSE shares .choice-list (app.js buildChoices), so True and False land side
+     by side here for free — which is the shape that pair always wanted. */
+  /* No align-items override: the grid default (stretch) is what makes two cards
+     sharing a row match heights when one option wraps to a second line. */
+  #app:not(.compact-view) .quiz-screen .choice-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+  #app:not(.compact-view) .quiz-screen .choice-list.tight { gap: 12px; }
+  /* Polls opt out. Their cards carry a result bar, a percentage and an "Other" text
+     field, all of which need the full width to stay legible — and a poll is read as a
+     ranked list, which two columns actively scramble. */
+  #app:not(.compact-view) .quiz-screen .choice-list:has(.choice-card.poll) {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* No .choice-list to spread out, so these stay a single element — capped narrower
+     than the card so a written answer isn't typed across 1180px. */
+  #app:not(.compact-view) .quiz-screen .answer-card,
+  #app:not(.compact-view) .quiz-screen .sentence-card { max-width: 820px; width: 100%; }
 
   /* Type scaled ~15% for laptop viewing distance. */
   #app:not(.compact-view) .quiz-screen .q-card-body { padding: 20px 24px; }
@@ -1507,9 +1543,57 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
   #app:not(.compact-view) .quiz-screen .choice-list.tight .choice-card { min-height: 64px; }
   #app:not(.compact-view) .quiz-screen .choice-label { font-size: 18px; line-height: 24px; }
 
-  /* Result/review lists sit in the same measure as the quiz body, so finishing a
-     quiz doesn't snap the content to a different width mid-flow. */
-  #app:not(.compact-view) .screen.result-screen { max-width: 820px; }
+  /* ── Result screen ───────────────────────────────────────────────────────
+     This used to be capped at 820px, which on a laptop left wide empty gutters
+     down both sides and made the whole screen read as broken. The cap is gone;
+     the content earns the width by flowing into columns instead of stretching. */
+
+  /* Four tiles, always (app.js builds Correct / Incorrect / Total Time / Hints) —
+     so one row rather than the 2x2 block the phone needs. */
+  #app:not(.compact-view) .stat-grid { grid-template-columns: repeat(4, 1fr); }
+
+  /* One card per question, routinely 20-50 of them. auto-fill picks 3 columns at
+     1440px and 2 around 1040px with no extra breakpoints.
+
+     align-items:start is load-bearing, not tidiness: review cards expand in place
+     (their open/closed state is the expandedReviews Set in app.js), and grid items
+     stretch to their row by default — so without this, opening one card would grow
+     every other card sharing its row. */
+  #app:not(.compact-view) .review-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+    gap: 12px;
+    align-items: start;
+  }
+
+  /* The score is one big number and a bar; stacked, it left the right half of a
+     1440px hero empty. Numbers on the left, bar and verdict sentence on the right. */
+  #app:not(.compact-view) .score-hero {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: 40px;
+    row-gap: 6px;
+    padding: 26px 32px;
+  }
+  #app:not(.compact-view) .score-hero .hero-label { grid-column: 1; }
+  #app:not(.compact-view) .score-hero .hero-numbers { grid-column: 1; }
+  #app:not(.compact-view) .score-hero .hero-bar-row { grid-column: 2; grid-row: 1 / 3; }
+  /* Spans both columns rather than sitting under the bar: kept to column 2 it left a
+     conspicuous empty patch beneath the big score number. */
+  #app:not(.compact-view) .score-hero .hero-footer { grid-column: 1 / -1; grid-row: 3; }
+  /* The info/poll-only variant has no numbers or bar to place, so it stays a plain
+     stacked block — the grid above would leave it with an empty second column. */
+  #app:not(.compact-view) .score-hero.info { display: block; }
+
+  /* Three stacked full-width 48px buttons across 1440px looks unfinished. */
+  #app:not(.compact-view) .result-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+  }
+  #app:not(.compact-view) .result-actions > button { width: auto; min-width: 180px; }
 }
 
 /* ── Quiz-taking screen (redesign) ─────────────────────────────────────────

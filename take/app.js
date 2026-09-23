@@ -1179,10 +1179,15 @@ async function goToExistingResult() {
  *  of this screen, so nothing should need a tap to be seen. */
 function openResultScreen() {
   state.resultFilter = "all";
-  // The score counts up once per result, and the details start folded away.
-  state.resultAnimated = false;
-  state.resultSummaryOpen = false;
-  state.resultReviewOpen = false;
+  state.resultAnimated = false; // the score counts up once per result
+  // On a phone the details start folded away — there is no room to show them and the
+  // score is what the taker came for. On a desktop the width is already there and the
+  // review cards flow into columns, so folding them costs two clicks and buys nothing.
+  // Read once here rather than watched: a later resize must not re-fold a section the
+  // taker has since opened by hand.
+  const wideResult = !state.compactView && window.matchMedia("(min-width: 900px)").matches;
+  state.resultSummaryOpen = wideResult;
+  state.resultReviewOpen = wideResult;
   state.resultJustToggled = null;
   expandedReviews.clear();
   expandedPollReviews.clear();
