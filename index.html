@@ -27,11 +27,12 @@
 <link rel="icon" href="/favicon.png" sizes="48x48" type="image/png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=5">
-<link rel="stylesheet" href="/page.css?v=2">
+<link rel="preload" href="/fonts/plus-jakarta-sans-latin-var.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="styles.css?v=6">
+<!-- Preload the LCP image. Without this the browser cannot discover it until
+     the stylesheet has parsed and the hero has laid out, which on mobile is
+     most of a second of dead time on the metric that matters most. -->
+<link rel="preload" as="image" href="assets/hero_photo.webp" type="image/webp" fetchpriority="high">
 <!-- Organization + WebSite + SoftwareApplication + FAQPage. The FAQ entries below
      mirror the visible accordion further down this page verbatim — Google requires
      the answer text to be on the page, so edit both together or drop the entry. -->
@@ -44,7 +45,7 @@
       "@id": "https://quizoma.com/#organization",
       "name": "CraftByte Studio",
       "url": "https://quizoma.com/",
-      "logo": "https://quizoma.com/icon-512.png"
+      "logo": "https://quizoma.com/icon-512.webp"
     },
     {
       "@type": "WebSite",
@@ -62,7 +63,7 @@
       "url": "https://quizoma.com/",
       "softwareVersion": "1.0",
       "description": "A free classroom quiz engine with dual-track grading: objective questions are marked instantly, and written answers are graded against configurable rules or handed to the teacher for review. Creating and taking a quiz keep working offline and sync later; exports a full PDF report.",
-      "image": "https://quizoma.com/icon-512.png",
+      "image": "https://quizoma.com/icon-512.webp",
       "author": { "@id": "https://quizoma.com/#organization" },
       "publisher": { "@id": "https://quizoma.com/#organization" },
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
@@ -104,10 +105,10 @@
 <body>
 <!-- Cookie consent gate — must load before analytics.js so it can hold off
      PostHog until the visitor accepts. Shared across home/take/join. -->
-<script src="/cookie-consent.js"></script>
+<script src="/cookie-consent.js" defer></script>
 <!-- Plain (non-module), loaded first so every other script can call
      window.Analytics unconditionally — same pattern as deploy/take and deploy/join. -->
-<script src="analytics.js"></script>
+<script src="analytics.js" defer></script>
 
 <!-- ===================== HEADER ===================== -->
 <header class="site-header" id="site-header">
@@ -115,7 +116,7 @@
     <div class="header-left">
       <a href="/" class="brand">
         <span class="brand-mark">
-          <img src="/icon-192.png" alt="" class="brand-icon">
+          <img src="/icon-72.webp" alt="" class="brand-icon" width="36" height="36">
         </span>
         <span class="brand-name">Quizoma</span>
       </a>
@@ -156,6 +157,7 @@
   <!-- ===================== HERO ===================== -->
   <section class="hero-wrap">
     <div class="hero-glow" aria-hidden="true"></div>
+    <div class="aurora" aria-hidden="true"><span></span><span></span><span></span></div>
     <div class="container hero-grid" id="hero">
       <div class="hero-copy">
         <h1 class="h1">The thoughtful classroom quiz<br>engine with <span class="underline-accent typewriter" id="typewriter-word">dual smart grading.</span></h1>
@@ -170,7 +172,7 @@
           </a>
           <!-- PLAY-CTA (hero). At launch, restore:
           <a href="https://play.google.com/store/apps/details?id=com.craftbytestudio.quizoma" class="play-store-btn" data-analytics="home_play_store_clicked" data-analytics-props='{"location":"hero"}'>
-            <img src="assets/google-play-badge.png" alt="Get it on Google Play" width="166" height="49">
+            <img src="assets/google-play-badge.png" alt="Get it on Google Play" width="166" height="49" loading="lazy" decoding="async">
           </a> -->
           <span class="play-soon"><span class="dot"></span>Coming soon on Google Play</span>
         </div>
@@ -214,7 +216,12 @@
         <div class="hero-orb hero-orb-b" aria-hidden="true"></div>
 
         <div class="classroom-card">
-          <img class="classroom-photo" src="assets/hero_photo.jpeg" alt="Teacher and students in warm classroom desk environment reviewing open-ended quizzes with focus and care">
+          <picture>
+            <source srcset="assets/hero_photo.webp" type="image/webp">
+            <img class="classroom-photo" src="assets/hero_photo.jpeg" width="512" height="382"
+                 fetchpriority="high" decoding="async"
+                 alt="Teacher and students in warm classroom desk environment reviewing open-ended quizzes with focus and care">
+          </picture>
           <div class="float-pill float-pill-left">
             <span class="dot dot-green"></span>
             <strong>Active Room #BIO-402</strong>
@@ -349,28 +356,28 @@
       </div>
       <div class="pillars-grid">
         <div class="pillar-card">
-          <div class="pillar-icon bg-green"><img src="assets/pillar_icon_01.svg" alt="" width="23" height="22"></div>
+          <div class="pillar-icon bg-green"><img src="assets/pillar_icon_01.svg" alt="" width="23" height="22" loading="lazy" decoding="async"></div>
           <h3 class="h3">100% Free &amp; Ad-Free</h3>
           <p>No ads, no selling your data, no subscription to unlock features. Just a quiz tool that works.</p>
-          <div class="pillar-foot foot-green"><img src="assets/pillar_icon_02.svg" alt="" width="11" height="8"> Free for Everyone</div>
+          <div class="pillar-foot foot-green"><img src="assets/pillar_icon_02.svg" alt="" width="11" height="8" loading="lazy" decoding="async"> Free for Everyone</div>
         </div>
         <div class="pillar-card">
-          <div class="pillar-icon bg-blue"><img src="assets/pillar_icon_03.svg" alt="" width="26" height="21"></div>
+          <div class="pillar-icon bg-blue"><img src="assets/pillar_icon_03.svg" alt="" width="26" height="21" loading="lazy" decoding="async"></div>
           <h3 class="h3">Works Without Wi-Fi</h3>
           <p>Answers save right on the device, so when the Wi-Fi drops, nothing does. Everything syncs back the second it's online again.</p>
-          <div class="pillar-foot foot-blue"><img src="assets/pillar_icon_04.svg" alt="" width="15" height="12"> Syncs Automatically</div>
+          <div class="pillar-foot foot-blue"><img src="assets/pillar_icon_04.svg" alt="" width="15" height="12" loading="lazy" decoding="async"> Syncs Automatically</div>
         </div>
         <div class="pillar-card">
-          <div class="pillar-icon bg-purple"><img src="assets/pillar_icon_05.svg" alt="" width="22" height="21"></div>
+          <div class="pillar-icon bg-purple"><img src="assets/pillar_icon_05.svg" alt="" width="22" height="21" loading="lazy" decoding="async"></div>
           <h3 class="h3">Two Ways to Grade</h3>
           <p>Quick questions grade themselves in an instant. Anything open-ended waits patiently for you — no shortcuts, no guesswork.</p>
-          <div class="pillar-foot foot-purple"><img src="assets/pillar_icon_06.svg" alt="" width="13" height="11"> Auto + Manual</div>
+          <div class="pillar-foot foot-purple"><img src="assets/pillar_icon_06.svg" alt="" width="13" height="11" loading="lazy" decoding="async"> Auto + Manual</div>
         </div>
         <div class="pillar-card">
-          <div class="pillar-icon bg-amber"><img src="assets/pillar_icon_07.svg" alt="" width="25" height="13"></div>
+          <div class="pillar-icon bg-amber"><img src="assets/pillar_icon_07.svg" alt="" width="25" height="13" loading="lazy" decoding="async"></div>
           <h3 class="h3">Easy to Join</h3>
           <p>One tap to sign in with Google — no password to create, no long form to fill in before class starts.</p>
-          <div class="pillar-foot foot-amber"><img src="assets/pillar_icon_08.svg" alt="" width="12" height="6"> Join in Seconds</div>
+          <div class="pillar-foot foot-amber"><img src="assets/pillar_icon_08.svg" alt="" width="12" height="6" loading="lazy" decoding="async"> Join in Seconds</div>
         </div>
       </div>
     </div>
@@ -381,14 +388,19 @@
     <div class="container">
       <div class="deep-dive-grid">
         <div class="deep-dive-art">
-          <img src="assets/dualtrack_photo.jpeg" alt="Ultra crisp minimalist editorial vector illustration explaining dual-track grading concept: automated algorithmic scan vs human empathetic review">
+          <picture>
+            <source srcset="assets/dualtrack_photo.webp" type="image/webp">
+            <img src="assets/dualtrack_photo.jpeg" width="512" height="512"
+                 loading="lazy" decoding="async"
+                 alt="Ultra crisp minimalist editorial vector illustration explaining dual-track grading concept: automated algorithmic scan vs human empathetic review">
+          </picture>
           <div class="art-caption">
             <span><span class="dot dot-green"></span> Every answer reviewed twice — machine and teacher</span>
             <span class="mono text-muted">Auto + Human</span>
           </div>
         </div>
         <div class="deep-dive-copy">
-          <span class="badge-pill badge-purple"><img src="assets/dualtrack_icon_02.svg" alt="" width="12" height="12"> The Idea Behind Quizoma</span>
+          <span class="badge-pill badge-purple"><img src="assets/dualtrack_icon_02.svg" alt="" width="12" height="12" loading="lazy" decoding="async"> The Idea Behind Quizoma</span>
           <h2 class="h2">Auto-Grading <span class="text-muted">+</span> Real Teacher Review</h2>
           <p class="lead">Most quiz apps mark an answer wrong for one typo or a word swapped for its synonym. Quizoma splits grading into two fair tracks instead.</p>
 
@@ -427,7 +439,7 @@
     <div class="glow glow-mint" aria-hidden="true"></div>
     <div class="container">
       <div class="section-head center narrow">
-        <span class="badge-pill badge-blue"><img src="assets/dualtrack_icon_02.svg" alt="" width="13" height="12"> How Quizoma Works <span><span class="sep">•</span> Four Simple Steps</span></span>
+        <span class="badge-pill badge-blue"><img src="assets/dualtrack_icon_02.svg" alt="" width="13" height="12" loading="lazy" decoding="async"> How Quizoma Works <span><span class="sep">•</span> Four Simple Steps</span></span>
         <h2 class="h2">From Question<br>to Result</h2>
         <p class="lead">Here's what happens from the moment you send a question to the moment a participant sees their result.</p>
         <div class="filter-chips">
@@ -679,7 +691,7 @@
     <div class="footer-grid">
       <div class="footer-brand">
         <a href="/" class="brand">
-          <span class="brand-mark"><img src="/icon-192.png" alt="" class="brand-icon"></span>
+          <span class="brand-mark"><img src="/icon-72.webp" alt="" class="brand-icon" width="36" height="36"></span>
           <span class="brand-name">Quizoma</span>
         </a>
         <p>A free classroom quiz engine with dual-track grading — algorithmic scanning for objective questions, and real teacher review for open-ended ones.</p>
@@ -717,6 +729,6 @@
   </div>
 </footer>
 
-<script src="script.js?v=3"></script>
+<script src="script.js?v=4" defer></script>
 </body>
 </html>

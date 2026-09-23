@@ -229,3 +229,18 @@
    <style> block in take/index.html, not here — that page loads its own
    take/style.css and should not pull this file in for markup app.js wipes on
    boot. */
+
+/* ── Ambient aurora on the page header band ─────────────────────────────────
+   The .aurora element itself, its keyframes and the scroll-reveal states all
+   live in /styles.css, which every page loads first. Only the secondary-page
+   positioning differs: the band is much shorter than the home hero, so the
+   layers sit higher and read as a wash across the top rather than a full
+   backdrop.
+
+   .page-hero is already position: relative; overflow: hidden, and
+   .page-hero .container is z-index: 1, so this sits behind the content with no
+   extra stacking work. */
+.page-hero .aurora { inset: -40% -10% auto -10%; height: 200%; }
+.page-hero .aurora span:nth-child(1) { top: -30%; left: -2%; max-width: 520px; max-height: 520px; }
+.page-hero .aurora span:nth-child(2) { top: -20%; right: -4%; max-width: 460px; max-height: 460px; }
+.page-hero .aurora span:nth-child(3) { display: none; }

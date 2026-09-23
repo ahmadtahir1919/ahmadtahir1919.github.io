@@ -1,4 +1,44 @@
 /* =========================================================
+   Quizoma — self-hosted fonts
+
+   These were loaded from fonts.googleapis.com, which cost two extra
+   cross-origin DNS+TLS handshakes AND a render-blocking stylesheet before any
+   text could paint — the single largest contributor to mobile First
+   Contentful Paint.
+
+   The files are Google's own Latin subsets, served from our origin instead.
+   Plus Jakarta Sans is a VARIABLE font, so one file covers every weight from
+   400 to 800; declaring the range here is what lets the browser use it for all
+   five weights the site asks for. Space Mono has no variable build, so it
+   needs the two static weights.
+
+   font-display: swap matches the previous behaviour (the Google URL ended in
+   &display=swap), so text paints immediately in the fallback and swaps when
+   the webfont lands. Both families are OFL-licensed; self-hosting is permitted.
+   ========================================================= */
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('/fonts/plus-jakarta-sans-latin-var.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Space Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/space-mono-latin-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Space Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/space-mono-latin-700.woff2') format('woff2');
+}
+
+/* =========================================================
    Quizoma — design tokens
    ========================================================= */
 :root {
@@ -1062,4 +1102,121 @@ h1, h2, h3, h4 { margin: 0; font-family: var(--font-sans); }
      they're stacked under it, keep normal spacing instead of overlapping
      the mini-quiz card into them. */
   .mini-quiz-card { margin-top: 16px; }
+}
+
+/* =========================================================
+   Ambient aurora + scroll reveal
+   ========================================================= */
+
+/* ── Drifting aurora ────────────────────────────────────────────────────────
+   A slow, low-contrast wash behind the hero and the secondary-page header
+   band. Two layers at different speeds and directions so it reads as depth
+   rather than one sliding blob.
+
+   Built from radial-gradients with NO filter: blur(). That is deliberate and
+   is the whole reason this is free: a blurred layer re-rasterises on every
+   frame it moves, which is exactly the jank this site has avoided so far by
+   keeping all four of its existing blurred glows completely static. Gradients
+   composite instead, and the only animated properties here are transform and
+   opacity — neither triggers layout or paint.
+
+   .page-hero-glow already used this gradient-not-blur trick; this extends it. */
+.aurora {
+  position: absolute;
+  inset: -20% -10% auto -10%;
+  height: 130%;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.aurora span {
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+  will-change: transform, opacity;
+}
+.aurora span:nth-child(1) {
+  top: -14%; left: 4%;
+  width: 46vw; height: 46vw;
+  max-width: 680px; max-height: 680px;
+  background: radial-gradient(closest-side, rgba(53, 37, 205, 0.16), rgba(53, 37, 205, 0) 72%);
+  animation: auroraDriftA 30s ease-in-out infinite alternate;
+}
+.aurora span:nth-child(2) {
+  top: 2%; right: 2%;
+  width: 40vw; height: 40vw;
+  max-width: 580px; max-height: 580px;
+  background: radial-gradient(closest-side, rgba(108, 248, 187, 0.26), rgba(108, 248, 187, 0) 70%);
+  animation: auroraDriftB 38s ease-in-out infinite alternate;
+}
+.aurora span:nth-child(3) {
+  bottom: -18%; left: 32%;
+  width: 34vw; height: 34vw;
+  max-width: 480px; max-height: 480px;
+  background: radial-gradient(closest-side, rgba(224, 242, 254, 0.7), rgba(224, 242, 254, 0) 70%);
+  animation: auroraDriftC 34s ease-in-out infinite alternate;
+}
+
+/* translate3d rather than translate: keeps each layer on its own compositor
+   layer so the main thread does no work per frame. */
+@keyframes auroraDriftA {
+  0%   { transform: translate3d(0, 0, 0) scale(1); opacity: 0.85; }
+  100% { transform: translate3d(7%, 5%, 0) scale(1.1); opacity: 1; }
+}
+@keyframes auroraDriftB {
+  0%   { transform: translate3d(0, 0, 0) scale(1.05); opacity: 0.7; }
+  100% { transform: translate3d(-8%, 7%, 0) scale(1); opacity: 1; }
+}
+@keyframes auroraDriftC {
+  0%   { transform: translate3d(0, 0, 0) scale(1); opacity: 0.6; }
+  100% { transform: translate3d(5%, -6%, 0) scale(1.12); opacity: 0.9; }
+}
+
+/* The hero's original glow was filter: blur(32px) across 1100x460 — the single
+   largest blurred surface on the page. The same look as a gradient costs
+   nothing to rasterise and leaves the aurora free to move above it. */
+.hero-glow {
+  background: radial-gradient(60% 100% at 50% 0%,
+              rgba(53, 37, 205, 0.07) 0%,
+              rgba(224, 242, 254, 0.42) 45%,
+              rgba(224, 242, 254, 0) 100%);
+  filter: none;
+}
+
+/* ── Scroll reveal ──────────────────────────────────────────────────────────
+   Scoped under .js-reveal, which script.js adds to <html> before anything is
+   observed. Without JS the class never appears, so every element keeps its
+   normal static styling and nothing can be left permanently invisible.
+
+   easeOutQuint (0.22, 1, 0.36, 1) is already the site's easing for large
+   settling moves — see .demo-poll-bar span. */
+.js-reveal [data-reveal] {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 560ms cubic-bezier(0.22, 1, 0.36, 1),
+              transform 560ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.js-reveal [data-reveal].is-revealed {
+  opacity: 1;
+  transform: none;
+}
+/* Stagger within a group. Capped at 5 so a long grid never feels like it is
+   loading slowly. */
+.js-reveal [data-reveal][style*="--reveal-i"] { transition-delay: calc(var(--reveal-i) * 70ms); }
+
+/* ── Reduced motion ─────────────────────────────────────────────────────────
+   House idiom (see the .flow-dot block above): stop the animation, and where an
+   element existed only to move, leave it static rather than hiding content. */
+@media (prefers-reduced-motion: reduce) {
+  /* Must repeat the :nth-child selectors, not just `.aurora span` — the
+     animations are declared on `.aurora span:nth-child(n)` (specificity 0,2,1)
+     and a bare `.aurora span` (0,1,1) silently loses to them. */
+  .aurora span:nth-child(1),
+  .aurora span:nth-child(2),
+  .aurora span:nth-child(3) { animation: none; }
+  .js-reveal [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }

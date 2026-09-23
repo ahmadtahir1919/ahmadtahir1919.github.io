@@ -547,4 +547,63 @@ document.addEventListener('DOMContentLoaded', function () {
     goToFormatSlide(0);
     scheduleFormatAutoplay();
   }
+
+  // ── Scroll reveal ─────────────────────────────────────────────────────────
+  // Sections fade and rise as they come into view. Runs on every page: the
+  // selector list spans the home page and the secondary/blog pages, and any
+  // page missing a given section simply matches nothing.
+  //
+  // The hidden starting state lives entirely under .js-reveal in styles.css and
+  // that class is added HERE, from JS. So if this script fails to load, is
+  // blocked, or throws before this point, no element is ever hidden — content
+  // must never depend on JS to be visible.
+  var revealSelector = [
+    '.section-head', '.pillar-card', '.format-card', '.stage-card',
+    '.info-card', '.post-card', '.next-link', '.prose > h2',
+    '.compare-table', '.faq-item', '.rule-example'
+  ].join(',');
+  var revealReduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (!revealReduceMotion && 'IntersectionObserver' in window) {
+    var revealTargets = document.querySelectorAll(revealSelector);
+    if (revealTargets.length) {
+      document.documentElement.classList.add('js-reveal');
+
+      // Stagger is per-parent, not global: each grid/row counts from 0 so a
+      // card low down the page never waits on a long cumulative delay.
+      var revealGroups = new Map();
+      revealTargets.forEach(function (el) {
+        el.setAttribute('data-reveal', '');
+        var parent = el.parentNode;
+        var i = revealGroups.get(parent) || 0;
+        if (i < 5) el.style.setProperty('--reveal-i', i); // cap, see styles.css
+        revealGroups.set(parent, i + 1);
+      });
+
+      var revealObserver = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add('is-revealed');
+          revealObserver.unobserve(entry.target); // reveal once, then stop
+        });
+      }, {
+        // Trigger slightly before the element reaches the viewport so the
+        // motion is finishing as it arrives rather than starting.
+        rootMargin: '0px 0px -8% 0px',
+        threshold: 0.01
+      });
+
+      revealTargets.forEach(function (el) { revealObserver.observe(el); });
+
+      // Anything already on screen at load (the hero area) reveals immediately
+      // rather than waiting for a scroll that may never come.
+      window.setTimeout(function () {
+        revealTargets.forEach(function (el) {
+          if (el.getBoundingClientRect().top < window.innerHeight) {
+            el.classList.add('is-revealed');
+          }
+        });
+      }, 60);
+    }
+  }
 });
