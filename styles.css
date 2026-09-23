@@ -349,28 +349,35 @@ h1, h2, h3, h4 { margin: 0; font-family: var(--font-sans); }
 }
 .account-signin:hover:not(:disabled) { border-color: var(--color-primary); color: var(--color-primary); }
 .account-signin:disabled { opacity: 0.6; cursor: default; }
+/* Quiet by design. A solid indigo disc read as the loudest thing in the header —
+   louder than the Join Quiz CTA next to it, which is the one element that should pull
+   the eye. A tinted face with a hairline border keeps it legible without competing. */
 .account-avatar {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 0;
-  border: none;
+  border: 1px solid var(--color-border);
   border-radius: 50%;
-  background: var(--color-primary);
-  color: var(--color-white);
+  background: var(--color-white);
+  color: var(--color-text-body);
   font-family: inherit;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
+  letter-spacing: 0.2px;
   cursor: pointer;
-  transition: box-shadow 150ms ease;
+  transition: border-color 150ms ease, color 150ms ease, background 150ms ease;
 }
-.account-avatar:hover { box-shadow: 0 0 0 3px rgba(53, 37, 205, 0.18); }
+.account-avatar:hover {
+  border-color: var(--color-primary);
+  background: var(--color-bg-alt);
+  color: var(--color-primary);
+}
 /* The header shrinks on scroll (.is-scrolled), so these shrink with it. */
-.site-header.is-scrolled .account-avatar,
 .site-header.is-scrolled .account-signin { height: 32px; }
-.site-header.is-scrolled .account-avatar { width: 32px; }
+.site-header.is-scrolled .account-avatar { width: 29px; height: 29px; font-size: 11px; }
 .account-menu {
   position: absolute;
   top: calc(100% + 10px);

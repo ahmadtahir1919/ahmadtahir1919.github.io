@@ -147,24 +147,31 @@ button, input, textarea { font-family: inherit; }
    above this is NOT desktop-only: knowing who you are signed in as, and being able
    to get out, matters just as much on a phone. */
 .account-control { position: relative; flex-shrink: 0; }
+/* Quiet by design — see the matching note in deploy/home/styles.css. A solid accent
+   disc dominated the header; a hairline border and neutral ink sit back where a
+   persistent piece of chrome belongs. Matches the .header-btn siblings beside it. */
 .account-avatar {
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 0;
-  border: none;
+  border: 1px solid #E6E7EF;
   border-radius: 50%;
-  background: var(--accent);
-  color: #fff;
-  font-size: 13px;
+  background: #fff;
+  color: var(--text-secondary);
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px;
   cursor: pointer;
-  transition: box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
 }
-.account-avatar:hover { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+.account-avatar:hover {
+  border-color: var(--primary);
+  background: var(--primary-container);
+  color: var(--primary);
+}
 .account-avatar:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .account-menu {
   position: absolute;

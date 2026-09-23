@@ -55,6 +55,10 @@ const shareCode = (params.get("code") || "").toUpperCase();
 // The home page's account menu links here as /take/?edit=name — it has no name editor
 // of its own, so it delegates to this app's confirm-name screen. See boot().
 const wantsNameEdit = params.get("edit") === "name";
+// A state.nameEditReturn value that means "leave this app entirely and go back to the
+// site root" rather than naming one of this app's own screens. Only the home page's
+// deep link uses it; see finishNameEdit.
+const HOME_RETURN = "__home__";
 
 // ── State ──────────────────────────────────────────────────────────────────
 const state = {
@@ -1023,12 +1027,24 @@ async function cancelConfirmName() {
   state.confirmNameError = null;
   state.nameEditReturn = null;
   if (returnTo) {
-    state.screen = returnTo;
-    render();
+    finishNameEdit(returnTo);
     return;
   }
   state.screen = "landing";
   await signOutAction();
+}
+
+/** Where an EDIT (as opposed to the first-login gate) goes when it is done.
+ *  HOME_RETURN leaves this app for the site root — replace(), not assign(), so the
+ *  ?edit=name URL doesn't sit in history waiting to re-open the editor the moment the
+ *  visitor presses Back from the home page. */
+function finishNameEdit(returnTo) {
+  if (returnTo === HOME_RETURN) {
+    window.location.replace("/");
+    return;
+  }
+  state.screen = returnTo;
+  render();
 }
 
 async function submitConfirmedName() {
@@ -1045,9 +1061,14 @@ async function submitConfirmedName() {
     state.confirmNameSaving = false;
     // Back where the edit was opened from — "landing" is only right for the first-login
     // gate, which is the sole caller that leaves nameEditReturn null.
-    state.screen = state.nameEditReturn || "landing";
+    const returnTo = state.nameEditReturn;
     state.nameEditReturn = null;
     state.confirmNameDraft = null;
+    if (returnTo) {
+      finishNameEdit(returnTo);
+      return;
+    }
+    state.screen = "landing";
     render();
   } catch (e) {
     state.confirmNameSaving = false;
@@ -3307,7 +3328,11 @@ async function boot() {
   watchAccountMenuDismiss();
   try {
     if (!shareCode) {
-      state.screen = "enterCode";
+      // Normally the code boxes paint immediately. But arriving on the home page's
+      // "Edit name" deep link, enterCode is scaffolding the visitor never asked for —
+      // they'd watch a "Enter Quiz Code" screen flash past on the way to a name field.
+      // Hold on the spinner instead until we know who they are.
+      state.screen = wantsNameEdit ? "loading" : "enterCode";
       render();
       // Both fetched after the first paint so a slow/offline call never delays showing
       // the code-entry boxes — the screen just re-renders once they land (fail-open
@@ -3320,10 +3345,16 @@ async function boot() {
       state.flags = flags;
       state.user = user;
       // ...and to service the home page's "Edit name" deep link, which lands here with
-      // no code at all.
+      // no code at all. HOME_RETURN, not "enterCode": someone who came from the home
+      // page to rename themselves wants to end up back on the home page, not stranded
+      // on a code-entry screen for a quiz they were never trying to take.
       if (state.user && wantsNameEdit) {
-        state.nameEditReturn = "enterCode";
+        state.nameEditReturn = HOME_RETURN;
         state.screen = "confirmName";
+      } else if (wantsNameEdit) {
+        // Signed out (or the session expired in transit) — nothing to edit, so fall
+        // through to the normal screen rather than leaving the spinner up forever.
+        state.screen = "enterCode";
       }
       render();
       return;

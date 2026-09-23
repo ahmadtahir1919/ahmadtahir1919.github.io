@@ -276,6 +276,20 @@
     window.addEventListener("storage", function (e) {
       if (e.key === STORAGE_KEY) renderAll();
     });
+
+    // Pressing Back onto this page usually restores it from the back/forward cache,
+    // which replays no scripts at all — so the header would still show whatever it
+    // showed when the visitor left, even though they may have signed out, or signed IN,
+    // on the page they went to (/take/ shares this same session). pageshow is the only
+    // event that fires in that case; persisted marks a bfcache restore specifically.
+    window.addEventListener("pageshow", function (e) {
+      if (e.persisted) renderAll();
+    });
+    // Same staleness, different trigger: coming back to this tab after acting in
+    // another one.
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden) renderAll();
+    });
   }
 
   window.QuizomaAccount = { mount: mount, refresh: renderAll };
