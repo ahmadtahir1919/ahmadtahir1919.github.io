@@ -1,0 +1,12 @@
+# https://quizoma.com/robots.txt
+# Everything on this site is public and meant to be indexed. The unreleased v2
+# pages (web-v2/ in the source repo) are never published here at all, so there
+# is nothing to disallow — see DEPLOY.md.
+
+User-agent: *
+Allow: /
+
+# .well-known/assetlinks.json is for Android App Links, not for readers.
+Disallow: /.well-known/
+
+Sitemap: https://quizoma.com/sitemap.xml

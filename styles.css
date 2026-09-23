@@ -150,6 +150,31 @@ h1, h2, h3, h4 { margin: 0; font-family: var(--font-sans); }
 .play-store-btn:active { transform: translateY(2px); }
 .play-store-btn img { display: block; height: 100%; width: auto; }
 
+/* ── Pre-launch Play Store state ─────────────────────────────────────────────
+   The listing goes live mid-October 2026; until then every Play CTA is this
+   non-clickable pill instead of a link to a 404. Deliberately NOT a greyed-out
+   Google Play badge — Google's brand guidelines don't allow altering the badge,
+   so we show our own control and bring the real badge back at launch.
+   Height matches the 49px badge it replaces, so the hero layout doesn't shift.
+   Search for PLAY-CTA to find every switch-over point. */
+.play-soon {
+  display: inline-flex; align-items: center; gap: 10px;
+  height: 56px; padding: 0 22px;
+  border: 1.5px dashed var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-white);
+  color: var(--color-text-body);
+  font-size: 14.5px; font-weight: 600; letter-spacing: .1px;
+  cursor: default; user-select: none;
+}
+.play-soon .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--color-amber-accent); flex: none;
+}
+/* Same idea for a CTA that is styled as a .btn — keeps the button's shape but
+   makes it inert, since it is a <span>, not an <a>. */
+.btn.is-soon { pointer-events: none; opacity: .72; cursor: default; }
+
 /* =========================================================
    Badges / chips / tags
    ========================================================= */
@@ -265,15 +290,17 @@ h1, h2, h3, h4 { margin: 0; font-family: var(--font-sans); }
 .header-left { display: flex; align-items: center; gap: 32px; min-width: 0; }
 .header-right { display: flex; align-items: center; gap: 16px; }
 .brand { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+/* Just a sizing box. It used to paint an indigo rounded square with a hard 3px
+   drop shadow behind the mark, which was right when the icon was a bare
+   glyph — but the icon is now the app's own launcher art, already a finished
+   circle with transparent corners (see tools/make-web-images.mjs). Keeping the
+   backdrop put a lighter square and a shadow around that circle. */
 .brand-mark {
   width: 36px; height: 36px;
-  background: var(--color-primary);
-  border-radius: var(--radius-md);
   display: flex; align-items: center; justify-content: center;
-  overflow: hidden;
-  box-shadow: 0 3px 0 var(--color-primary-dark);
+  flex: none;
 }
-.brand-icon { width: 100%; height: 100%; object-fit: cover; }
+.brand-icon { width: 100%; height: 100%; object-fit: contain; }
 .brand-name { font-weight: 700; font-size: 18px; letter-spacing: -0.4px; color: var(--color-text-dark); }
 .main-nav { display: flex; align-items: center; gap: 4px; }
 .main-nav a {
@@ -949,7 +976,8 @@ h1, h2, h3, h4 { margin: 0; font-family: var(--font-sans); }
    Footer
    ========================================================= */
 .site-footer { background: var(--color-bg-alt); padding: 48px 40px; }
-.footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+/* Brand blurb + three link columns (Product / Resources / Legal). */
+.footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
 .footer-brand p { font-size: 14px; color: var(--color-text-body); line-height: 1.55; margin: 16px 0; max-width: 384px; }
 .footer-col h4 { font-size: 15px; font-weight: 600; letter-spacing: 0.15px; margin-bottom: 12px; }
 .footer-col { display: flex; flex-direction: column; gap: 12px; }

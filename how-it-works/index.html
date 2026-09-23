@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How Quizoma Works — Create, Share, Grade a Quiz | Quizoma</title>
+<meta name="description" content="Build a quiz in the app, share a 6-character code or QR, and watch answers arrive. Objective questions grade themselves; written ones come to you. Here is the whole flow, step by step.">
+<link rel="canonical" href="https://quizoma.com/how-it-works/">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="theme-color" content="#3525cd">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Quizoma">
+<meta property="og:title" content="How Quizoma Works — Create, Share, Grade a Quiz">
+<meta property="og:description" content="Build a quiz, share a 6-character code or QR, and watch answers arrive. Objective questions grade themselves; written ones come to you.">
+<meta property="og:url" content="https://quizoma.com/how-it-works/">
+<meta property="og:image" content="https://quizoma.com/assets/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="How Quizoma Works — Create, Share, Grade a Quiz">
+<meta name="twitter:description" content="Build a quiz, share a 6-character code or QR, and watch answers arrive. Objective questions grade themselves; written ones come to you.">
+<meta name="twitter:image" content="https://quizoma.com/assets/og-image.png">
+<link rel="icon" href="/favicon.png" sizes="48x48" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css?v=5">
+<link rel="stylesheet" href="/page.css?v=2">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "HowTo",
+      "name": "How to create and run a quiz with Quizoma",
+      "description": "Create a quiz in the Quizoma Android app, share a room code or QR, let participants answer on any device, then review the results and export a PDF report.",
+      "totalTime": "PT10M",
+      "supply": [
+        { "@type": "HowToSupply", "name": "An Android phone or tablet with Quizoma installed" },
+        { "@type": "HowToSupply", "name": "A Google account to sign in with" }
+      ],
+      "step": [
+        {
+          "@type": "HowToStep",
+          "name": "Create the quiz",
+          "text": "Type questions in the app or import them from a file. Pick from six formats and set how each written answer should be graded.",
+          "url": "https://quizoma.com/how-it-works/#step-create"
+        },
+        {
+          "@type": "HowToStep",
+          "name": "Invite participants",
+          "text": "Quizoma generates a 6-character room code and a QR code. Share either one — there is nothing to install for people joining in a browser.",
+          "url": "https://quizoma.com/how-it-works/#step-invite"
+        },
+        {
+          "@type": "HowToStep",
+          "name": "Participants join and answer",
+          "text": "Participants open quizoma.com/take, enter the code and answer. Answers are stored on their device as they go, so a dropped connection never loses progress.",
+          "url": "https://quizoma.com/how-it-works/#step-join"
+        },
+        {
+          "@type": "HowToStep",
+          "name": "Review results and export",
+          "text": "Objective questions are already marked. Read and score the written answers yourself, add comments, then export a full PDF report.",
+          "url": "https://quizoma.com/how-it-works/#step-results"
+        }
+      ]
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://quizoma.com/" },
+        { "@type": "ListItem", "position": 2, "name": "How It Works", "item": "https://quizoma.com/how-it-works/" }
+      ]
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<script src="/cookie-consent.js"></script>
+<script src="/analytics.js"></script>
+
+<!-- ===================== HEADER ===================== -->
+<header class="site-header" id="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <a href="/" class="brand">
+        <span class="brand-mark"><img src="/icon-192.png" alt="" class="brand-icon" width="36" height="36"></span>
+        <span class="brand-name">Quizoma</span>
+      </a>
+      <nav class="main-nav" id="main-nav">
+        <a href="/how-it-works/">How It Works</a>
+        <a href="/features/">Features</a>
+        <a href="/smart-grading/">Smart Grading</a>
+        <a href="/for-teachers/">For Teachers</a>
+        <a href="/faq/">FAQ</a>
+      </nav>
+    </div>
+    <div class="header-right">
+      <a href="/take/" class="btn btn-cream btn-sm" data-analytics="home_enter_room_code_clicked" data-analytics-props='{"location":"header"}' target="_blank" rel="noopener">
+        <span>Join Quiz</span>
+      </a>
+      <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+  <nav class="mobile-nav" id="mobile-nav">
+    <a href="/how-it-works/">How It Works</a>
+    <a href="/features/">Features</a>
+    <a href="/smart-grading/">Smart Grading</a>
+    <a href="/for-teachers/">For Teachers</a>
+    <a href="/faq/">FAQ</a>
+    <a href="/take/" class="btn btn-cream btn-sm" target="_blank" rel="noopener">Join Quiz</a>
+  </nav>
+</header>
+
+<main>
+
+  <section class="page-hero">
+    <div class="page-hero-glow" aria-hidden="true"></div>
+    <div class="container">
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="/">Home</a><span class="sep-slash">/</span><span aria-current="page">How It Works</span>
+      </nav>
+      <span class="eyebrow">THE WHOLE FLOW</span>
+      <h1 class="h1">From a blank screen to a marked PDF report.</h1>
+      <p class="lead">Four steps, and only one of them needs your attention for more than a minute.
+      Here is exactly what happens when you run a quiz with Quizoma — and what the app is doing
+      in the background while you do it.</p>
+      <div class="cta-row">
+        <a href="/download/" class="btn btn-primary btn-lg">Get the app</a>
+        <a href="/take/" class="btn btn-cream btn-lg" data-analytics="home_enter_room_code_clicked" data-analytics-props='{"location":"how_it_works_hero"}' target="_blank" rel="noopener">I have a room code</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="prose">
+
+        <h2 id="step-create">1. Create the quiz</h2>
+        <p>Open the app and start a new quiz. You can type questions directly, or import them from
+        a <strong>.txt or .csv</strong> file if you already have a question bank written down. Each
+        question gets a format, and Quizoma supports six of them:</p>
+        <ul>
+          <li><strong>Single choice (MCQ)</strong> — one right answer out of several.</li>
+          <li><strong>Multiple correct</strong> — more than one right answer, with partial credit.</li>
+          <li><strong>True / False</strong> — the fastest thing to write and the fastest thing to mark.</li>
+          <li><strong>Written short answer</strong> — a sentence or a phrase, graded by rules you choose.</li>
+          <li><strong>Fill in the blanks</strong> — one or many blanks, each with its own accepted answers.</li>
+          <li><strong>Live poll</strong> — no scoring, just the room's opinion. The app shows totals, not who picked what.</li>
+        </ul>
+        <p>The decision that matters most is on the written questions: <strong>how strictly should
+        this answer be matched?</strong> Exact text, case-sensitive, typo-tolerant, keyword coverage,
+        or numeric equivalence. That single setting is what separates a quiz that punishes a slip of
+        the thumb from one that doesn't — there is a full breakdown on the
+        <a href="/smart-grading/">smart grading</a> page.</p>
+
+        <div class="note">
+          <p><strong>Creating is app-only for now.</strong> Quizzes are built in the Android app;
+          the website is where people take them. Browser-based creation is on the way.</p>
+        </div>
+
+        <h2 id="step-invite">2. Invite the people taking it</h2>
+        <p>When the quiz is ready, Quizoma generates a <strong>6-character room code</strong> and a
+        matching <strong>QR code</strong>. That is the entire invitation mechanism. There is no class
+        roster to build, no email addresses to collect, and no accounts to create in advance.</p>
+        <p>Read the code out, write it on the board, or put the QR on a projector. Participants
+        who have the app can scan it; everyone else goes to
+        <a href="/take/">quizoma.com/take</a> in whatever browser is already on their phone or
+        laptop. Nothing to install, no app store detour.</p>
+
+        <h2 id="step-join">3. They join and answer</h2>
+        <p>Participants enter the code, sign in with their Google account so their answers can be
+        attributed to a real person, and start answering. The questions come one at a time on a
+        screen designed for a phone held in one hand.</p>
+        <p>The important part is invisible: <strong>every answer is written to the device the moment
+        it is given</strong>, and only then synced to the server. School Wi-Fi that drops in the
+        middle of a test is an ordinary event, not a disaster — when the connection returns, the
+        queued answers go up on their own. Nobody restarts, nobody loses ten minutes of work.</p>
+        <p>You see participants arrive and progress as it happens, so you know who has finished and
+        who is still going without walking around the room.</p>
+
+        <h2 id="step-results">4. Review the results</h2>
+        <p>The moment a participant submits, the objective questions are already scored. Multiple
+        choice, true/false, multiple-correct with partial credit, and any written answer whose rule
+        matched cleanly — all done, no queue, no waiting.</p>
+        <p>What lands on your desk is the part that actually needed a human: the written answers that
+        were close, unusual, or thoughtful in a way no rule can anticipate. You read them, award the
+        marks, and add a comment if you want the participant to understand the score.</p>
+        <p>Then export the whole thing as a <strong>PDF report</strong> — scores, per-question
+        breakdowns, every answer, and your comments — ready to file, print, or send to a parent.</p>
+
+        <div class="note note-green">
+          <p><strong>Nothing is auto-marked wrong in silence.</strong> A written answer that fails
+          its rule is never quietly scored zero. It is handed to you.</p>
+        </div>
+
+        <h2>What it looks like end to end</h2>
+        <p>For a twenty-question class test, the realistic time budget is roughly: ten minutes to
+        write the quiz, five seconds to share the code, however long the test runs, and then two or
+        three minutes reading the handful of written answers that needed you. The marking that used
+        to happen on the drive home mostly doesn't exist any more.</p>
+
+      </div>
+
+      <div class="section-head" style="margin-top:56px">
+        <h2 class="h2">Keep reading</h2>
+      </div>
+      <div class="next-links">
+        <a class="next-link" href="/features/">
+          <strong>Every feature in one place</strong>
+          <span>The six question formats, offline sync, reports and polls.</span>
+        </a>
+        <a class="next-link" href="/smart-grading/">
+          <strong>How smart grading actually works</strong>
+          <span>The five matching rules, with worked examples.</span>
+        </a>
+        <a class="next-link" href="/for-teachers/">
+          <strong>Built for real classrooms</strong>
+          <span>Why it works when the Wi-Fi and the budget don't.</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ===================== FOOTER ===================== -->
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="/" class="brand">
+          <span class="brand-mark"><img src="/icon-192.png" alt="" class="brand-icon" width="36" height="36"></span>
+          <span class="brand-name">Quizoma</span>
+        </a>
+        <p>A free classroom quiz engine with dual-track grading — algorithmic scanning for objective questions, and real teacher review for open-ended ones.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="/how-it-works/">How It Works</a>
+        <a href="/features/">Features</a>
+        <a href="/smart-grading/">Smart Grading</a>
+        <a href="/take/" target="_blank" rel="noopener">Join a Quiz</a>
+        <a href="/download/">Download the App</a>
+      </div>
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <a href="/for-teachers/">For Teachers</a>
+        <a href="/why-quizoma/">Why Quizoma</a>
+        <a href="/faq/">FAQ</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <a href="/privacy/">Privacy Policy</a>
+        <a href="/terms/">Terms of Service</a>
+        <a href="/delete-account/">Delete My Account</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2026 Quizoma. Built for thoughtful classrooms.</p>
+      <div class="footer-links">
+        <a href="/privacy/">Privacy Policy</a>
+        <a href="/terms/">Terms of Service</a>
+        <a href="#" id="cookie-settings-link">Cookie Settings</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="/script.js?v=3"></script>
+</body>
+</html>

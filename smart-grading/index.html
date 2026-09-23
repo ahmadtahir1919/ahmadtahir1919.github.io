@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Grading — Auto-Grade Short Answers Without Punishing Typos | Quizoma</title>
+<meta name="description" content="Five matching rules for written answers: exact, case-sensitive, typo-tolerant, keyword coverage and numeric equivalence — so 7, seven and 7.0 all count. Anything unclear goes to you, never marked wrong in silence.">
+<link rel="canonical" href="https://quizoma.com/smart-grading/">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="theme-color" content="#3525cd">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Quizoma">
+<meta property="og:title" content="Smart Grading — Auto-Grade Short Answers Without Punishing Typos">
+<meta property="og:description" content="Five matching rules for written answers, so a fair answer never scores zero over a missing letter.">
+<meta property="og:url" content="https://quizoma.com/smart-grading/">
+<meta property="og:image" content="https://quizoma.com/assets/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Smart Grading — Auto-Grade Short Answers Without Punishing Typos">
+<meta name="twitter:description" content="Five matching rules for written answers, so a fair answer never scores zero over a missing letter.">
+<meta name="twitter:image" content="https://quizoma.com/assets/og-image.png">
+<link rel="icon" href="/favicon.png" sizes="48x48" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css?v=5">
+<link rel="stylesheet" href="/page.css?v=2">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://quizoma.com/" },
+    { "@type": "ListItem", "position": 2, "name": "Smart Grading", "item": "https://quizoma.com/smart-grading/" }
+  ]
+}
+</script>
+</head>
+<body>
+<script src="/cookie-consent.js"></script>
+<script src="/analytics.js"></script>
+
+<header class="site-header" id="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <a href="/" class="brand">
+        <span class="brand-mark"><img src="/icon-192.png" alt="" class="brand-icon" width="36" height="36"></span>
+        <span class="brand-name">Quizoma</span>
+      </a>
+      <nav class="main-nav" id="main-nav">
+        <a href="/how-it-works/">How It Works</a>
+        <a href="/features/">Features</a>
+        <a href="/smart-grading/">Smart Grading</a>
+        <a href="/for-teachers/">For Teachers</a>
+        <a href="/faq/">FAQ</a>
+      </nav>
+    </div>
+    <div class="header-right">
+      <a href="/take/" class="btn btn-cream btn-sm" data-analytics="home_enter_room_code_clicked" data-analytics-props='{"location":"header"}' target="_blank" rel="noopener">
+        <span>Join Quiz</span>
+      </a>
+      <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+  <nav class="mobile-nav" id="mobile-nav">
+    <a href="/how-it-works/">How It Works</a>
+    <a href="/features/">Features</a>
+    <a href="/smart-grading/">Smart Grading</a>
+    <a href="/for-teachers/">For Teachers</a>
+    <a href="/faq/">FAQ</a>
+    <a href="/take/" class="btn btn-cream btn-sm" target="_blank" rel="noopener">Join Quiz</a>
+  </nav>
+</header>
+
+<main>
+
+  <section class="page-hero">
+    <div class="page-hero-glow" aria-hidden="true"></div>
+    <div class="container">
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="/">Home</a><span class="sep-slash">/</span><span aria-current="page">Smart Grading</span>
+      </nav>
+      <span class="eyebrow">THE GRADING ENGINE</span>
+      <h1 class="h1">A missing letter is not a wrong answer.</h1>
+      <p class="lead">Most quiz tools compare a written answer to a string and mark anything else
+      zero. Quizoma gives you five ways to decide what "correct" means for each question — and hands
+      you anything it is not sure about instead of guessing.</p>
+      <div class="cta-row">
+        <a href="/download/" class="btn btn-primary btn-lg">Get the app</a>
+        <a href="/features/" class="btn btn-cream btn-lg">See all features</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="prose">
+
+        <h2>The problem this solves</h2>
+        <p>A student who knows the answer types <code>Pythagoras</code> as <code>Pythagorus</code>.
+        A trainee writes <code>seven</code> where the answer key says <code>7</code>. Someone gives a
+        perfectly good three-sentence explanation that happens not to contain the exact phrase you
+        wrote down at 11pm the night before.</p>
+        <p>In a string-comparison quiz tool, all three score zero. Then you spend the evening
+        un-doing the marking, which is worse than not having auto-marking at all — you now have to
+        check every answer <em>and</em> distrust the ones it got right.</p>
+
+        <h2 id="rules">The five matching rules</h2>
+        <p>Each written or fill-in-the-blank question carries its own rule. You can also give a
+        question several rules at once, and the answer is accepted if any of them is satisfied.</p>
+
+        <h3>1. Exact match</h3>
+        <p>Letter for letter, after case and punctuation are normalised away. Use it when the answer
+        is a single unambiguous token and you want no interpretation at all.</p>
+        <div class="rule-example">
+          <span>"New York, USA"</span><span class="arrow">→</span><span>"new york usa"</span>
+          <span class="arrow">·</span><span class="verdict-ok">accepted</span>
+        </div>
+
+        <h3>2. Case-sensitive exact</h3>
+        <p>The strict one: capitalisation <em>and</em> punctuation are both preserved and both must
+        match. This is the rule for a spelling test, a code identifier, or anything where
+        <code>don't</code> and <code>dont</code> are genuinely different answers.</p>
+        <div class="rule-example">
+          <span>expected "HCl"</span><span class="arrow">·</span><span>given "hcl"</span>
+          <span class="arrow">→</span><span class="verdict-no">not accepted</span>
+        </div>
+
+        <h3>3. Smart match (typo-tolerant)</h3>
+        <p>Compares the answer word by word and scores how close it is, then accepts it if the
+        similarity clears a threshold <strong>you set on that question</strong>. Loosen it on a
+        history quiz where the spelling of a name is not the point; tighten it where it is.</p>
+        <div class="rule-example">
+          <span>expected "Pythagoras"</span><span class="arrow">·</span><span>given "Pythagorus"</span>
+          <span class="arrow">→</span><span class="verdict-ok">accepted with typo</span>
+        </div>
+        <p>Below the accept threshold but still recognisably in the region of right, the answer is
+        marked a <strong>partial match</strong> and routed to you. It is not scored zero on your
+        behalf.</p>
+
+        <h3>4. Keyword coverage</h3>
+        <p>For answers that are explanations rather than facts. You list the ideas that have to be
+        present, and set how many of them are enough:</p>
+        <ul>
+          <li><strong>All</strong> — every keyword must appear.</li>
+          <li><strong>Most</strong> — 75% of them.</li>
+          <li><strong>Half</strong> — 50%.</li>
+        </ul>
+        <p>A participant who covers the required share is accepted; one who covers noticeably less
+        is flagged as partial and sent to you with the coverage percentage attached, so you can see
+        at a glance what they missed.</p>
+        <div class="rule-example">
+          <span>keywords: photosynthesis, chlorophyll, sunlight, glucose</span>
+          <span class="arrow">·</span><span>3 of 4 found</span>
+          <span class="arrow">→</span><span class="verdict-ok">accepted at "Most"</span>
+        </div>
+
+        <h3>5. Numeric equivalence</h3>
+        <p>Numbers are compared <strong>as numbers</strong>, not as text. Digits, number words and
+        different decimal spellings of the same value are all the same answer.</p>
+        <div class="rule-example">
+          <span>7</span><span class="arrow">=</span><span>seven</span>
+          <span class="arrow">=</span><span>7.0</span>
+          <span class="arrow">·</span><span class="verdict-ok">all correct</span>
+        </div>
+        <div class="rule-example">
+          <span>1500</span><span class="arrow">=</span><span>"one thousand five hundred"</span>
+          <span class="arrow">·</span><span class="verdict-ok">correct</span>
+        </div>
+
+        <h2>Accepted answers and aliases</h2>
+        <p>Any question can carry a list of acceptable answers rather than one. <code>H2O</code> and
+        <code>water</code> can both be right without you marking forty scripts by hand. On fill in
+        the blanks, <strong>each blank keeps its own list</strong>, so a sentence with three gaps is
+        really three small questions with three sets of accepted answers.</p>
+
+        <h2>Partial credit</h2>
+        <p>Where it makes sense, a near answer earns a proportion of the marks instead of all or
+        nothing. Multiple-correct questions score by how many of the right options were found. Fill
+        in the blanks scores per blank. On written answers, partial credit is a setting you turn on
+        per question — some questions deserve it, some genuinely don't.</p>
+
+        <h2 id="review">What the engine will never do</h2>
+        <div class="note note-green">
+          <p><strong>It will never quietly mark a written answer wrong.</strong> If a rule does not
+          settle an answer confidently, that answer goes into your review queue with the similarity
+          or coverage score attached. The algorithm's job is to remove the obvious work, not to make
+          the judgement calls.</p>
+        </div>
+        <p>This is the whole design. Objective questions — multiple choice, true/false,
+        multiple-correct — are marked instantly and you never look at them again. Written answers
+        that clear their rule are marked too. What is left is the small pile that actually needed a
+        person, and that pile is usually four or five answers, not thirty.</p>
+
+        <h2>Same results in the app and the browser</h2>
+        <p>The grading engine runs in both the Android app and the web quiz-taking page, and the two
+        implementations are kept in lockstep and tested against each other. A written answer scores
+        identically whether it was typed in the app or at
+        <a href="/take/">quizoma.com/take</a>. Nobody gets a different mark for using a different
+        device.</p>
+
+      </div>
+
+      <div class="section-head" style="margin-top:56px">
+        <h2 class="h2">Keep reading</h2>
+      </div>
+      <div class="next-links">
+        <a class="next-link" href="/how-it-works/">
+          <strong>How it works, step by step</strong>
+          <span>Create, invite, answer, review — the whole flow.</span>
+        </a>
+        <a class="next-link" href="/for-teachers/">
+          <strong>Built for real classrooms</strong>
+          <span>Why it works when the Wi-Fi and the budget don't.</span>
+        </a>
+        <a class="next-link" href="/faq/">
+          <strong>Common questions</strong>
+          <span>Cost, accounts, offline use, reports and privacy.</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="/" class="brand">
+          <span class="brand-mark"><img src="/icon-192.png" alt="" class="brand-icon" width="36" height="36"></span>
+          <span class="brand-name">Quizoma</span>
+        </a>
+        <p>A free classroom quiz engine with dual-track grading — algorithmic scanning for objective questions, and real teacher review for open-ended ones.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="/how-it-works/">How It Works</a>
+        <a href="/features/">Features</a>
+        <a href="/smart-grading/">Smart Grading</a>
+        <a href="/take/" target="_blank" rel="noopener">Join a Quiz</a>
+        <a href="/download/">Download the App</a>
+      </div>
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <a href="/for-teachers/">For Teachers</a>
+        <a href="/why-quizoma/">Why Quizoma</a>
+        <a href="/faq/">FAQ</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <a href="/privacy/">Privacy Policy</a>
+        <a href="/terms/">Terms of Service</a>
+        <a href="/delete-account/">Delete My Account</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2026 Quizoma. Built for thoughtful classrooms.</p>
+      <div class="footer-links">
+        <a href="/privacy/">Privacy Policy</a>
+        <a href="/terms/">Terms of Service</a>
+        <a href="#" id="cookie-settings-link">Cookie Settings</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="/script.js?v=3"></script>
+</body>
+</html>

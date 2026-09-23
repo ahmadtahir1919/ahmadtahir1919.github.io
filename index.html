@@ -6,11 +6,100 @@
 <title>Quizoma — The thoughtful classroom quiz engine</title>
 <meta name="description" content="No more marking a typo as wrong. No more a fair answer scoring zero. Quizoma grades the easy stuff in an instant — and leaves the real thinking for you.">
 <link rel="canonical" href="https://quizoma.com/">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="theme-color" content="#3525cd">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Quizoma">
+<meta property="og:title" content="Quizoma — The thoughtful classroom quiz engine">
+<meta property="og:description" content="No more marking a typo as wrong. No more a fair answer scoring zero. Quizoma grades the easy stuff in an instant — and leaves the real thinking for you.">
+<meta property="og:url" content="https://quizoma.com/">
+<meta property="og:image" content="https://quizoma.com/assets/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Quizoma — the thoughtful classroom quiz engine with dual smart grading.">
+<!-- No twitter:site / no Organization sameAs anywhere on the site yet: there are
+     no social accounts to point at. Add both together once they exist — a
+     twitter:site handle that does not resolve is worse than none. -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Quizoma — The thoughtful classroom quiz engine">
+<meta name="twitter:description" content="No more marking a typo as wrong. No more a fair answer scoring zero. Quizoma grades the easy stuff in an instant — and leaves the real thinking for you.">
+<meta name="twitter:image" content="https://quizoma.com/assets/og-image.png">
+<link rel="icon" href="/favicon.png" sizes="48x48" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="icon" type="image/png" href="data:image/png;base64,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">
-<link rel="stylesheet" href="styles.css?v=3">
+<link rel="stylesheet" href="styles.css?v=5">
+<link rel="stylesheet" href="/page.css?v=2">
+<!-- Organization + WebSite + SoftwareApplication + FAQPage. The FAQ entries below
+     mirror the visible accordion further down this page verbatim — Google requires
+     the answer text to be on the page, so edit both together or drop the entry. -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://quizoma.com/#organization",
+      "name": "CraftByte Studio",
+      "url": "https://quizoma.com/",
+      "logo": "https://quizoma.com/icon-512.png"
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://quizoma.com/#website",
+      "url": "https://quizoma.com/",
+      "name": "Quizoma",
+      "description": "A free classroom quiz engine with dual-track grading.",
+      "publisher": { "@id": "https://quizoma.com/#organization" }
+    },
+    {
+      "@type": "SoftwareApplication",
+      "name": "Quizoma: Quiz & Test Maker",
+      "operatingSystem": "Android 7.0+",
+      "applicationCategory": "EducationalApplication",
+      "url": "https://quizoma.com/",
+      "softwareVersion": "1.0",
+      "description": "A free classroom quiz engine with dual-track grading: objective questions are marked instantly, and written answers are graded against configurable rules or handed to the teacher for review. Creating and taking a quiz keep working offline and sync later; exports a full PDF report.",
+      "image": "https://quizoma.com/icon-512.png",
+      "author": { "@id": "https://quizoma.com/#organization" },
+      "publisher": { "@id": "https://quizoma.com/#organization" },
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Can a participant get an unfair zero for a small mistake?",
+          "acceptedAnswer": { "@type": "Answer", "text": "No. Written and open-ended answers are never auto-marked wrong — they always go to you to read and grade yourself. Only simple questions (like multiple choice) are graded automatically, and those allow for small typos too." }
+        },
+        {
+          "@type": "Question",
+          "name": "What happens if the Wi-Fi drops during a test?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Answers are saved on the device as participants work, so a dropped connection never loses their progress. Everything syncs back up automatically once they're online again." }
+        },
+        {
+          "@type": "Question",
+          "name": "Do participants need to pay or make an account?",
+          "acceptedAnswer": { "@type": "Answer", "text": "There's nothing to pay. Participants join with a room PIN or QR code, then sign in with their Google account — no password to create, no separate signup form." }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I get a report of the results?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes. Scores, answers, and a full PDF report are generated automatically for every quiz, ready to save or share." }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I create a quiz from the website?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Not yet — for now, quizzes are created in the Android app. The website is for joining and taking a quiz. Creating from the browser is on the way." }
+        }
+      ]
+    }
+  ]
+}
+</script>
 </head>
 <body>
 <!-- Cookie consent gate — must load before analytics.js so it can hold off
@@ -26,19 +115,24 @@
     <div class="header-left">
       <a href="/" class="brand">
         <span class="brand-mark">
-          <img src="data:image/png;base64,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" alt="" class="brand-icon">
+          <img src="/icon-192.png" alt="" class="brand-icon">
         </span>
         <span class="brand-name">Quizoma</span>
       </a>
+      <!-- Real page links, not #anchors: Google builds search sitelinks out of a
+           site's internal navigation, and an anchor into this same page gives it
+           nothing to choose from. Anchor text is written to read the way we want
+           a sitelink to read. -->
       <nav class="main-nav" id="main-nav">
-        <a href="#pillars">Product</a>
-        <a href="#dual-grading">Dual Grading Engine</a>
-        <a href="#formats">6 Formats</a>
-        <a href="#faq">FAQ</a>
+        <a href="/how-it-works/">How It Works</a>
+        <a href="/features/">Features</a>
+        <a href="/smart-grading/">Smart Grading</a>
+        <a href="/for-teachers/">For Teachers</a>
+        <a href="/faq/">FAQ</a>
       </nav>
     </div>
     <div class="header-right">
-      <a href="/take/" class="btn btn-cream btn-sm" data-analytics="home_enter_room_code_clicked" data-analytics-props='{"location":"header"}'>
+      <a href="/take/" class="btn btn-cream btn-sm" data-analytics="home_enter_room_code_clicked" data-analytics-props='{"location":"header"}' target="_blank" rel="noopener">
         <img src="assets/header_icon_02.svg" alt="" width="15" height="12">
         <span>Join Quiz</span>
       </a>
@@ -48,11 +142,12 @@
     </div>
   </div>
   <nav class="mobile-nav" id="mobile-nav">
-    <a href="#pillars">Product</a>
-    <a href="#dual-grading">Dual Grading Engine</a>
-    <a href="#formats">6 Formats</a>
-    <a href="#faq">FAQ</a>
-    <a href="/take/" class="btn btn-cream btn-sm" data-analytics="home_enter_room_code_clicked" data-analytics-props='{"location":"mobile_nav"}'>Join Quiz</a>
+    <a href="/how-it-works/">How It Works</a>
+    <a href="/features/">Features</a>
+    <a href="/smart-grading/">Smart Grading</a>
+    <a href="/for-teachers/">For Teachers</a>
+    <a href="/faq/">FAQ</a>
+    <a href="/take/" class="btn btn-cream btn-sm" data-analytics="home_enter_room_code_clicked" data-analytics-props='{"location":"mobile_nav"}' target="_blank" rel="noopener">Join Quiz</a>
   </nav>
 </header>
 
@@ -69,19 +164,21 @@
         Quizoma grades the easy stuff in an instant — and leaves the real thinking for you.</p>
 
         <div class="cta-row">
-          <a href="/take/" class="btn btn-primary btn-lg btn-hero-cta" data-analytics="home_enter_room_code_clicked" data-analytics-props='{"location":"hero"}'>
+          <a href="/take/" class="btn btn-primary btn-lg btn-hero-cta" data-analytics="home_enter_room_code_clicked" data-analytics-props='{"location":"hero"}' target="_blank" rel="noopener">
             <img src="assets/hero_icon_02.svg" alt="" width="17" height="17">
             <span>Join Quiz</span>
           </a>
+          <!-- PLAY-CTA (hero). At launch, restore:
           <a href="https://play.google.com/store/apps/details?id=com.craftbytestudio.quizoma" class="play-store-btn" data-analytics="home_play_store_clicked" data-analytics-props='{"location":"hero"}'>
             <img src="assets/google-play-badge.png" alt="Get it on Google Play" width="166" height="49">
-          </a>
+          </a> -->
+          <span class="play-soon"><span class="dot"></span>Coming soon on Google Play</span>
         </div>
 
         <div class="trust-badges">
           <span><img src="assets/hero_icon_04.svg" alt="" width="13" height="13"> 100% Free</span>
           <span><img src="assets/hero_icon_05.svg" alt="" width="13" height="11"> Android 7.0+ &amp; Any Browser</span>
-          <span><img src="assets/hero_icon_06.svg" alt="" width="12" height="12"> Works Fully Offline</span>
+          <span><img src="assets/hero_icon_06.svg" alt="" width="12" height="12"> Keeps Working Offline</span>
         </div>
 
         <div class="stat-cards">
@@ -213,7 +310,7 @@
                 </div>
               </div>
 
-              <!-- Slide 6: Anonymous Live Poll -->
+              <!-- Slide 6: Live Poll -->
               <div class="mini-quiz-slide">
                 <p class="mini-quiz-question">Quick pulse check: how confident do you feel right now?</p>
                 <div class="demo-poll">
@@ -409,7 +506,7 @@
             <li><span class="feature-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg></span><div><strong>Private, Kind Feedback</strong><span>Your notes, right there with the score, plus a PDF summary to keep.</span></div></li>
           </ul>
           <div class="stage-foot">
-            <span class="mono foot-green">Works Offline</span>
+            <span class="mono foot-green">Syncs Later</span>
             <span class="tag tag-green">Ready to Go</span>
           </div>
         </div>
@@ -498,7 +595,7 @@
             <div class="format-icon bg-purple"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b21a8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg></div>
             <span class="tag tag-blue-soft">Audio/Video Soon</span>
           </div>
-          <h3 class="h3">Anonymous Live Polls</h3>
+          <h3 class="h3">Live Polls</h3>
           <p>A quick, ungraded poll to check how the class feels. Results show up live as a simple bar chart.</p>
           <div class="format-foot"><span class="mono">No Names Shown</span><span class="mono foot-amber">Ungraded</span></div>
         </div>
@@ -518,8 +615,10 @@
           <p>Built for teachers and participants who want quizzes graded properly — join a quiz instantly from your browser, or get the Android app to start creating your own.</p>
         </div>
         <div class="closing-actions">
-          <a href="/take/" class="btn btn-cream btn-lg" data-analytics="home_join_quiz_clicked" data-analytics-props='{"location":"closing_banner"}'>Join a Quiz</a>
-          <a href="https://play.google.com/store/apps/details?id=com.craftbytestudio.quizoma" class="btn btn-primary-dark btn-lg" data-analytics="home_play_store_clicked" data-analytics-props='{"location":"closing_banner"}'>Get Quizoma on Android</a>
+          <a href="/take/" class="btn btn-cream btn-lg" data-analytics="home_join_quiz_clicked" data-analytics-props='{"location":"closing_banner"}' target="_blank" rel="noopener">Join a Quiz</a>
+          <!-- PLAY-CTA (closing banner). At launch, restore:
+          <a href="https://play.google.com/store/apps/details?id=com.craftbytestudio.quizoma" class="btn btn-primary-dark btn-lg" data-analytics="home_play_store_clicked" data-analytics-props='{"location":"closing_banner"}'>Get Quizoma on Android</a> -->
+          <span class="btn btn-primary-dark btn-lg is-soon">Coming soon on Google Play</span>
         </div>
       </div>
     </div>
@@ -580,17 +679,25 @@
     <div class="footer-grid">
       <div class="footer-brand">
         <a href="/" class="brand">
-          <span class="brand-mark"><img src="data:image/png;base64,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" alt="" class="brand-icon"></span>
+          <span class="brand-mark"><img src="/icon-192.png" alt="" class="brand-icon"></span>
           <span class="brand-name">Quizoma</span>
         </a>
         <p>A free classroom quiz engine with dual-track grading — algorithmic scanning for objective questions, and real teacher review for open-ended ones.</p>
       </div>
       <div class="footer-col">
         <h4>Product</h4>
-        <a href="#dual-grading">Dual Grading Engine</a>
-        <a href="#formats">6 Question Formats</a>
-        <a href="#pillars">Offline-First Sync</a>
-        <a href="/take/" data-analytics="home_join_quiz_clicked" data-analytics-props='{"location":"footer"}'>Join a Quiz</a>
+        <a href="/how-it-works/">How It Works</a>
+        <a href="/features/">Features</a>
+        <a href="/smart-grading/">Smart Grading</a>
+        <a href="/take/" data-analytics="home_join_quiz_clicked" data-analytics-props='{"location":"footer"}' target="_blank" rel="noopener">Join a Quiz</a>
+        <a href="/download/">Download the App</a>
+      </div>
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <a href="/for-teachers/">For Teachers</a>
+        <a href="/why-quizoma/">Why Quizoma</a>
+        <a href="/faq/">FAQ</a>
+        <a href="/blog/">Blog</a>
       </div>
       <div class="footer-col">
         <h4>Legal</h4>
