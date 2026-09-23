@@ -1472,41 +1472,47 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
    by anything in here. */
 @media (min-width: 900px) {
   /* A tighter frame than the shared 40px page padding — the quiz surface is the page
-     here, so it gets most of the viewport. It already fills the height: .site-main is
-     flex:1 and .quiz-screen is flex:1 inside it. */
-  #app:not(.compact-view) .site-main:has(> .quiz-screen) { padding: 24px; }
+     here, so it gets most of the viewport. */
+  #app:not(.compact-view) .site-main:has(> .quiz-screen) { padding: 20px 24px 28px; }
 
-  /* The chrome (top bar, progress, bottom bar) spans the full 1040px so the surface
-     reads as a deliberate full-width app, while the READING column below stays at a
-     comfortable measure. */
-  #app:not(.compact-view) .quiz-screen .quiz-topbar { height: 60px; padding: 0 28px; }
-  #app:not(.compact-view) .quiz-screen .quiz-topbar .title { font-size: 17px; }
-  #app:not(.compact-view) .quiz-screen .progress-track.segmented { padding: 0 28px; margin: 16px 0 6px; }
+  /* The card SHRINK-WRAPS its question instead of stretching to the viewport.
+     Stretching is what made the whole screen read as oversized-and-empty: on any
+     short question it left a few hundred px of blank white above the bottom bar, and
+     the body's `justify-content: safe center` then pushed the question itself ~90px
+     down from the progress bar to balance that void — so the first thing on screen
+     was a gap. Sized to its content, the question sits right under the header at every
+     length, and the leftover height is page background rather than empty card.
 
-  /* Centered content column. It used to cap at 820px because a single stacked column
-     of options gets unreadable past roughly that width — the options now go
-     two-across (below), which is what buys the extra room back. */
+     The 480px floor keeps a 2-option question (or a True/False) from collapsing into a
+     stub, and is set just under a 4-option question's natural height so the card does
+     not visibly resize between most consecutive questions.
+     1100px rather than the shell's 1440: a question card is one column of prose plus
+     two columns of options, and at 1440 each option row was ~700px of card carrying a
+     one-word answer. The RESULT screen still uses the full 1440 — it has 20-50 review
+     cards to lay out and genuinely wants the room. */
+  #app:not(.compact-view) .site-main > .quiz-screen {
+    flex: 0 0 auto;
+    min-height: 480px;
+    max-width: 1100px;
+  }
+
+  /* The chrome (top bar, progress, bottom bar) spans the full card so the surface reads
+     as a deliberate app frame. The progress bar sits flush under the top bar's divider
+     rather than floating between it and the question — two separated hairlines up there
+     were most of the "busy top". */
+  #app:not(.compact-view) .quiz-screen .quiz-topbar { height: 56px; padding: 0 28px; }
+  #app:not(.compact-view) .quiz-screen .quiz-topbar .title { font-size: 16px; }
+  #app:not(.compact-view) .quiz-screen .progress-track.segmented { padding: 0 28px; margin: 14px 0 0; }
+
+  /* No inner column cap any more: the CARD is now the reading column (1100px), so a
+     second 1180px cap inside it only ever added dead margin. */
   #app:not(.compact-view) .quiz-screen .quiz-body {
     width: 100%;
-    max-width: 1180px;
-    margin: 0 auto;
-    padding: 28px 32px 40px;
-    /* The surface now fills a 1080px-tall viewport, so a short question would leave a
-       few hundred px of blank white under it — worse than the narrow card. Centering
-       sits the question in the middle of that space instead.
-       "safe" matters: with plain `center`, content taller than the body overflows the
-       TOP where it cannot be scrolled back to, silently cutting off a long question.
-       Browsers without `safe` ignore the whole value and fall back to the flex-start
-       this rule started from, which is the old (still usable) behaviour. */
-    justify-content: safe center;
+    padding: 22px 28px 26px;
   }
-  /* The timer bar keeps spanning the full 1040px (it reads as the surface's own edge);
-     only the Skip/Next row lines up with the reading column above it. */
   #app:not(.compact-view) .quiz-screen .quiz-bottombar .bar-row {
     width: 100%;
-    max-width: 1180px;
-    margin: 0 auto;
-    padding: 16px 32px calc(16px + env(safe-area-inset-bottom, 0px));
+    padding: 14px 28px calc(14px + env(safe-area-inset-bottom, 0px));
   }
 
   /* Options two across. This is the whole reason the card can be this wide: at 1180px
@@ -1519,9 +1525,9 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
   #app:not(.compact-view) .quiz-screen .choice-list {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px;
+    gap: 12px;
   }
-  #app:not(.compact-view) .quiz-screen .choice-list.tight { gap: 12px; }
+  #app:not(.compact-view) .quiz-screen .choice-list.tight { gap: 10px; }
   /* Polls opt out. Their cards carry a result bar, a percentage and an "Other" text
      field, all of which need the full width to stay legible — and a poll is read as a
      ranked list, which two columns actively scramble. */
@@ -1530,18 +1536,22 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
     flex-direction: column;
   }
 
-  /* No .choice-list to spread out, so these stay a single element — capped narrower
-     than the card so a written answer isn't typed across 1180px. */
+  /* These have no .choice-list to spread into columns, so they simply fill the card.
+     They used to be capped at 820px to keep a written answer off a 1180px line, but
+     under the 1100px card that cap only left a conspicuous empty half to their right
+     while the question card above them ran full width. */
   #app:not(.compact-view) .quiz-screen .answer-card,
-  #app:not(.compact-view) .quiz-screen .sentence-card { max-width: 820px; width: 100%; }
+  #app:not(.compact-view) .quiz-screen .sentence-card { width: 100%; }
 
-  /* Type scaled ~15% for laptop viewing distance. */
-  #app:not(.compact-view) .quiz-screen .q-card-body { padding: 20px 24px; }
-  #app:not(.compact-view) .quiz-screen .q-title { font-size: 19px; line-height: 28px; }
-  #app:not(.compact-view) .quiz-screen .q-title.statement { font-size: 17px; line-height: 25px; }
-  #app:not(.compact-view) .quiz-screen .choice-card { min-height: 68px; padding: 16px; }
-  #app:not(.compact-view) .quiz-screen .choice-list.tight .choice-card { min-height: 64px; }
-  #app:not(.compact-view) .quiz-screen .choice-label { font-size: 18px; line-height: 24px; }
+  /* Type scaled for laptop viewing distance, but the BOXES stay close to their phone
+     sizes. The earlier pass grew both, which is what made an option card carrying the
+     word "1889" 82px tall — the padding, not the text, was doing the growing. */
+  #app:not(.compact-view) .quiz-screen .q-card-body { padding: 16px 22px; }
+  #app:not(.compact-view) .quiz-screen .q-title { font-size: 18px; line-height: 26px; }
+  #app:not(.compact-view) .quiz-screen .q-title.statement { font-size: 16px; line-height: 24px; }
+  #app:not(.compact-view) .quiz-screen .choice-card { min-height: 56px; padding: 12px 16px; }
+  #app:not(.compact-view) .quiz-screen .choice-list.tight .choice-card { min-height: 54px; }
+  #app:not(.compact-view) .quiz-screen .choice-label { font-size: 17px; line-height: 23px; }
 
   /* ── Result screen ───────────────────────────────────────────────────────
      This used to be capped at 820px, which on a laptop left wide empty gutters
