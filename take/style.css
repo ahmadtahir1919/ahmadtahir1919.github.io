@@ -140,6 +140,22 @@ button, input, textarea { font-family: inherit; }
 .header-btn svg { width: 18px; height: 18px; }
 .header-btn:hover { background: var(--primary-container); color: var(--primary); border-color: var(--primary); }
 .header-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+/* Engaged toggle: filled, not just tinted. Both of these are modes you can leave
+   switched on and forget, and until now the only thing separating "compact view is on"
+   from "compact view is off" was which way a 18px arrow glyph pointed — which is how a
+   browser sat in compact view for days while the wide layout was assumed broken. The
+   filled state is the button saying which mode you are actually in. Hover on an already
+   on button deepens rather than lightens, so it never reads as switching off. */
+.header-btn.is-on {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+.header-btn.is-on:hover {
+  background: color-mix(in srgb, var(--primary) 84%, #000);
+  border-color: color-mix(in srgb, var(--primary) 84%, #000);
+  color: #fff;
+}
 @media (max-width: 899px) {
   .header-actions .header-btn { display: none; }
 }
@@ -1110,8 +1126,20 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
 .result-expander .expander-text { flex: 1; display: flex; flex-direction: column; gap: 2px; }
 .result-expander .expander-title { font-size: 15px; font-weight: 600; }
 .result-expander .expander-sub { font-size: 13px; color: var(--text-secondary); }
+/* Open vs closed used to ride entirely on which way a 20px chevron pointed, which is
+   not a state you can read at a glance — least of all on desktop, where both sections
+   start open and there is nothing to compare against. An open section now takes the
+   quiz's own colour: tinted face, accent border and title, and the chevron inherits it.
+   Closed stays the plain white row, so the two are told apart by the whole control
+   rather than by one rotated glyph. */
+.result-expander.open .expander-head {
+  background: color-mix(in srgb, var(--accent) 6%, #fff);
+  border-color: color-mix(in srgb, var(--accent) 30%, #fff);
+}
+.result-expander.open .expander-title { color: var(--accent); }
+.result-expander .expander-head:hover { border-color: color-mix(in srgb, var(--accent) 45%, #fff); }
 .result-expander .expander-chevron { color: var(--text-secondary); transition: transform 0.22s ease; flex-shrink: 0; }
-.result-expander.open .expander-chevron { transform: rotate(180deg); }
+.result-expander.open .expander-chevron { transform: rotate(180deg); color: var(--accent); }
 .result-expander .expander-body { display: none; padding-top: 12px; flex-direction: column; gap: 12px; }
 .result-expander.open .expander-body { display: flex; }
 .result-expander .expander-body.opening { animation: expanderOpen 0.28s cubic-bezier(0.22, 1, 0.36, 1) both; }
@@ -1576,16 +1604,30 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
     align-items: start;
   }
 
+  /* The top of the result screen is pure preamble — page padding, title, candidate
+     line, hero, two expander headers — and at the sizes below it ate the whole first
+     viewport before a single review card appeared. Everything here is the same
+     information at a weight that leaves room for the answers, which are what the
+     taker actually came to read. */
+  #app:not(.compact-view) .site-main:has(> .result-screen) { padding: 20px 24px 28px; }
+  #app:not(.compact-view) .result-screen .quiz-title { font-size: 22px; }
+  #app:not(.compact-view) .result-expander .expander-head { padding: 11px 16px; }
+
   /* The score is one big number and a bar; stacked, it left the right half of a
-     1440px hero empty. Numbers on the left, bar and verdict sentence on the right. */
+     1440px hero empty. Numbers on the left, bar and verdict sentence on the right.
+     The type is a notch smaller than it was: at 64px the number alone set the hero's
+     height, and a 200px block for "5 / 9" is a headline, not a result. */
   #app:not(.compact-view) .score-hero {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
     align-items: center;
     column-gap: 40px;
-    row-gap: 6px;
-    padding: 26px 32px;
+    row-gap: 2px;
+    padding: 16px 28px 18px;
   }
+  #app:not(.compact-view) .score-hero .hero-score { font-size: 46px; }
+  #app:not(.compact-view) .score-hero .hero-total { font-size: 20px; padding-bottom: 5px; }
+  #app:not(.compact-view) .score-hero .hero-footer { margin-top: 8px; }
   #app:not(.compact-view) .score-hero .hero-label { grid-column: 1; }
   #app:not(.compact-view) .score-hero .hero-numbers { grid-column: 1; }
   #app:not(.compact-view) .score-hero .hero-bar-row { grid-column: 2; grid-row: 1 / 3; }

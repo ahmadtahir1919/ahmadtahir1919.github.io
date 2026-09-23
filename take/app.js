@@ -262,9 +262,18 @@ function watchFullscreenChanges() {
 
 /** One header control: an icon button carrying its label as both tooltip and
  *  aria-label (the icon alone is the whole visible content). */
-function buildHeaderBtn(label, svg, onClick) {
-  const btn = el("button", { class: "header-btn", type: "button", title: label, onclick: onClick }, []);
+/** `on` marks the button's mode as currently engaged: it paints filled (style.css
+ *  .header-btn.is-on) and reports aria-pressed, so "compact view is on" is legible
+ *  without having to know which way the icon's arrows are supposed to point. */
+function buildHeaderBtn(label, svg, onClick, on = false) {
+  const btn = el("button", {
+    class: "header-btn" + (on ? " is-on" : ""),
+    type: "button",
+    title: label,
+    onclick: onClick,
+  }, []);
   btn.setAttribute("aria-label", label);
+  btn.setAttribute("aria-pressed", on ? "true" : "false");
   btn.appendChild(html(svg));
   return btn;
 }
@@ -344,10 +353,14 @@ function watchAccountMenuDismiss() {
 
 function buildSiteHeader(status) {
   const actions = [
+    // Filled while compact is the mode in force. Wide is the default, so it is compact
+    // that needs announcing — a page can sit in it across sessions (readCompactView
+    // reads localStorage) with nothing on screen saying so.
     buildHeaderBtn(
       state.compactView ? S.VIEW_WIDE : S.VIEW_COMPACT,
       state.compactView ? EXPAND_WIDE_SVG : COLLAPSE_NARROW_SVG,
-      toggleViewMode
+      toggleViewMode,
+      state.compactView
     ),
   ];
   if (FULLSCREEN_SUPPORTED) {
@@ -355,7 +368,8 @@ function buildSiteHeader(status) {
     actions.push(buildHeaderBtn(
       inFullscreen ? S.FULLSCREEN_EXIT : S.FULLSCREEN_ENTER,
       inFullscreen ? FULLSCREEN_EXIT_SVG : FULLSCREEN_ENTER_SVG,
-      toggleFullscreen
+      toggleFullscreen,
+      inFullscreen
     ));
   }
   actions.push(el("span", { class: "status-chip" }, [
