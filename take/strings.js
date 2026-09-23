@@ -28,6 +28,13 @@ const S = {
   STATUS_IN_PROGRESS: "In progress",
   STATUS_SESSION_READY: "Session Ready",
   STATUS_PAUSED: "Maintenance",
+  // Desktop-only header controls (hidden under 900px — see .header-btn in style.css).
+  // Each label is both the button's tooltip and its aria-label, and names the state the
+  // click MOVES TO, not the one it's in.
+  VIEW_WIDE: "Wide view",
+  VIEW_COMPACT: "Compact view",
+  FULLSCREEN_ENTER: "Fullscreen",
+  FULLSCREEN_EXIT: "Exit fullscreen",
   footerVersion: (v) => `Quizoma Web v${v}`,
   FOOTER_TERMS: "Terms",
   FOOTER_PRIVACY: "Privacy",

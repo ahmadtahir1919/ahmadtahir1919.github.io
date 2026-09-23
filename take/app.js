@@ -101,6 +101,9 @@ const state = {
   // Admin maintenance switches (see SC.fetchFeatureFlags) — fetched once in boot() and
   // fails open, so an unreached/erroring flags call never blocks a genuine join.
   flags: { joinQuizEnabled: true },
+  // Desktop layout toggle (the header's first button). false = wide, which is the
+  // default; see readCompactView for why it starts out of localStorage.
+  compactView: false,
 };
 
 // Fires window.Analytics.screen() once per genuine screen change, not once per
@@ -122,6 +125,8 @@ function render() {
     state.landingTickerHandle = null;
   }
   app.innerHTML = "";
+  // Re-asserted every render so the class can never drift from state.compactView.
+  applyViewMode();
   // Every screen shares the same chrome: brand header (with a status chip) on top, the
   // screen's own content in the middle, version/legal footer at the bottom. Only the
   // chip's text changes per screen, so the header reads identically everywhere.
@@ -172,7 +177,107 @@ function headerStatusFor(screen) {
 // brand mark and the browser tab icon identical.
 const BRAND_ICON_DATA_URI = "data:image/png;base64,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";
 
+// ── Desktop view controls ───────────────────────────────────────────────────
+// Two independent toggles, both surfaced in the shared header and both hidden under
+// 900px by CSS (.header-btn) — on a phone the app is already edge-to-edge and the
+// browser owns fullscreen, so neither has anything to offer there.
+//
+//   1. compactView — CSS only. Flips #app.compact-view, which pins --shell-max back
+//      to the 480px phone column at any viewport (see style.css).
+//   2. fullscreen  — the real Fullscreen API on <html>, so the browser's own chrome
+//      goes away too.
+//
+// They compose: fullscreen + compact is a legal (if unusual) combination.
+
+// Remembered per-browser the same way cookie-consent.js stores its choice — the
+// try/catch matters, Safari in private mode throws on any localStorage access.
+// Kebab-case rather than "quizoma.viewMode" on purpose: lint-strings.mjs classifies a
+// dotted, capitalised literal as prose and reports it as untranslated UI text.
+const VIEW_MODE_KEY = "quizoma-view-mode";
+function readCompactView() {
+  try { return window.localStorage.getItem(VIEW_MODE_KEY) === "compact"; } catch (e) { return false; }
+}
+function storeCompactView(compact) {
+  try { window.localStorage.setItem(VIEW_MODE_KEY, compact ? "compact" : "wide"); } catch (e) {}
+}
+
+/** Pushes state.compactView onto #app. render() wipes #app's CHILDREN but never its
+ *  class list, so the class survives a re-render — this just keeps the two in sync no
+ *  matter how compactView was changed. Called from render() and from boot(). */
+function applyViewMode() {
+  app.classList.toggle("compact-view", state.compactView);
+}
+
+function toggleViewMode() {
+  state.compactView = !state.compactView;
+  storeCompactView(state.compactView);
+  // Full re-render rather than just the class flip: it's the path every other state
+  // change already takes, and it's what repaints this button's own icon and label.
+  render();
+}
+
+// iOS Safari on iPhone has no Fullscreen API at all. Detect once — a button that
+// silently does nothing is worse than no button, so we simply don't render it there.
+const FULLSCREEN_SUPPORTED = !!(
+  document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen
+);
+function isFullscreen() {
+  return !!(document.fullscreenElement || document.webkitFullscreenElement);
+}
+function toggleFullscreen() {
+  if (isFullscreen()) {
+    const exit = document.exitFullscreen || document.webkitExitFullscreen;
+    if (exit) Promise.resolve(exit.call(document)).catch(() => {});
+    return;
+  }
+  const root = document.documentElement;
+  const request = root.requestFullscreen || root.webkitRequestFullscreen;
+  // Rejects when a permissions policy or an embedding iframe blocks it. Swallow it:
+  // an unhandled rejection from a header button must not take the screen down.
+  if (request) Promise.resolve(request.call(root)).catch(() => {});
+}
+
+/** Esc and F11 leave fullscreen without going through our button, so the icon has to
+ *  follow the browser rather than our own last click. Registered ONCE from boot() —
+ *  render() rebuilds the header constantly, so binding this per-render would stack up
+ *  listeners for the life of the page. */
+function watchFullscreenChanges() {
+  if (!FULLSCREEN_SUPPORTED) return;
+  const onChange = () => render();
+  document.addEventListener("fullscreenchange", onChange);
+  document.addEventListener("webkitfullscreenchange", onChange);
+}
+
+/** One header control: an icon button carrying its label as both tooltip and
+ *  aria-label (the icon alone is the whole visible content). */
+function buildHeaderBtn(label, svg, onClick) {
+  const btn = el("button", { class: "header-btn", type: "button", title: label, onclick: onClick }, []);
+  btn.setAttribute("aria-label", label);
+  btn.appendChild(html(svg));
+  return btn;
+}
+
 function buildSiteHeader(status) {
+  const actions = [
+    buildHeaderBtn(
+      state.compactView ? S.VIEW_WIDE : S.VIEW_COMPACT,
+      state.compactView ? EXPAND_WIDE_SVG : COLLAPSE_NARROW_SVG,
+      toggleViewMode
+    ),
+  ];
+  if (FULLSCREEN_SUPPORTED) {
+    const inFullscreen = isFullscreen();
+    actions.push(buildHeaderBtn(
+      inFullscreen ? S.FULLSCREEN_EXIT : S.FULLSCREEN_ENTER,
+      inFullscreen ? FULLSCREEN_EXIT_SVG : FULLSCREEN_ENTER_SVG,
+      toggleFullscreen
+    ));
+  }
+  actions.push(el("span", { class: "status-chip" }, [
+    el("span", { class: "status-dot" }, []),
+    status,
+  ]));
+
   return el("header", { class: "site-header" }, [
     el("div", { class: "brand" }, [
       el("span", { class: "brand-tile" }, [
@@ -180,10 +285,7 @@ function buildSiteHeader(status) {
       ]),
       el("span", { class: "brand-name" }, [S.BRAND]),
     ]),
-    el("span", { class: "status-chip" }, [
-      el("span", { class: "status-dot" }, []),
-      status,
-    ]),
+    el("div", { class: "header-actions" }, actions),
   ]);
 }
 
@@ -371,6 +473,12 @@ const GOOGLE_G_SVG = `
 
 const CHECK_SVG = `<svg viewBox="0 0 20 20" fill="none"><path d="M4 10.5l4 4 8-9" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const CLOSE_X_SVG = `<svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
+// Header controls (see buildSiteHeader). Arrows pointing OUT = "make it bigger",
+// pointing IN = "make it smaller" — the same convention a video player uses.
+const EXPAND_WIDE_SVG = `<svg viewBox="0 0 24 24" fill="none"><path d="M9 12H3M3 12l3-3M3 12l3 3M15 12h6M21 12l-3-3M21 12l-3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const COLLAPSE_NARROW_SVG = `<svg viewBox="0 0 24 24" fill="none"><path d="M3 12h6M9 12L6 9M9 12l-3 3M21 12h-6M15 12l3-3M15 12l3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const FULLSCREEN_ENTER_SVG = `<svg viewBox="0 0 24 24" fill="none"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const FULLSCREEN_EXIT_SVG = `<svg viewBox="0 0 24 24" fill="none"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const CLOCK_SVG = `<svg viewBox="0 0 20 20" fill="none" width="13" height="13"><circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="1.6"/><path d="M10 6v4l2.6 2.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
 const CHEVRON_RIGHT_SVG = `<svg viewBox="0 0 16 16" fill="none" width="14" height="14"><path d="M6 3l5 5-5 5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 // Quiz-taking screen icons (Material Rounded/Outlined equivalents used on Android).
@@ -3085,6 +3193,11 @@ const PDF_SVG = `<svg viewBox="0 0 20 20" fill="none" width="16" height="16"><pa
 
 // ── Boot ───────────────────────────────────────────────────────────────────
 async function boot() {
+  // Before the first render, so the very first paint is already in the right layout
+  // (no flash from wide to compact for someone who chose compact last visit).
+  state.compactView = readCompactView();
+  applyViewMode();
+  watchFullscreenChanges();
   try {
     if (!shareCode) {
       state.screen = "enterCode";

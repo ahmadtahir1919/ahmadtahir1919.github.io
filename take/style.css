@@ -52,6 +52,24 @@ button, input, textarea { font-family: inherit; }
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
+  /* The single knob every screen's width cap reads from (.screen, .card-screen and
+     .site-main > .quiz-screen below). 480px is the phone-shaped column this app was
+     built around; the min-width:900px rule further down widens it for laptops and
+     monitors, and .compact-view forces it back when the user asks for the narrow
+     layout from the header. Changing widths in ONE place is what keeps the desktop
+     treatment from having to be re-derived per screen. */
+  --shell-max: 480px;
+}
+/* Compact toggle (header button → app.js applyViewMode). Deliberately outside any
+   media query: it must win at every viewport, so "compact" means compact even on a
+   4K monitor. */
+#app.compact-view { --shell-max: 480px; }
+@media (min-width: 900px) {
+  /* Laptops and up: use the screen instead of pretending to be a phone. Not 100% —
+     the quiz keeps a deliberate frame of background around it (see the wide-quiz
+     block near .quiz-screen), and a line of option text stretched across a 2560px
+     monitor is unreadable. */
+  #app { --shell-max: 1040px; }
 }
 
 .site-header {
@@ -98,6 +116,38 @@ button, input, textarea { font-family: inherit; }
   white-space: nowrap;
 }
 .status-chip.small { height: 24px; padding: 0 10px; font-size: 11px; }
+
+/* Right-hand side of the shared header: the layout/fullscreen controls, then the
+   status chip. Both buttons are desktop-only — on a phone the app is already
+   edge-to-edge and the browser owns fullscreen, so they'd be noise. */
+.header-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.header-btn {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid #E6E7EF;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.header-btn svg { width: 18px; height: 18px; }
+.header-btn:hover { background: var(--primary-container); color: var(--primary); border-color: var(--primary); }
+.header-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+@media (max-width: 899px) {
+  .header-actions .header-btn { display: none; }
+}
+/* Real browser fullscreen (the second header button → requestFullscreen on
+   <html>). The fullscreened element gets a UA-default black background, which would
+   show through the dotted paper backdrop — repaint it, and make sure the app still
+   measures its height against the fullscreen viewport. */
+html:fullscreen, html:-webkit-full-screen { background: #F4F5F9; }
+html:fullscreen body, html:-webkit-full-screen body { min-height: 100vh; }
 .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18); }
 
 .site-main {
@@ -134,7 +184,7 @@ button, input, textarea { font-family: inherit; }
 
 .screen {
   width: 100%;
-  max-width: 480px;
+  max-width: var(--shell-max);
   display: flex;
   flex-direction: column;
   padding: 0;
@@ -144,8 +194,10 @@ button, input, textarea { font-family: inherit; }
 /* Follows directly after the top bar/progress bar in the quiz flow — a little
    breathing room, not the full top padding (would double up on the bar above). */
 .screen.no-pad-top { padding-top: 18px; }
-/* A single card in the middle of the page (enter code / landing / confirm name). */
-.screen.card-screen { max-width: 420px; align-items: center; gap: 16px; }
+/* A single card in the middle of the page (enter code / landing / confirm name).
+   Widens with the shell but stops at 560px: these hold one PIN field or one name
+   field, and an input stretched to 1040px reads as broken rather than spacious. */
+.screen.card-screen { max-width: min(var(--shell-max), 560px); align-items: center; gap: 16px; }
 
 .card {
   position: relative;
@@ -1315,11 +1367,69 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
 .sign-out-row .sign-out-link:hover { text-decoration: underline; }
 
 /* Quiz-taking and result screens sit in the same centered column as the cards. */
-.site-main > .quiz-screen { width: 100%; max-width: 480px; border-radius: 24px; overflow: hidden; box-shadow: 0 18px 50px rgba(30, 30, 60, 0.10); }
+.site-main > .quiz-screen { width: 100%; max-width: var(--shell-max); border-radius: 24px; overflow: hidden; box-shadow: 0 18px 50px rgba(30, 30, 60, 0.10); }
 .result-screen { padding-bottom: 8px; }
 @media (max-width: 480px) {
   .site-main:has(> .quiz-screen) { padding: 0; }
   .site-main > .quiz-screen { border-radius: 0; box-shadow: none; }
+}
+
+/* ── Wide (desktop) quiz ───────────────────────────────────────────────────
+   The 1040px shell from --shell-max is only half the job: every measurement
+   inside .quiz-screen was picked for a 480px phone column, so at 1040 the type
+   looks lost and the option rows turn into very long lines. This block scales the
+   quiz up for the wide case ONLY — scoped to :not(.compact-view) inside a
+   min-width query, so the phone layout and the compact toggle are both untouched
+   by anything in here. */
+@media (min-width: 900px) {
+  /* A tighter frame than the shared 40px page padding — the quiz surface is the page
+     here, so it gets most of the viewport. It already fills the height: .site-main is
+     flex:1 and .quiz-screen is flex:1 inside it. */
+  #app:not(.compact-view) .site-main:has(> .quiz-screen) { padding: 24px; }
+
+  /* The chrome (top bar, progress, bottom bar) spans the full 1040px so the surface
+     reads as a deliberate full-width app, while the READING column below stays at a
+     comfortable measure. */
+  #app:not(.compact-view) .quiz-screen .quiz-topbar { height: 60px; padding: 0 28px; }
+  #app:not(.compact-view) .quiz-screen .quiz-topbar .title { font-size: 17px; }
+  #app:not(.compact-view) .quiz-screen .progress-track.segmented { padding: 0 28px; margin: 16px 0 6px; }
+
+  /* Centered reading column. 820px is roughly the widest a line of option text can
+     be before the eye loses the start of the next line. */
+  #app:not(.compact-view) .quiz-screen .quiz-body {
+    width: 100%;
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 28px 32px 40px;
+    /* The surface now fills a 1080px-tall viewport, so a short question would leave a
+       few hundred px of blank white under it — worse than the narrow card. Centering
+       sits the question in the middle of that space instead.
+       "safe" matters: with plain `center`, content taller than the body overflows the
+       TOP where it cannot be scrolled back to, silently cutting off a long question.
+       Browsers without `safe` ignore the whole value and fall back to the flex-start
+       this rule started from, which is the old (still usable) behaviour. */
+    justify-content: safe center;
+  }
+  /* The timer bar keeps spanning the full 1040px (it reads as the surface's own edge);
+     only the Skip/Next row lines up with the reading column above it. */
+  #app:not(.compact-view) .quiz-screen .quiz-bottombar .bar-row {
+    width: 100%;
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 16px 32px calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Type scaled ~15% for laptop viewing distance. */
+  #app:not(.compact-view) .quiz-screen .q-card-body { padding: 20px 24px; }
+  #app:not(.compact-view) .quiz-screen .q-title { font-size: 19px; line-height: 28px; }
+  #app:not(.compact-view) .quiz-screen .q-title.statement { font-size: 17px; line-height: 25px; }
+  #app:not(.compact-view) .quiz-screen .choice-card { min-height: 68px; padding: 16px; }
+  #app:not(.compact-view) .quiz-screen .choice-list.tight .choice-card { min-height: 64px; }
+  #app:not(.compact-view) .quiz-screen .choice-label { font-size: 18px; line-height: 24px; }
+
+  /* Result/review lists sit in the same measure as the quiz body, so finishing a
+     quiz doesn't snap the content to a different width mid-flow. */
+  #app:not(.compact-view) .screen.result-screen { max-width: 820px; }
 }
 
 /* ── Quiz-taking screen (redesign) ─────────────────────────────────────────
