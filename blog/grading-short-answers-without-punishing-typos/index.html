@@ -187,22 +187,24 @@
         hundred</code>. Any tool comparing those as text will mark two of the three wrong, which is
         purely an artefact of the implementation and has nothing to do with the student.</p>
 
-        <h2>The rule that matters more than all five</h2>
+        <h2>The decision that matters more than all five</h2>
 
         <div class="note note-green">
-          <p><strong>Never let the algorithm mark a written answer wrong on its own.</strong> If a
-          rule cannot settle an answer confidently, that answer should go into a review queue for a
-          human — not into the zero column.</p>
+          <p><strong>Decide, before you share the quiz, whether a machine should be marking it at
+          all.</strong> A rule will settle every answer one way or the other — that is what a rule
+          does. If a question turns on judgement rather than on a key, the honest move is to mark
+          that quiz yourself rather than to loosen a threshold until it guesses the way you would.</p>
         </div>
 
-        <p>This single constraint changes the economics completely. An auto-grader that can only be
-        right or wrong has to be checked everywhere. An auto-grader that can also say "I'm not sure,
-        you look" only has to be checked where it asked for help.</p>
+        <p>This single decision changes the economics completely. A quiz of settled answers costs you
+        nothing to mark and you can trust the totals. A quiz of arguments costs you an evening, and
+        no threshold will change that — but it is an evening you chose to spend rather than one you
+        spend undoing a computer's marking.</p>
 
-        <p>In a thirty-student class the unsure pile is usually four or five answers. Those are
-        exactly the interesting ones — the unusual phrasings, the partly-right reasoning, the answer
-        that is better than your key. They are the answers that deserved a teacher in the first
-        place.</p>
+        <p>In a thirty-student class only a handful of answers are genuinely unusual — the odd
+        phrasing, the partly-right reasoning, the answer that is better than your key. Those are the
+        ones worth opening after the marks are in, whoever or whatever awarded them. They are the
+        answers that deserved a teacher in the first place.</p>
 
         <h2>Practical advice for writing the questions</h2>
 
@@ -241,10 +243,11 @@
           know what the class will write. Read that round, then set the rules from what you saw.</li>
         </ul>
 
-        <p>The practical arrangement is a split, not a choice: let the rules clear the questions that
-        have one correct answer, and spend the time you get back on the ones that do not. That is the
-        same division of labour behind Quizoma's <a href="/features/">question types</a> — objective
-        formats marked instantly, written ones routed to you.</p>
+        <p>The practical arrangement is to sort it at the quiz level: let the rules mark the papers
+        whose answers are settled, and put the ones that turn on judgement into a quiz you mark
+        yourself. Quizoma works the same way — a quiz is either graded automatically, using whichever
+        of the <a href="/features/">matching rules</a> each question carries, or switched to manual
+        marking, in which case nothing in it is auto-graded at all.</p>
 
         <h2>What you get back</h2>
 
@@ -253,8 +256,9 @@
         usefully, written questions stop being the expensive option — which means you can go back to
         asking them.</p>
 
-        <p>Quizoma implements all five rules per question, with anything unsettled routed to you
-        rather than marked wrong. There is a full breakdown, with worked examples, on
+        <p>Quizoma implements all five rules per question, with typo tolerance as the one a new
+        question starts on, and lets you switch a whole quiz to manual marking when you would rather
+        read everything. There is a full breakdown, with worked examples, on
         <a href="/smart-grading/">how smart grading works</a>.</p>
 
       </article>
@@ -289,7 +293,7 @@
           <span class="brand-mark"><img src="/icon-72.webp" alt="" class="brand-icon" width="36" height="36"></span>
           <span class="brand-name">Quizoma</span>
         </a>
-        <p>A free classroom quiz and test maker with dual-track grading — algorithmic scanning for objective questions, and real teacher review for open-ended ones.</p>
+        <p>A free classroom quiz and test maker with typo-tolerant grading — the whole quiz marked automatically, or switched to manual marking so you score every answer yourself.</p>
       </div>
       <div class="footer-col">
         <h4>Product</h4>

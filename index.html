@@ -57,7 +57,7 @@
       "@id": "https://quizoma.com/#website",
       "url": "https://quizoma.com/",
       "name": "Quizoma",
-      "description": "A free classroom quiz and test maker with dual-track grading.",
+      "description": "A free classroom quiz and test maker with typo-tolerant grading.",
       "publisher": { "@id": "https://quizoma.com/#organization" }
     },
     {
@@ -67,7 +67,7 @@
       "applicationCategory": "EducationalApplication",
       "url": "https://quizoma.com/",
       "softwareVersion": "1.0",
-      "description": "A free quiz and test maker for teachers. Build MCQ quizzes, class tests and polls in the Android app, share them with a 6-character code or a QR code, and take them in any browser. Objective questions are marked instantly; written answers are graded against configurable rules or handed to the teacher for review. Creating and answering a joined quiz keep working offline and sync later; exports a full PDF report.",
+      "description": "A free quiz and test maker for teachers. Build MCQ quizzes, class tests and polls in the Android app, share them with a 6-character code or a QR code, and take them in any browser. Objective questions are marked instantly, and written answers are graded against configurable matching rules including typo tolerance — or the whole quiz can be switched to manual marking so the teacher scores every answer. Creating and answering a joined quiz keep working offline and sync later; exports a full PDF report.",
       "image": "https://quizoma.com/icon-512.webp",
       "author": { "@id": "https://quizoma.com/#organization" },
       "publisher": { "@id": "https://quizoma.com/#organization" },
@@ -79,7 +79,7 @@
         {
           "@type": "Question",
           "name": "Can a participant get an unfair zero for a small mistake?",
-          "acceptedAnswer": { "@type": "Answer", "text": "No. Written and open-ended answers are never auto-marked wrong — they always go to you to read and grade yourself. Only simple questions (like multiple choice) are graded automatically, and those allow for small typos too." }
+          "acceptedAnswer": { "@type": "Answer", "text": "Small typos and close spellings are accepted, and numbers match in any form, so a spelling slip does not cost marks. If you would rather read every written answer yourself, switch the quiz to manual marking and nothing is graded automatically." }
         },
         {
           "@type": "Question",
@@ -89,7 +89,7 @@
         {
           "@type": "Question",
           "name": "Do participants need to pay or make an account?",
-          "acceptedAnswer": { "@type": "Answer", "text": "There's nothing to pay. Participants join with a room PIN or QR code, then sign in with their Google account — no password to create, no separate signup form." }
+          "acceptedAnswer": { "@type": "Answer", "text": "There's nothing to pay. Participants join with a 6-character join code or QR code, then sign in with their Google account — no password to create, no separate signup form." }
         },
         {
           "@type": "Question",
@@ -206,7 +206,7 @@
               <span class="stat-title">Dual Track</span>
               <span class="stat-icon stat-icon-blue"><img src="assets/hero_icon_09.svg" alt="" width="15" height="15"></span>
             </div>
-            <p class="stat-desc">Smart Auto + Human Hand Marking</p>
+            <p class="stat-desc">Auto Grading or Manual Marking</p>
             <span class="tag tag-blue"><img src="assets/hero_icon_10.svg" alt="" width="9" height="10"> Typo-Tolerant</span>
           </div>
           <div class="stat-card">
@@ -233,12 +233,8 @@
           </picture>
           <div class="float-pill float-pill-left">
             <span class="dot dot-green"></span>
-            <strong>Active Room #BIO-402</strong>
-            <span><span class="sep">•</span> <span class="mono accent">CC7Q5V</span></span>
-          </div>
-          <div class="float-pill float-pill-right">
-            <img src="assets/hero_icon_13.svg" alt="" width="13" height="9">
-            <strong id="online-count">28 Online</strong>
+            <strong>Quiz code</strong>
+            <span><span class="mono accent">CC7Q5V</span></span>
           </div>
         </div>
 
@@ -248,7 +244,7 @@
               <span class="format-pill-icon" id="format-pill-icon"></span>
               <span id="format-pill-label">Single Choice</span>
             </span>
-            <span class="format-live-badge"><span class="dot dot-green"></span>6 Formats • Live Preview</span>
+            <span class="format-live-badge"><span class="dot dot-green"></span>6 Formats</span>
           </div>
 
           <div class="mini-quiz-slider" id="mini-quiz-slider">
@@ -272,7 +268,7 @@
                   </button>
                 </div>
                 <div class="feedback-banner feedback-banner-hidden" id="mini-quiz-feedback">
-                  <span><img src="assets/hero_icon_18.svg" alt="" width="15" height="15"> Typo-tolerant: "mitocondria" accepted • 89% match</span>
+                  <span><img src="assets/hero_icon_18.svg" alt="" width="15" height="15"> Close spelling accepted: "mitocondria"</span>
                   <span class="feedback-points">+100 Pts</span>
                 </div>
               </div>
@@ -319,14 +315,14 @@
               <!-- Slide 5: Fill in the Blanks -->
               <div class="mini-quiz-slide">
                 <p class="mini-quiz-question">The powerhouse of the cell is the <span class="demo-blank">mitochondria</span>.</p>
-                <div class="demo-blank-hint">Accepts common misspellings and synonyms automatically.</div>
+                <div class="demo-blank-hint">Each blank keeps its own list of accepted answers.</div>
                 <div class="feedback-banner">
-                  <span><img src="assets/hero_icon_18.svg" alt="" width="15" height="15"> Typo-tolerant: "mitocondria" accepted • 89% match</span>
+                  <span><img src="assets/hero_icon_18.svg" alt="" width="15" height="15"> Accepted answer matched</span>
                   <span class="feedback-points">+100 Pts</span>
                 </div>
               </div>
 
-              <!-- Slide 6: Live Poll -->
+              <!-- Slide 6: Poll -->
               <div class="mini-quiz-slide">
                 <p class="mini-quiz-question">Quick pulse check: how confident do you feel right now?</p>
                 <div class="demo-poll">
@@ -335,8 +331,8 @@
                   <div class="demo-poll-row"><span class="demo-poll-label">Not yet</span><span class="demo-poll-bar"><span style="--target:10%"></span></span><span class="demo-poll-pct">10%</span></div>
                 </div>
                 <div class="feedback-banner">
-                  <span><img src="assets/hero_icon_18.svg" alt="" width="15" height="15"> 128 responses so far</span>
-                  <span class="feedback-points">Live</span>
+                  <span><img src="assets/hero_icon_18.svg" alt="" width="15" height="15"> Ungraded — opinion only</span>
+                  <span class="feedback-points">Anonymous</span>
                 </div>
               </div>
 
@@ -349,7 +345,7 @@
             <button type="button" class="mq-dot" aria-label="True / False"></button>
             <button type="button" class="mq-dot" aria-label="Written Answer"></button>
             <button type="button" class="mq-dot" aria-label="Fill in the Blank"></button>
-            <button type="button" class="mq-dot" aria-label="Live Poll"></button>
+            <button type="button" class="mq-dot" aria-label="Poll"></button>
           </div>
         </div>
       </div>
@@ -404,14 +400,14 @@
                  alt="Diagram comparing two grading tracks: on the left an automated 85% typo-tolerant match on the word mitochondria, on the right a hand writing encouraging feedback on a paper.">
           </picture>
           <div class="art-caption">
-            <span><span class="dot dot-green"></span> Every answer reviewed twice — machine and teacher</span>
-            <span class="mono text-muted">Auto + Human</span>
+            <span><span class="dot dot-green"></span> Every quiz graded the way you chose — automatically, or by you</span>
+            <span class="mono text-muted">Auto or Manual</span>
           </div>
         </div>
         <div class="deep-dive-copy">
           <span class="badge-pill badge-purple"><img src="assets/dualtrack_icon_02.svg" alt="" width="12" height="12" loading="lazy" decoding="async"> The Idea Behind Quizoma</span>
-          <h2 class="h2">Auto-Grading <span class="text-muted">+</span> Real Teacher Review</h2>
-          <p class="lead">Most quiz apps mark an answer wrong for one typo or a word swapped for its synonym. Quizoma splits grading into two fair tracks instead — there is a worked breakdown of <a href="/smart-grading/">typo-tolerant grading</a>.</p>
+          <h2 class="h2">Auto-Grading <span class="text-muted">or</span> Marking It Yourself</h2>
+          <p class="lead">Most quiz apps mark an answer wrong for one typo or a word swapped for its synonym. Quizoma grades written answers properly instead — and if you would rather judge every answer yourself, a quiz can be switched to manual marking. There is a worked breakdown of <a href="/smart-grading/">typo-tolerant grading</a>.</p>
 
           <div class="track-stack">
             <div class="track-card track-a">
@@ -422,15 +418,15 @@
               <p>A close spelling still counts. Numbers match in any form (<span class="chip mono chip-inline">"7" = "seven" = "7.0"</span>). Said it in different words? Still recognized.</p>
               <div class="track-tags">
                 <span class="tag tag-blue">Accepts Number Words</span>
-                <span class="tag tag-green">85% Typo Match</span>
+                <span class="tag tag-green">Typo-tolerant</span>
               </div>
             </div>
             <div class="track-card track-b">
               <div class="track-head">
-                <span class="track-title"><span class="track-letter track-letter-b">B</span> Track B: You Grade It Yourself</span>
-                <span class="chip chip-mint mono">Zero False 0%</span>
+                <span class="track-title"><span class="track-letter track-letter-b">B</span> Track B: Manual Marking, When You Turn It On</span>
+                <span class="chip chip-mint mono">You decide</span>
               </div>
-              <p>Essays and open-ended answers are never auto-marked wrong. They go straight to you — because that's a call only a person should make.</p>
+              <p>Switch a quiz to manual marking and nothing in it is graded automatically — every answer waits for you to read and score, with a note if you want. You can also open any auto-graded answer afterwards and change the mark.</p>
               <div class="track-tags">
                 <span class="tag tag-amber">You're in Control</span>
                 <span class="tag tag-purple">Add a Note</span>
@@ -470,7 +466,7 @@
           </div>
           <p class="stage-desc">Write your questions in the app, or import them from a file — either way, it's ready to share in seconds.</p>
           <ul class="feature-list">
-            <li><span class="feature-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"></line><line x1="4" y1="15" x2="20" y2="15"></line><line x1="10" y1="3" x2="8" y2="21"></line><line x1="16" y1="3" x2="14" y2="21"></line></svg></span><div><strong>6-Digit PIN or QR Code</strong><span>Participants join instantly on any phone or laptop.</span></div></li>
+            <li><span class="feature-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"></line><line x1="4" y1="15" x2="20" y2="15"></line><line x1="10" y1="3" x2="8" y2="21"></line><line x1="16" y1="3" x2="14" y2="21"></line></svg></span><div><strong>6-Character Join Code or QR</strong><span>Participants join instantly on any phone or laptop.</span></div></li>
             <li><span class="feature-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg></span><div><strong>Import from a Text or CSV File</strong><span>Already have your questions written down? Bring them in with one tap.</span></div></li>
             <li><span class="feature-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg></span><div><strong>6 Question Types</strong><span>Multiple choice, written answers, fill-in-the-blank, polls, and more.</span></div></li>
           </ul>
@@ -493,10 +489,10 @@
             <span class="stage-eyebrow mono text-primary center">STEP 2</span>
             <h3 class="h3 center">Quizoma Grades It</h3>
           </div>
-          <p class="stage-desc center">Every answer is checked the moment it comes in — automatically where it can be, and set aside for you where it can't.</p>
+          <p class="stage-desc center">Every answer is checked the moment it comes in — or held for you to mark, if that is how you set the quiz up.</p>
           <div class="highlight-rows">
-            <div class="highlight-row"><span class="highlight-label"><span class="highlight-icon highlight-icon-primary"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></span>Track A: Auto-Graded</span><span class="mono text-primary">85% Typo Match</span></div>
-            <div class="highlight-row"><span class="highlight-label"><span class="highlight-icon highlight-icon-green"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></span>Track B: You Grade It</span><span class="mono foot-green">Zero False 0%</span></div>
+            <div class="highlight-row"><span class="highlight-label"><span class="highlight-icon highlight-icon-primary"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></span>Track A: Auto-Graded</span><span class="mono text-primary">Typo-tolerant</span></div>
+            <div class="highlight-row"><span class="highlight-label"><span class="highlight-icon highlight-icon-green"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></span>Track B: Manual Marking</span><span class="mono foot-green">You decide</span></div>
             <div class="highlight-row"><span class="highlight-label"><span class="highlight-icon highlight-icon-muted"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg></span>Saves Automatically</span><span class="mono text-muted">Even Offline</span></div>
           </div>
           <div class="stage-foot center">
@@ -550,7 +546,7 @@
           <div class="workflow-step" style="animation-delay: 1.2s">
             <div class="workflow-step-top"><span class="step-tag mono step-tag-amber">STEP 2</span><span class="step-icon bg-amber"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg></span></div>
             <h4>Invite</h4>
-            <p>Share an instant 6-digit room PIN or display a QR code.</p>
+            <p>Share a 6-character join code or display a QR code.</p>
           </div>
           <div class="workflow-arrow" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></div>
           <div class="workflow-step" style="animation-delay: 2.4s">
@@ -584,7 +580,7 @@
         <div class="format-card">
           <div class="format-icon bg-blue"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#075985" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="3.5" fill="#075985" stroke="none"></circle></svg></div>
           <h3 class="h3">Single Choice (MCQ)</h3>
-          <p>Pick the one correct answer. Options can shuffle so nobody memorizes the pattern.</p>
+          <p>Pick the one correct answer, with points and an optional time limit per question.</p>
           <div class="format-foot"><span class="mono">Auto-Graded</span><span class="mono text-primary">Track A</span></div>
         </div>
         <div class="format-card">
@@ -602,23 +598,23 @@
         <div class="format-card">
           <div class="format-icon bg-amber"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg></div>
           <h3 class="h3">Written Short Answer</h3>
-          <p>Participants write their own answer in their own words. You read each one and grade it yourself, with a personal note if you want.</p>
-          <div class="format-foot"><span class="mono">You Grade It</span><span class="mono foot-green">Track B</span></div>
+          <p>Participants answer in their own words. Quizoma can grade it automatically with typo-tolerant matching, or you can switch the quiz to manual marking and grade every answer yourself.</p>
+          <div class="format-foot"><span class="mono">Typo-Tolerant</span><span class="mono foot-green">Auto or Manual</span></div>
         </div>
         <div class="format-card">
           <div class="format-icon bg-indigo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3525cd" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="7" y2="12"></line><line x1="9.5" y1="12" x2="14.5" y2="12" stroke-dasharray="2.2 2.2"></line><line x1="17" y1="12" x2="21" y2="12"></line></svg></div>
           <h3 class="h3">Fill in the Blanks</h3>
-          <p>Participants type the missing word into a sentence. Small typos and close spellings are still accepted.</p>
-          <div class="format-foot"><span class="mono">Typo-Tolerant</span><span class="mono text-primary">Track A</span></div>
+          <p>Participants type the missing word into a sentence. Each blank carries its own list of accepted answers, and capitals and punctuation are ignored.</p>
+          <div class="format-foot"><span class="mono">Accepted Answers</span><span class="mono text-primary">Track A</span></div>
         </div>
         <div class="format-card">
           <div class="format-header-row">
             <div class="format-icon bg-purple"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b21a8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg></div>
             <span class="tag tag-blue-soft">Audio/Video Soon</span>
           </div>
-          <h3 class="h3">Live Polls</h3>
-          <p>A quick, ungraded poll to check how the class feels. Results show up live as a simple bar chart.</p>
-          <div class="format-foot"><span class="mono">No Names Shown</span><span class="mono foot-amber">Ungraded</span></div>
+          <h3 class="h3">Polls</h3>
+          <p>A quick, ungraded poll to check how the class feels. Results appear as a simple bar chart as answers come in.</p>
+          <div class="format-foot"><span class="mono">Anonymous Option</span><span class="mono foot-amber">Ungraded</span></div>
         </div>
       </div>
     </div>
@@ -658,7 +654,7 @@
             <span>Can a participant get an unfair zero for a small mistake?</span>
             <span class="faq-caret">＋</span>
           </button>
-          <div class="faq-answer"><p>No. Written and open-ended answers are never auto-marked wrong — they always go to you to read and grade yourself. Only simple questions (like multiple choice) are graded automatically, and those allow for small typos too.</p></div>
+          <div class="faq-answer"><p>Small typos and close spellings are accepted, and numbers match in any form, so a spelling slip does not cost marks. If you would rather read every written answer yourself, switch the quiz to manual marking and nothing is graded automatically.</p></div>
         </div>
         <div class="faq-item">
           <button class="faq-question" type="button" aria-expanded="false">
@@ -672,7 +668,7 @@
             <span>Do participants need to pay or make an account?</span>
             <span class="faq-caret">＋</span>
           </button>
-          <div class="faq-answer"><p>There's nothing to pay. Participants join with a room PIN or QR code, then sign in with their Google account — no password to create, no separate signup form.</p></div>
+          <div class="faq-answer"><p>There's nothing to pay. Participants join with a 6-character join code or QR code, then sign in with their Google account — no password to create, no separate signup form.</p></div>
         </div>
         <div class="faq-item">
           <button class="faq-question" type="button" aria-expanded="false">
@@ -703,7 +699,7 @@
           <span class="brand-mark"><img src="/icon-72.webp" alt="" class="brand-icon" width="36" height="36"></span>
           <span class="brand-name">Quizoma</span>
         </a>
-        <p>A free classroom quiz and test maker with dual-track grading — algorithmic scanning for objective questions, and real teacher review for open-ended ones.</p>
+        <p>A free classroom quiz and test maker with typo-tolerant grading — the whole quiz marked automatically, or switched to manual marking so you score every answer yourself.</p>
       </div>
       <div class="footer-col">
         <h4>Product</h4>
@@ -739,7 +735,7 @@
   </div>
 </footer>
 
-<script src="script.js?v=4" defer></script>
+<script src="script.js?v=5" defer></script>
 <!-- Header account control (Sign in / avatar + menu). Shared with the other root
      pages, hence the absolute path, same as /cookie-consent.js. Deliberately does NOT
      pull in supabase-js on load — see the header comment in that file. -->

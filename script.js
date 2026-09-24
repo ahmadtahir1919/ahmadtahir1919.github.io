@@ -61,18 +61,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 400);
   }
 
-  // Hero "X Online" count: a believable random headcount that drifts a
-  // little over time instead of a hardcoded number.
-  var onlineCount = document.getElementById('online-count');
-  if (onlineCount) {
-    var currentOnline = 20 + Math.floor(Math.random() * 81); // 20–100
-    onlineCount.textContent = currentOnline + ' Online';
-    setInterval(function () {
-      var delta = Math.floor(Math.random() * 7) - 3; // small drift, -3..+3
-      currentOnline = Math.min(100, Math.max(20, currentOnline + delta));
-      onlineCount.textContent = currentOnline + ' Online';
-    }, 300000); // 5 minutes — shouldn't feel like it's updating in real time
-  }
+  // There used to be a hero "X Online" counter here that invented a random
+  // headcount. Quizoma has no live room and no realtime anything — the app does
+  // not even ship the Supabase Realtime client — so the pill and this script
+  // were both removed rather than made less obviously fake.
 
   // Mobile hamburger nav toggle
   var hamburger = document.getElementById('hamburger');
@@ -396,7 +388,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Hero mini-quiz card, part 2: a slider cycling through all 6 question
   // formats (Single Choice, Multiple Correct, True/False, Written Answer,
-  // Fill in the Blank, Live Poll), each with a small "now showing" pill and
+  // Fill in the Blank, Poll), each with a small "now showing" pill and
   // a matching animated example — so the hero shows the full range Quizoma
   // supports, not just one MCQ.
   var quizSlider = document.getElementById('mini-quiz-slider');
@@ -414,7 +406,7 @@ document.addEventListener('DOMContentLoaded', function () {
       { label: 'True / False', icon: '<svg width="14" height="14" viewBox="0 0 24 24" ' + ICON_STROKE + '><circle cx="7" cy="12" r="5"></circle><path d="M4.7 12l1.5 1.6L9.3 10"></path><circle cx="17" cy="12" r="5"></circle><path d="M14.8 9.8l4.4 4.4M19.2 9.8l-4.4 4.4"></path></svg>' },
       { label: 'Written Answer', icon: '<svg width="14" height="14" viewBox="0 0 24 24" ' + ICON_STROKE + '><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>' },
       { label: 'Fill in the Blank', icon: '<svg width="14" height="14" viewBox="0 0 24 24" ' + ICON_STROKE + '><line x1="3" y1="12" x2="7" y2="12"></line><line x1="9.5" y1="12" x2="14.5" y2="12" stroke-dasharray="2.2 2.2"></line><line x1="17" y1="12" x2="21" y2="12"></line></svg>' },
-      { label: 'Live Poll', icon: '<svg width="14" height="14" viewBox="0 0 24 24" ' + ICON_STROKE + '><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>' }
+      { label: 'Poll', icon:'<svg width="14" height="14" viewBox="0 0 24 24" ' + ICON_STROKE + '><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>' }
     ];
 
     var formatReduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;

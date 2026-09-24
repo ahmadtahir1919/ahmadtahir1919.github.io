@@ -4,21 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Smart Grading — Typo-Tolerant Marking for Written Answers</title>
-<meta name="description" content="Five matching rules for written answers: exact, case-sensitive, typo-tolerant, keyword coverage and numeric equivalence. Anything unclear comes to you.">
+<meta name="description" content="Five matching rules for written answers: exact, case-sensitive, typo-tolerant, keyword coverage and numeric equivalence — or switch a quiz to manual marking.">
 <link rel="canonical" href="https://quizoma.com/smart-grading/">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="theme-color" content="#3525cd">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Quizoma">
 <meta property="og:title" content="Smart Grading — Typo-Tolerant Marking for Written Answers">
-<meta property="og:description" content="Five matching rules for written answers, so a fair answer never scores zero over a missing letter.">
+<meta property="og:description" content="Five matching rules for written answers, so a close spelling is not treated as a wrong answer.">
 <meta property="og:url" content="https://quizoma.com/smart-grading/">
 <meta property="og:image" content="https://quizoma.com/assets/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Smart Grading — Typo-Tolerant Marking for Written Answers">
-<meta name="twitter:description" content="Five matching rules for written answers, so a fair answer never scores zero over a missing letter.">
+<meta name="twitter:description" content="Five matching rules for written answers, so a close spelling is not treated as a wrong answer.">
 <meta name="twitter:image" content="https://quizoma.com/assets/og-image.png">
 <link rel="icon" href="/favicon.png" sizes="48x48" type="image/png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -88,8 +88,8 @@
       <span class="eyebrow">THE GRADING ENGINE</span>
       <h1 class="h1">A missing letter is not a wrong answer.</h1>
       <p class="lead">Most quiz tools compare a written answer to a string and mark anything else
-      zero. Quizoma gives you five ways to decide what "correct" means for each question — and hands
-      you anything it is not sure about instead of guessing.</p>
+      zero. Quizoma gives you five ways to decide what "correct" means for each question — or lets
+      you turn the marking over to yourself entirely.</p>
       <div class="cta-row">
         <a href="/download/" class="btn btn-primary btn-lg">Get the app</a>
         <a href="/features/" class="btn btn-cream btn-lg">See all features</a>
@@ -111,8 +111,9 @@
         check every answer <em>and</em> distrust the ones it got right.</p>
 
         <h2 id="rules">The five matching rules</h2>
-        <p>Each written or fill-in-the-blank question carries its own rule. You can also give a
-        question several rules at once, and the answer is accepted if any of them is satisfied.</p>
+        <p>Each written question carries its own rule, and typo tolerance is the one it starts
+        with. You can also give a question several rules at once, and the answer is accepted if any
+        of them is satisfied. Fill-in-the-blank questions work differently — see below.</p>
 
         <h3>1. Exact match</h3>
         <p>Letter for letter, after case and punctuation are normalised away. Use it when the answer
@@ -140,8 +141,9 @@
           <span class="arrow">→</span><span class="verdict-ok">accepted with typo</span>
         </div>
         <p>Below the accept threshold but still recognisably in the region of right, the answer is
-        marked a <strong>partial match</strong> and routed to you. It is not scored zero on your
-        behalf.</p>
+        recorded as a <strong>partial match</strong>. It earns a share of the marks if you turned
+        partial credit on for that question, and otherwise scores zero — so it is worth switching on
+        wherever a near answer deserves something.</p>
 
         <h3>4. Keyword coverage</h3>
         <p>For answers that are explanations rather than facts. You list the ideas that have to be
@@ -152,8 +154,8 @@
           <li><strong>Half</strong> — 50%.</li>
         </ul>
         <p>A participant who covers the required share is accepted; one who covers noticeably less
-        is flagged as partial and sent to you with the coverage percentage attached, so you can see
-        at a glance what they missed.</p>
+        is recorded as a partial match with the coverage percentage attached, so when you open the
+        result you can see at a glance what they missed.</p>
         <div class="rule-example">
           <span>keywords: photosynthesis, chlorophyll, sunlight, glucose</span>
           <span class="arrow">·</span><span>3 of 4 found</span>
@@ -181,21 +183,23 @@
 
         <h2>Partial credit</h2>
         <p>Where it makes sense, a near answer earns a proportion of the marks instead of all or
-        nothing. Multiple-correct questions score by how many of the right options were found. Fill
-        in the blanks scores per blank. On written answers, partial credit is a setting you turn on
-        per question — some questions deserve it, some genuinely don't.</p>
+        nothing. Multiple-correct questions score by how many of the right options were found. On
+        written answers, partial credit is a setting you turn on per question — some questions
+        deserve it, some genuinely don't, and it is off until you switch it on. Fill in the blanks
+        is the exception: every blank has to be right for the question to score.</p>
 
-        <h2 id="review">What the engine will never do</h2>
+        <h2 id="review">When you would rather mark it yourself</h2>
         <div class="note note-green">
-          <p><strong>It will never quietly mark a written answer wrong.</strong> If a rule does not
-          settle an answer confidently, that answer goes into your review queue with the similarity
-          or coverage score attached. The algorithm's job is to remove the obvious work, not to make
-          the judgement calls.</p>
+          <p><strong>Manual marking is a setting on the quiz, not something that happens on its
+          own.</strong> Switch it on and nothing in that quiz is graded automatically — every
+          answer, in every question type except polls, waits for you to read and score it. Leave it
+          off and the rules above decide, including deciding that an answer nothing matched is
+          wrong.</p>
         </div>
-        <p>This is the whole design. Objective questions — multiple choice, true/false,
-        multiple-correct — are marked instantly and you never look at them again. Written answers
-        that clear their rule are marked too. What is left is the small pile that actually needed a
-        person, and that pile is usually four or five answers, not thirty.</p>
+        <p>So the choice is yours per quiz. On an auto-graded quiz, objective questions — multiple
+        choice, true/false, multiple-correct — are marked instantly, and written answers are marked
+        against their rule with the similarity or coverage score recorded next to them. You can
+        still open any submission afterwards and change a mark or leave a comment.</p>
 
         <h2>Same results in the app and the browser</h2>
         <p>The grading engine runs in both the Android app and the web quiz-taking page, and the two
@@ -236,7 +240,7 @@
           <span class="brand-mark"><img src="/icon-72.webp" alt="" class="brand-icon" width="36" height="36"></span>
           <span class="brand-name">Quizoma</span>
         </a>
-        <p>A free classroom quiz and test maker with dual-track grading — algorithmic scanning for objective questions, and real teacher review for open-ended ones.</p>
+        <p>A free classroom quiz and test maker with typo-tolerant grading — the whole quiz marked automatically, or switched to manual marking so you score every answer yourself.</p>
       </div>
       <div class="footer-col">
         <h4>Product</h4>
