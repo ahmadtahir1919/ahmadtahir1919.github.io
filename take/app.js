@@ -1741,6 +1741,18 @@ function shouldConfirmSkip() {
 /** Has the taker actually given an answer to the question they're on right now? For a poll
  *  that means a cast vote whose reveal is showing (not one reopened for editing). Mirrors
  *  QuizPreviewUiState.hasAnsweredCurrent. */
+/** Did the taker actually put something down for [q], judged on what was RECORDED into
+ *  state.questionAnswers — not on the live draft that hasAnsweredCurrent() reads. Skip
+ *  deliberately throws the draft away before recording (see onSkip), and a timeout records
+ *  whatever was there, so the recorded value is the one signal that covers skipped, timed
+ *  out and never-touched alike. FILL_BLANK needs the per-blank check: its recorded array is
+ *  a fixed-length draft that is still all-empty-strings when nothing was typed. */
+function hasRecordedAnswer(q) {
+  const recorded = state.questionAnswers[q.id] || [];
+  if (q.type === "FILL_BLANK") return recorded.some((v) => (v || "").trim().length > 0);
+  return recorded.length > 0;
+}
+
 function hasAnsweredCurrent() {
   const q = currentQuestion();
   if (!q) return false;
@@ -1848,8 +1860,10 @@ async function advance(keepAnswer) {
 
   const quiz = state.quiz;
   // Never flash right/wrong on a question the owner marks by hand — nobody has decided
-  // yet, so any verdict shown here would be a guess we'd have to take back.
-  if (quiz.showCorrectnessInstantly && !requiresManualMarking(q, quiz)) {
+  // yet, so any verdict shown here would be a guess we'd have to take back. And never on a
+  // question they left empty (skipped, or the timer ran out): showing the answer to someone
+  // who never attempted it just hands it over, and there is no verdict of theirs to confirm.
+  if (quiz.showCorrectnessInstantly && !requiresManualMarking(q, quiz) && hasRecordedAnswer(q)) {
     const feedback = buildInstantFeedback(q, state.questionAnswers[q.id] || []);
     state.instantFeedback = feedback;
     render();
