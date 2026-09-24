@@ -18,6 +18,10 @@
   /* Manual marking: an answer nobody has judged yet is neither green nor red. */
   --pending: #B08900;
   --pending-bg: #FFF8E1;
+  /* Skipped: a question nobody attempted isn't red either — it was never got wrong. */
+  --skipped: #6B7280;
+  --skipped-bg: #F3F4F8;
+  --skipped-border: #DDDEE8;
   --timer-track: #E8E7F8;
   /* Per-quiz accent — set inline once a quiz loads, via QUIZ_THEME_COLORS. */
   --accent: var(--primary);
@@ -1295,21 +1299,80 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
 .q-pill.correct { color: #16A34A; }
 .q-pill.wrong { color: #DC2626; }
 .q-pill.pending { color: var(--pending); }
+.q-pill.skipped { color: var(--skipped); }
 .q-pill.poll { color: var(--accent); }
 .type-badge { font-size: 11px; font-weight: 600; border-radius: 6px; padding: 3px 8px; background: #F3F4F8; color: #4B5563; }
 .type-badge.correct { background: var(--success-bg); color: #15803D; }
 .type-badge.wrong { background: var(--error-bg); color: #B91C1C; }
 .type-badge.pending { background: var(--pending-bg); color: var(--pending); }
+.type-badge.skipped { background: var(--skipped-bg); color: var(--skipped); }
 .type-badge.poll { background: color-mix(in srgb, var(--accent) 12%, #fff); color: var(--accent); }
 .review-time { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--icon-gray); }
 .pending-tag {
   font-size: 11px; font-weight: 500; border-radius: 6px; padding: 3px 7px;
   background: var(--pending-bg); color: var(--pending);
 }
+.skipped-tag {
+  font-size: 11px; font-weight: 500; border-radius: 6px; padding: 3px 7px;
+  background: var(--skipped-bg); color: var(--skipped);
+}
+
+/* ── "Move on without answering?" ──────────────────────────────────────────
+   The only modal on this page. It exists because window.confirm() blocks the main
+   thread, which froze the question countdown behind it; this one lets the clock keep
+   running, and advance() tears it down when the clock wins. Mirrors the app's
+   ConfirmActionDialog. */
+.skip-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(16, 16, 32, 0.55);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+.skip-confirm-card {
+  width: 100%;
+  max-width: 380px;
+  background: #fff;
+  border: 1px solid var(--border-light);
+  border-radius: 20px;
+  padding: 22px 20px 18px;
+  box-shadow: 0 18px 44px rgba(16, 16, 32, 0.22);
+}
+.skip-confirm-title {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 800;
+  color: #1C1B2E;
+  line-height: 1.3;
+}
+.skip-confirm-body {
+  margin: 0 0 18px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #4B5563;
+}
+/* Ticks once a second while the dialog is up — proof the clock did not stop. Tabular
+   figures so the width does not jitter as the digits change. */
+.skip-confirm-time {
+  margin: 0 0 18px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+/* Confirm on the right, the safe "Go back" on the left — same order as the app's dialog. */
+.skip-confirm-actions { display: flex; gap: 10px; }
+.skip-confirm-actions button { margin-top: 0; }
 .marks-badge { font-size: 12px; font-weight: 700; border-radius: 8px; padding: 4px 9px; border: 1px solid; }
 .marks-badge.correct { background: var(--success-bg); color: #16A34A; border-color: #A7F3D0; }
 .marks-badge.wrong { background: var(--error-bg); color: #DC2626; border-color: #FECACA; }
 .marks-badge.pending { background: var(--pending-bg); color: var(--pending); border-color: #FDE68A; }
+.marks-badge.skipped { background: var(--skipped-bg); color: var(--skipped); border-color: var(--skipped-border); }
 .hint-used-tag {
   font-size: 11px; font-weight: 500; border-radius: 6px; padding: 3px 7px;
   background: #FFFBEB; color: #D97706;
@@ -1323,15 +1386,18 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
 .answer-box.wrong { background: var(--error-bg); border-color: #FECACA; }
 .answer-box.correct { background: var(--success-bg); border-color: #A7F3D0; }
 .answer-box.pending { background: var(--pending-bg); border-color: #FDE68A; }
+.answer-box.skipped { background: var(--skipped-bg); border-color: var(--skipped-border); }
 .answer-box-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
 .answer-box-label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 .answer-box.wrong .answer-box-label { color: #DC2626; }
 .answer-box.correct .answer-box-label { color: #16A34A; }
 .answer-box.pending .answer-box-label { color: var(--pending); }
+.answer-box.skipped .answer-box-label { color: var(--skipped); }
 .answer-chip { font-size: 11px; font-weight: 600; border-radius: 6px; padding: 3px 8px; background: #fff; }
 .answer-chip.wrong { color: #DC2626; }
 .answer-chip.correct { color: #16A34A; }
 .answer-chip.pending { color: var(--pending); }
+.answer-chip.skipped { color: var(--skipped); }
 .answer-box-text { font-size: 14px; color: #1C1B2E; word-break: break-word; }
 .answer-box-text.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 .answer-box-text.strong { font-weight: 700; }

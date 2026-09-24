@@ -72,6 +72,19 @@ const S = {
     "Leave this quiz? Your answers won't be saved — nothing has been submitted yet. You can retake it later.",
   LEAVE_CONFIRM_NO_RETAKE:
     "Leave this quiz? Your answers won't be saved, and the creator doesn't allow retakes — you won't be able to take this quiz again.",
+  // Byte-identical to preview_skip_confirm_* in strings.xml. Raised only by Next/Finish with
+  // nothing filled in; the Skip button never asks, because that tap already said it
+  // deliberately, and neither does the countdown expiring.
+  SKIP_CONFIRM_TITLE: "Move on without answering?",
+  SKIP_CONFIRM_BODY:
+    "You haven't answered this one. It'll be recorded as skipped and scores zero, and it still counts towards your total.",
+  SKIP_CONFIRM_BODY_LAST:
+    "You haven't answered this one. It'll be recorded as skipped and scores zero, and it still counts towards your total — and this is the last question, so your quiz gets submitted.",
+  // Mirrors preview_skip_confirm_timer. Its own line here rather than appended to the body,
+  // since this one has to be re-rendered every second on its own (see updateTimerDisplay).
+  skipConfirmTimeLeft: (t) => `Time left on this question: ${t}`,
+  SKIP_CONFIRM_YES: "Skip anyway",
+  SKIP_CONFIRM_NO: "Go back",
   QUIZ_CLOSED: "Quiz closed",
   POLL_ALL_CLOSED: "This poll has already closed, so there's nothing here for you to answer.",
 
@@ -109,8 +122,9 @@ const S = {
   // ── Confirm name ───────────────────────────────────────────────────────
   CONFIRM_NAME_KICKER: "ONE QUICK THING",
   CONFIRM_NAME_TITLE: "Confirm your display name",
+  // No leaderboard exists — this used to name one. Twin of rename_profile_body in strings.xml.
   CONFIRM_NAME_BLURB:
-    "This is the name shown on your quizzes, leaderboard, and results. Some Google accounts have a nickname or email attached, so make sure it's accurate.",
+    "This is the name the quiz's creator sees next to your answers and your score. Some Google accounts have a nickname or email attached, so make sure it's accurate.",
   CONFIRM_NAME_LABEL: "YOUR FULL NAME",
   CONFIRM_NAME_PLACEHOLDER: "Your name",
   CONFIRM_NAME_SYNCED: "Synced from Google account",
@@ -213,6 +227,10 @@ const S = {
   marksLine: (awarded, total) => `${awarded} / ${total} MARKS`,
   RESULT_STAT_CORRECT: "Correct",
   RESULT_STAT_INCORRECT: "Incorrect",
+  // A question moved past without answering. Worth the same as a wrong answer (zero, and
+  // still in the total) but it isn't the same thing, so the card says so. Byte-identical to
+  // result_verdict_skipped in strings.xml.
+  RESULT_VERDICT_SKIPPED: "Skipped",
   RESULT_STAT_TIME: "Total Time",
   RESULT_STAT_HINTS: "Hints Used",
   qsCount: (n) => `${n} Qs`,

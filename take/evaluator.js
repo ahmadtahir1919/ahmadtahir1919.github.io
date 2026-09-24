@@ -192,7 +192,6 @@ function defaultAnswerRule(overrides) {
       minSimilarity: 0.85,
       keywords: [],
       keywordCoverage: "ALL", // ALL=1.0, MOST=0.75, HALF=0.50
-      partialCreditEnabled: false,
       // G-01: was "WEIGHTED_BY_SIMILARITY" — see computeScore's doc below for why that
       // silently graded every untouched quiz on a curve. Mirrors AnswerRule.kt's default.
       marksPattern: "ALL_OR_NOTHING",
@@ -203,31 +202,30 @@ function defaultAnswerRule(overrides) {
 
 const KEYWORD_COVERAGE_THRESHOLD = { ALL: 1.0, MOST: 0.75, HALF: 0.5 };
 
-/** Mirrors computeScore() in AnswerModels.kt exactly, including the HALF_FOR_PARTIAL/
- *  ALL_OR_NOTHING branches being identical (a latent duplication in the Kotlin source,
- *  replicated here on purpose for parity — not something G-01 was asked to fix).
+/** Mirrors computeScore() in AnswerModels.kt exactly. marksPattern is the only control over
+ *  what a PARTIAL_MATCH is worth — ALL_OR_NOTHING (the default) pays nothing for one,
+ *  HALF_FOR_PARTIAL pays half, WEIGHTED_BY_SIMILARITY pays by similarity.
  *
- *  G-01: WEIGHTED_BY_SIMILARITY's PARTIAL_MATCH case now requires partialCreditEnabled, same
- *  as the other two patterns already did — it used to score any non-zero similarity
- *  regardless of that flag, and the caller (app.js's finishQuiz) rounded any nonzero score up
- *  to full marks, so a 40%-similar answer (PARTIAL_MATCH's passing floor) silently earned
- *  full credit on the default rule. */
+ *  G-01: PARTIAL_MATCH used to earn WEIGHTED_BY_SIMILARITY credit whichever pattern was
+ *  chosen, and the caller (app.js's finishQuiz) rounded any nonzero score up to full marks,
+ *  so a 40%-similar answer (PARTIAL_MATCH's passing floor) silently earned full credit on
+ *  the default rule. The first fix gated all three patterns on a `partialCreditEnabled`
+ *  flag, but the Android builder had no control for it and always sent false, so "Half for
+ *  close" and "By similarity" paid zero here too. The flag is gone on both sides. */
 function computeScore(result, points, rule) {
   if (result.status === "INCORRECT") return 0;
+  const exactish = result.status === "EXACT_MATCH" || result.status === "ACCEPTED_WITH_TYPO";
   let raw;
   if (rule.marksPattern === "WEIGHTED_BY_SIMILARITY") {
-    if (result.status === "EXACT_MATCH" || result.status === "ACCEPTED_WITH_TYPO") {
-      raw = points * clamp(result.similarityScore, 0, 1);
-    } else if (result.status === "PARTIAL_MATCH") {
-      raw = rule.partialCreditEnabled ? points * clamp(result.similarityScore, 0, 1) : 0;
-    } else {
-      raw = 0; // unreachable — INCORRECT already returned above
-    }
+    // Both exact-ish and partial are weighted by the answer's own similarity.
+    raw = points * clamp(result.similarityScore, 0, 1);
+  } else if (rule.marksPattern === "HALF_FOR_PARTIAL") {
+    if (exactish) raw = points * 1;
+    else if (result.status === "PARTIAL_MATCH") raw = points * 0.5;
+    else raw = 0; // unreachable — INCORRECT already returned above
   } else {
-    // HALF_FOR_PARTIAL and ALL_OR_NOTHING share this same body in the Kotlin source.
-    if (result.status === "EXACT_MATCH" || result.status === "ACCEPTED_WITH_TYPO") raw = points * 1;
-    else if (result.status === "PARTIAL_MATCH") raw = rule.partialCreditEnabled ? points * 0.5 : 0;
-    else raw = 0;
+    // ALL_OR_NOTHING: a partial match earns nothing, which is what the name promises.
+    raw = exactish ? points * 1 : 0;
   }
   return Math.trunc(raw * 100) / 100; // truncate to 2dp, matches (raw*100).toLong()/100f
 }
@@ -435,11 +433,24 @@ function evaluate(userInput, expected, rule) {
   return bestPartial || bestIncorrect || { status: "INCORRECT", similarityScore: 0, matchedAgainst: expected, feedbackMessage: window.S.EVAL_INCORRECT, wordDetails: [] };
 }
 
+/** Nothing was entered — the taker moved past this question without answering it.
+ *
+ *  Mirrors `AnswerResult.isSkipped` in Grading.kt: derived from what was recorded rather
+ *  than stored, because an unanswered question already records nothing. The choice types and
+ *  a blank WRITTEN give an empty array; FILL_BLANK gives one blank entry per blank, and
+ *  `every` on an empty array is true, so one rule covers them all.
+ *
+ *  A label only — a skipped answer still scores 0 and still counts in the denominator. */
+function isAnswerSkipped(givenAnswers) {
+  return (givenAnswers || []).every((a) => !String(a == null ? "" : a).trim());
+}
+
 // Public API — mirrors the Kotlin package's exported surface.
 window.Evaluator = {
   evaluate,
   computeScore,
   defaultAnswerRule,
+  isAnswerSkipped,
   TextNormalizer,
   splitCorrectOptionPoints,
   isMultipleCorrectAnswer,

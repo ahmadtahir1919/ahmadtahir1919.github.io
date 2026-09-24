@@ -113,6 +113,29 @@ function pollResultsVisibleToVoters(settings) {
   return (settings || {}).showResultsToVoters === true;
 }
 
+/** `questions.poll_settings` is nullable and its keys are optional, so every read needs a
+ *  default — and each one has to be the same default Kotlin's `PollSettings()` uses, or the
+ *  browser and the app disagree about the same poll. They did: `anonymous` was read as
+ *  `!== false` where it is rendered (so a poll with no settings showed the lock and the
+ *  "Anonymous" chip) and as truthy where the vote is written (so that same poll stored the
+ *  voter's id), and `allowVoteChange` defaulted the web to changeable while the app defaults
+ *  it off. Fill the object once, here, instead of defaulting at each use. */
+function pollSettingsOrDefaults(settings) {
+  return Object.assign(
+    {
+      allowMultiple: true,
+      anonymous: false,
+      allowVoteChange: false,
+      allowOther: false,
+      askReason: false,
+      shuffleOptions: false,
+      noTimeLimit: false,
+      showResultsToVoters: false,
+    },
+    settings || {}
+  );
+}
+
 window.Poll = {
   POLL_OTHER_INDEX,
   computePollDistribution,
@@ -120,4 +143,5 @@ window.Poll = {
   pollShuffledOrder,
   pollHiddenForNonVoter,
   pollResultsVisibleToVoters,
+  pollSettingsOrDefaults,
 };

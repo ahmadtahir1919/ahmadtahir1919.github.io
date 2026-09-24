@@ -87,6 +87,13 @@ const state = {
   autoFinishHandle: null, // setTimeout id — LAST question only, once it's been answered
   // Question preview (quiz.questionPreviewSec): the question shows on its own first, with
   // no choices and no clock — mirrors QuizPreviewUiState.revealingQuestion.
+  // "Move on without answering?" — raised by the Next/Finish button only, and cleared by
+  // advance(). Deliberately NOT window.confirm(): that blocks the main thread, which froze
+  // the countdown behind it (free thinking time) and then let the queued interval tick and
+  // the confirmed onNext() both call advance(). Mirrors QuizPreviewUiState.showSkipConfirm.
+  skipConfirmOpen: false,
+  // Mirrors QuizPreviewUiState.isFinishing (L-02) — see advance()'s guard.
+  isFinishing: false,
   revealing: false,
   revealHandle: null, // setTimeout id ending the preview
   revealStartedAt: 0, // epoch ms — keeps the fill bar continuous across re-renders
@@ -152,6 +159,12 @@ function render() {
   // already confirms before leaving (see confirmLeave()).
   if (state.screen !== "quiz" && state.screen !== "finishing") {
     app.appendChild(buildSiteFooter());
+  }
+  // Appended to #app rather than <main>, after it, so it layers over whatever the switch
+  // below draws and survives the per-second timer repaints (updateTimerDisplay only touches
+  // the chip). advance() clears the flag, so any route off this question closes it.
+  if (state.skipConfirmOpen && state.screen === "quiz") {
+    app.appendChild(buildSkipConfirm());
   }
   switch (state.screen) {
     case "loading": return renderLoading();
@@ -1375,7 +1388,7 @@ function isStillOnQuestion(q) {
  *  before, and computes the static distribution once closed. Mirrors
  *  QuizPreviewViewModel.loadPollForCurrentQuestion() exactly. */
 async function loadPollForCurrentQuestion(q) {
-  const settings = q.pollSettings || {};
+  const settings = PL.pollSettingsOrDefaults(q.pollSettings);
   let opened;
   try {
     opened = await SC.ensurePollOpen(q.id);
@@ -1516,6 +1529,11 @@ function updateTimerDisplay() {
   if (segFill) {
     segFill.style.width = `${((state.totalTimeSec - state.secondsRemaining) / state.totalTimeSec) * 100}%`;
   }
+  // Same in-place mutation for the skip dialog's "time left" line. It has to be updated from
+  // here rather than by re-rendering: render() rebuilds the dialog from scratch, which would
+  // throw away focus and restart its transition every second.
+  const skipLeft = document.getElementById("skip-confirm-time");
+  if (skipLeft) skipLeft.textContent = S.skipConfirmTimeLeft(formatSeconds(state.secondsRemaining));
 }
 
 function toggleAnswer(optionIndex) {
@@ -1550,8 +1568,8 @@ function toggleAnswer(optionIndex) {
  *  instead of the plain single/multi rule every other question type uses. */
 function togglePollOption(optionIndex) {
   const q = currentQuestion();
-  const settings = q.pollSettings || {};
-  const locked = state.pollHasVoted && settings.allowVoteChange === false;
+  const settings = PL.pollSettingsOrDefaults(q.pollSettings);
+  const locked = state.pollHasVoted && !settings.allowVoteChange;
   if (locked) return;
   if (settings.allowMultiple) {
     if (state.pollSelected.has(optionIndex)) state.pollSelected.delete(optionIndex);
@@ -1565,8 +1583,68 @@ function togglePollOption(optionIndex) {
 // Skip and Next both advance, but only Next casts whatever's selected on a
 // Poll question — a skipped poll is left unvoted, even if an option was
 // tapped first, mirroring QuizPreviewViewModel's onSkip()/onNext() split.
-function onNext() { advance(true); }
+/** What the Next/Finish button calls. Asks first when nothing is filled in, so a mistaken
+ *  tap can't quietly cost the question. Mirrors QuizPreviewViewModel.onNextTapped.
+ *
+ *  The countdown keeps running behind the dialog; if it expires, its advance(true) closes
+ *  the dialog and records the skip — the same outcome, reached without the taker. */
+function onNext() {
+  if (shouldConfirmSkip()) {
+    state.skipConfirmOpen = true;
+    render();
+    return;
+  }
+  advance(true);
+}
 function onSkip() { advance(false); }
+
+function onSkipConfirmed() {
+  state.skipConfirmOpen = false;
+  advance(true);
+}
+
+function onSkipConfirmDismissed() {
+  state.skipConfirmOpen = false;
+  render();
+}
+
+/** The "Move on without answering?" dialog — the one modal on this page, and deliberately
+ *  in-page rather than window.confirm() so the countdown behind it keeps running (see
+ *  state.skipConfirmOpen). Mirrors the ConfirmActionDialog QuizPreviewScreen raises: title,
+ *  body, a filled confirm and an outlined dismiss. */
+function buildSkipConfirm() {
+  const onLast = state.currentIndex === state.quiz.questions.length - 1;
+  const children = [
+    el("h2", { class: "skip-confirm-title" }, [S.SKIP_CONFIRM_TITLE]),
+    el("p", { class: "skip-confirm-body" }, [onLast ? S.SKIP_CONFIRM_BODY_LAST : S.SKIP_CONFIRM_BODY]),
+  ];
+  // The clock is still running behind this dialog, so show it ticking rather than leaving the
+  // taker to wonder. Only on a timed question — updateTimerDisplay keeps it current by id.
+  if (state.totalTimeSec > 0) {
+    children.push(el("p", { class: "skip-confirm-time", id: "skip-confirm-time" }, [
+      S.skipConfirmTimeLeft(formatSeconds(state.secondsRemaining)),
+    ]));
+  }
+  const card = el("div", { class: "skip-confirm-card", role: "alertdialog", "aria-modal": "true" }, [
+    ...children,
+    el("div", { class: "skip-confirm-actions" }, [
+      el("button", { class: "secondary", type: "button", onclick: onSkipConfirmDismissed }, [S.SKIP_CONFIRM_NO]),
+      el("button", { class: "primary", type: "button", onclick: onSkipConfirmed }, [S.SKIP_CONFIRM_YES]),
+    ]),
+  ]);
+  // Backdrop taps read as "go back" — the safe half, same as dismissing the Android dialog.
+  return el("div", {
+    class: "skip-confirm-backdrop",
+    onclick: (e) => { if (e.target.classList.contains("skip-confirm-backdrop")) onSkipConfirmDismissed(); },
+  }, [card]);
+}
+
+/** A Next/Finish tap here would record a skip. Polls are exempt for the same reasons as on
+ *  Android: outside scoring, Next *casts* the vote, and Skip Poll already covers passing. */
+function shouldConfirmSkip() {
+  const q = currentQuestion();
+  return !!q && q.type !== "POLL" && !hasAnsweredCurrent();
+}
 
 /** Has the taker actually given an answer to the question they're on right now? For a poll
  *  that means a cast vote whose reveal is showing (not one reopened for editing). Mirrors
@@ -1591,7 +1669,10 @@ function scheduleLastQuestionAutoFinish() {
   state.autoFinishHandle = null;
   const isLast = state.currentIndex === state.quiz.questions.length - 1;
   if (!isLast || state.instantFeedback || !hasAnsweredCurrent()) return;
-  state.autoFinishHandle = setTimeout(() => { onNext(); }, 3000);
+  // advance(), not onNext(): no automatic path may raise the skip dialog, since nobody is
+  // there to answer it. (It only arms once hasAnsweredCurrent(), so this is belt-and-braces —
+  // it also matches Android, where the auto-finish calls the raw onNext.)
+  state.autoFinishHandle = setTimeout(() => { advance(true); }, 3000);
 }
 
 function cancelLastQuestionAutoFinish() {
@@ -1602,14 +1683,23 @@ function cancelLastQuestionAutoFinish() {
 async function advance(castPollVote) {
   if (state.instantFeedback) return; // already mid-feedback — ignore stray taps
   if (state.revealing) return; // question still previewing on its own — nothing to answer yet
+  // L-02, mirroring shouldSkipAdvanceTap: this function is async and awaits a poll cast and
+  // the submit, so without this a second call can enter while the first is suspended and
+  // submit the attempt twice. Reachable from the leave confirm racing a timer tick.
+  if (state.isFinishing) return;
   // A real Finish/Skip tap (or the auto-finish firing) takes over from here.
   cancelLastQuestionAutoFinish();
+  // However we got here — a tap, the countdown expiring, the poll auto-advance — this
+  // question is settled, so the "move on without answering?" dialog has nothing left to ask
+  // about. Clearing it here (rather than in the button handlers) is what makes the timer
+  // case work: the dialog closes by itself and the question records as skipped.
+  state.skipConfirmOpen = false;
   const q = currentQuestion();
   clearInterval(state.timerHandle);
 
   if (q.type === "POLL") {
-    const settings = q.pollSettings || {};
-    const locked = state.pollHasVoted && settings.allowVoteChange === false;
+    const settings = PL.pollSettingsOrDefaults(q.pollSettings);
+    const locked = state.pollHasVoted && !settings.allowVoteChange;
     // Only actually cast on a fresh vote or a deliberate re-vote (pollEditingVote) — an
     // ordinary "Next" tap after the reveal below already has nothing new to cast.
     if (castPollVote && !locked && (!state.pollHasVoted || state.pollEditingVote) &&
@@ -1732,6 +1822,10 @@ function requiresManualMarking(q, quiz) {
 }
 
 async function finishQuiz() {
+  // L-02: set before the first await below, so a second advance() landing mid-submit sees it
+  // already flipped. Cleared only where this function bails out and leaves the taker on the
+  // quiz; a successful submit navigates away and the flag goes with the attempt.
+  state.isFinishing = true;
   state.screen = "finishing";
   render();
 
@@ -1860,7 +1954,8 @@ async function finishQuiz() {
       givenAnswers: given,
       timeTakenSec: elapsedSec,
       needsManualMarking: isManual,
-      // null on a manual answer is what marks it pending.
+      // null on a manual answer is what marks it pending — a blank answer included, so the
+      // owner's queue counts every question. Mirrors QuizPreviewViewModel.finishPreview.
       awardedPoints: isManual ? null : finalPoints,
       maxPoints: q.points,
       usedHint: state.hintUsed[q.id] === true,
@@ -2043,7 +2138,10 @@ function buildHintBox(hint) {
 /** "QUESTION X OF N" + Hint (and Anonymous on a poll) — mirrors the badge row in
  *  QuizPreviewScreen.kt. The number is gated by quiz.showQuestionNumbers. */
 function buildBadgeRow(quiz, q) {
-  const anonymous = q.type === "POLL" && (q.pollSettings || {}).anonymous !== false;
+  // Defaults via pollSettingsOrDefaults, like every other settings read — this was `!== false`,
+  // so a poll with no settings showed the lock and the "Anonymous" chip while castPollVote
+  // stored the voter's id for that very same poll. QuizPreviewScreen.kt:469 is the twin.
+  const anonymous = q.type === "POLL" && PL.pollSettingsOrDefaults(q.pollSettings).anonymous;
   const end = [];
   if (anonymous) end.push(el("span", { class: "anon-chip" }, [html(LOCK_SVG), S.ANONYMOUS]));
   if (q.hint) {
@@ -2093,11 +2191,12 @@ function buildQuestionHelper(q) {
     case "FILL_BLANK":
       return el("div", { class: "q-helper" }, [html(TEXT_FIELDS_SVG), S.HELPER_FILL_BLANK]);
     default: {
-      const settings = q.pollSettings || {};
+      const settings = PL.pollSettingsOrDefaults(q.pollSettings);
       return el("div", { class: "q-helper" }, [
         S.pollHelper(
           settings.allowMultiple ? S.SELECT_ALL_THAT_APPLY : S.POLL_HELPER_SINGLE,
-          settings.anonymous !== false ? S.POLL_HELPER_ANONYMOUS : S.POLL_HELPER_NAMED
+          // Truthy, like buildBadgeRow's chip — see the note there.
+          settings.anonymous ? S.POLL_HELPER_ANONYMOUS : S.POLL_HELPER_NAMED
         ),
       ]);
     }
@@ -2352,8 +2451,8 @@ function buildWrittenAnswer() {
 // "Why?" fields, then a static percent-bar distribution once closed). ───────
 
 function buildPollVoting(q) {
-  const settings = q.pollSettings || {};
-  const locked = state.pollHasVoted && settings.allowVoteChange === false;
+  const settings = PL.pollSettingsOrDefaults(q.pollSettings);
+  const locked = state.pollHasVoted && !settings.allowVoteChange;
   const container = el("div", { class: "choice-list" }, []);
 
   // "Select all that apply" lives in the question card's helper line now.
@@ -2439,7 +2538,7 @@ function buildPollResults(q) {
     container.appendChild(buildPollResultRow(dist.other, state.pollSelected.has(PL.POLL_OTHER_INDEX), dist.otherEntries));
   }
 
-  const settings = q.pollSettings || {};
+  const settings = PL.pollSettingsOrDefaults(q.pollSettings);
   if (state.pollState?.status !== "CLOSED" && settings.allowVoteChange) {
     container.appendChild(
       el("p", { class: "poll-change-vote", onclick: () => { state.pollEditingVote = true; cancelLastQuestionAutoFinish(); render(); } }, [S.POLL_CHANGE_VOTE])
@@ -2896,7 +2995,10 @@ function buildReviewCard(answer, index) {
   // An unmarked answer isn't wrong, it's undecided — red here would tell the taker they
   // got something wrong that nobody has actually looked at yet.
   const isPending = answer.needsManualMarking === true && answer.awardedPoints == null;
-  const stateClass = isPending ? "pending" : isCorrect ? "correct" : "wrong";
+  // Same reasoning one step further: a question the taker never attempted isn't wrong
+  // either. Read after isPending, like ResultScreen.kt's ReviewCard does.
+  const isSkipped = !isPending && window.Evaluator.isAnswerSkipped(answer.givenAnswers);
+  const stateClass = isPending ? "pending" : isSkipped ? "skipped" : isCorrect ? "correct" : "wrong";
   const expanded = expandedReviews.has(answer.questionId);
 
   const right = [];
@@ -2905,6 +3007,8 @@ function buildReviewCard(answer, index) {
     right.push(el("span", { class: "marks-badge " + stateClass }, [S.marksFraction(answer.awardedPoints ?? 0, answer.maxPoints)]));
   }
   if (isPending) right.push(el("span", { class: "pending-tag" }, [S.RESULT_AWAITING_MARKING]));
+  // A marks question says it with its 0/N badge; a correctness-track one needs the word.
+  else if (isSkipped && answer.maxPoints === 0) right.push(el("span", { class: "skipped-tag" }, [S.RESULT_VERDICT_SKIPPED]));
   if (answer.usedHint) right.push(el("span", { class: "hint-used-tag" }, [S.HINT]));
 
   const header = buildReviewHeader({
@@ -2962,12 +3066,16 @@ function questionTypeLabel(q) {
 function buildWrittenReview(q, answer, isPending, isCorrect) {
   const given = (answer.givenAnswers || [])[0] || "";
   const evalResult = answer.evaluationResult;
+  // "Mismatch" would be a lie about an empty box — nothing was ever compared.
+  const isSkipped = !isPending && window.Evaluator.isAnswerSkipped(answer.givenAnswers);
   const mineChip = isPending
     ? S.RESULT_AWAITING_MARKING
-    : evalResult && WRITTEN_STATUS_LABELS[evalResult.status] && evalResult.status !== "EXACT_MATCH" && evalResult.status !== "INCORRECT"
-      ? WRITTEN_STATUS_LABELS[evalResult.status]
-      : isCorrect ? S.RESULT_MATCH : S.RESULT_MISMATCH;
-  const mineState = isPending ? "pending" : isCorrect ? "correct" : "wrong";
+    : isSkipped
+      ? S.RESULT_VERDICT_SKIPPED
+      : evalResult && WRITTEN_STATUS_LABELS[evalResult.status] && evalResult.status !== "EXACT_MATCH" && evalResult.status !== "INCORRECT"
+        ? WRITTEN_STATUS_LABELS[evalResult.status]
+        : isCorrect ? S.RESULT_MATCH : S.RESULT_MISMATCH;
+  const mineState = isPending ? "pending" : isSkipped ? "skipped" : isCorrect ? "correct" : "wrong";
   const wrap = el("div", { class: "written-review" }, [
     el("div", { class: "answer-box " + mineState }, [
       el("div", { class: "answer-box-head" }, [
