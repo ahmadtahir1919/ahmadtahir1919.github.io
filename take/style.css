@@ -877,7 +877,7 @@ textarea:focus, input:focus { outline: none; border-color: var(--accent); }
 .fb-blank-input,
 .fb-blank-chip {
   min-width: 92px;
-  max-width: 220px;
+  max-width: min(220px, 100%);
   border-radius: 10px;
   border: 1.5px solid var(--border-light);
   background: var(--surface);
@@ -904,6 +904,9 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
   background: color-mix(in srgb, var(--accent) 10%, var(--surface));
   color: var(--accent);
 }
+/* Unlike the input next to it, the chip cannot scroll its overflow — it is a span. A long
+   answer echoed back during instant feedback has to wrap inside the cap instead. */
+.fb-blank-chip { overflow-wrap: anywhere; }
 .fb-blank-chip.correct { border-color: var(--success); background: var(--success-bg); color: #16A34A; }
 .fb-blank-chip.wrong { border-color: var(--error); background: var(--error-bg); color: #DC2626; }
 
@@ -1425,9 +1428,18 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
   font-size: 14px;
   line-height: 2;
   color: #1C1B2E;
+  /* .review-card clips (overflow:hidden, for its rounded corners and status bar), so
+     anything that cannot wrap here is lost rather than scrollable — a long unbroken
+     answer or template word has to break mid-token. Same rule as .answer-box-text. */
+  overflow-wrap: anywhere;
 }
+/* The taking sentence pre-splits its text into one span per word, so `pre` costs it
+   nothing; here each span is a whole run between two blanks and would never wrap.
+   pre-wrap keeps the creator's manual line breaks and still wraps. */
+.fb-review-sentence .fb-word { white-space: pre-wrap; }
 .fb-review-chip {
   display: inline-block;
+  max-width: 100%;
   padding: 1px 8px;
   margin: 0 3px;
   border-radius: 6px;
@@ -2327,7 +2339,8 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
 .quiz-screen .fb-blank-chip {
   display: inline-flex;
   align-items: center;
-  height: 44px;
+  /* min-, not a fixed height: a wrapped long answer grows the chip instead of spilling. */
+  min-height: 44px;
   padding: 0 12px;
   border-width: 2px;
   font-size: 17px;

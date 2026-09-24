@@ -74,7 +74,8 @@ const S = {
     "Leave this quiz? Your answers won't be saved, and the creator doesn't allow retakes — you won't be able to take this quiz again.",
   // Byte-identical to preview_skip_confirm_* in strings.xml. Raised only by Next/Finish with
   // nothing filled in; the Skip button never asks, because that tap already said it
-  // deliberately, and neither does the countdown expiring.
+  // deliberately (and it discards whatever is filled in — see onSkip), and neither does
+  // the countdown expiring, which keeps what is there.
   SKIP_CONFIRM_TITLE: "Move on without answering?",
   SKIP_CONFIRM_BODY:
     "You haven't answered this one. It'll be recorded as skipped and scores zero, and it still counts towards your total.",

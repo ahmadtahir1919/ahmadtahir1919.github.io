@@ -1587,9 +1587,10 @@ function togglePollOption(optionIndex) {
   render();
 }
 
-// Skip and Next both advance, but only Next casts whatever's selected on a
-// Poll question — a skipped poll is left unvoted, even if an option was
-// tapped first, mirroring QuizPreviewViewModel's onSkip()/onNext() split.
+// Skip and Next both advance, but Skip throws away whatever is filled in first
+// (see onSkip), so the question records as unanswered. Next, the countdown
+// expiring, the poll auto-advance and the last-question auto-finish all keep
+// what is there. Mirrors QuizPreviewViewModel's onSkip()/onNext() split.
 /** What the Next/Finish button calls. Asks first when nothing is filled in, so a mistaken
  *  tap can't quietly cost the question. Mirrors QuizPreviewViewModel.onNextTapped.
  *
@@ -1603,7 +1604,32 @@ function onNext() {
   }
   advance(true);
 }
+/** Skip means skip: advance(false) throws away anything already selected or typed before
+ *  it can be recorded, so the question comes back as unanswered no matter what was on
+ *  screen — a poll included, as it always has been.
+ *
+ *  Only this deliberate tap discards. The countdown running out, the poll auto-advance
+ *  and the last-question auto-finish all call advance(true) and keep what is filled in,
+ *  exactly as pressing Next would. Mirrors QuizPreviewViewModel.onSkip. */
 function onSkip() { advance(false); }
+
+/** The in-progress answer for the current question, back to how prepareCurrentQuestion
+ *  leaves it — the fill-blank draft keeps one blank entry per blank so grading still
+ *  lines up with the template. Clearing the live state (rather than just recording an
+ *  empty answer) is also what keeps the instant-feedback card honest: it renders these
+ *  fields, not the recorded answer. */
+function clearCurrentAnswerDraft() {
+  const q = currentQuestion();
+  if (!q) return;
+  state.selectedAnswers = new Set();
+  state.writtenAnswer = "";
+  state.fillBlankDraft = q.type === "FILL_BLANK" && q.fillBlankContent
+    ? new Array(FB.orderedBlanks(q.fillBlankContent).length).fill("")
+    : [];
+  state.pollSelected = new Set();
+  state.pollOtherText = "";
+  state.pollReasonText = "";
+}
 
 function onSkipConfirmed() {
   state.skipConfirmOpen = false;
@@ -1687,7 +1713,11 @@ function cancelLastQuestionAutoFinish() {
   state.autoFinishHandle = null;
 }
 
-async function advance(castPollVote) {
+/** @param keepAnswer true for Next/Finish and for every automatic advance (the countdown
+ *  expiring, the poll auto-advance, the last-question auto-finish): whatever is filled in
+ *  is recorded and a poll vote is cast. False only for the Skip button, which discards it
+ *  all first. Mirrors QuizPreviewViewModel.advance. */
+async function advance(keepAnswer) {
   if (state.instantFeedback) return; // already mid-feedback — ignore stray taps
   if (state.revealing) return; // question still previewing on its own — nothing to answer yet
   // L-02, mirroring shouldSkipAdvanceTap: this function is async and awaits a poll cast and
@@ -1701,6 +1731,9 @@ async function advance(castPollVote) {
   // about. Clearing it here (rather than in the button handlers) is what makes the timer
   // case work: the dialog closes by itself and the question records as skipped.
   state.skipConfirmOpen = false;
+  // Skip discards before anything reads the draft below, so the answer recorded is empty
+  // and isAnswerSkipped() reports the question as skipped however much was filled in.
+  if (!keepAnswer) clearCurrentAnswerDraft();
   const q = currentQuestion();
   clearInterval(state.timerHandle);
 
@@ -1709,7 +1742,7 @@ async function advance(castPollVote) {
     const locked = state.pollHasVoted && !settings.allowVoteChange;
     // Only actually cast on a fresh vote or a deliberate re-vote (pollEditingVote) — an
     // ordinary "Next" tap after the reveal below already has nothing new to cast.
-    if (castPollVote && !locked && (!state.pollHasVoted || state.pollEditingVote) &&
+    if (keepAnswer && !locked && (!state.pollHasVoted || state.pollEditingVote) &&
         state.pollSelected.size > 0 && state.pollState) {
       const vote = {
         questionId: q.id,
