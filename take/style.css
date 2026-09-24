@@ -1438,6 +1438,8 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
 .fb-review-chip.correct { background: var(--success-bg); color: #16A34A; }
 .fb-review-chip.wrong { background: var(--error-bg); color: #DC2626; text-decoration: line-through; }
 .fb-review-chip.pending { background: var(--pending-bg); color: var(--pending); }
+/* No line-through: an unanswered blank has nothing to cross out. */
+.fb-review-chip.skipped { background: var(--skipped-bg); color: var(--skipped); }
 .fb-review-chip.answer { text-decoration: none; }
 
 /* True / False tiles. */

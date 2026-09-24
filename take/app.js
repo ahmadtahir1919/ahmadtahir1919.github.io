@@ -1277,6 +1277,13 @@ async function startQuiz() {
     /* offline / transient — carry on */
   }
   state.currentIndex = 0;
+  // Reset alongside currentIndex, because this is a single-page app and `state` outlives an
+  // attempt: a retake in the same tab starts with whatever the last one left behind. A stale
+  // isFinishing would make every advance() return early and freeze the Next button, and a
+  // stale skipConfirmOpen would draw the dialog over question 1. (The app has neither problem
+  // — a retake there gets a brand-new ViewModel.)
+  state.isFinishing = false;
+  state.skipConfirmOpen = false;
   state.screen = "quiz";
   render();
   prepareCurrentQuestion();
@@ -3119,7 +3126,10 @@ function buildFillBlankReview(q, answer, isPending, isCorrect) {
     }
     const ok = FB.fillBlankIsCorrect(seg.blank, givenText, content.checking);
     const frag = document.createDocumentFragment();
-    frag.appendChild(el("span", { class: "fb-review-chip " + (ok ? "correct" : "wrong") }, [givenText || S.RESULT_NO_ANSWER]));
+    // An empty blank was never answered, so it reads grey like the card header rather than a
+    // red strike-through — there is nothing to cross out. Mirrors ResultComponents.kt.
+    const chipCls = ok ? "correct" : givenText.trim() ? "wrong" : "skipped";
+    frag.appendChild(el("span", { class: "fb-review-chip " + chipCls }, [givenText || S.RESULT_NO_ANSWER]));
     if (!ok) {
       const correctText = (seg.blank.acceptedAnswers || []).find((a) => a && a.trim()) || "";
       if (correctText) frag.appendChild(el("span", { class: "fb-review-chip correct answer" }, [correctText]));
