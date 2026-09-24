@@ -36,7 +36,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=121">
+<link rel="stylesheet" href="style.css?v=122">
 <!-- Styles for the crawler fallback in <body> only. Inline rather than pulling
      /page.css into the quiz-taking SPA for markup nobody actually looks at:
      app.js wipes it on first render. Sized so the brief flash before boot (or a
@@ -76,21 +76,21 @@
   <!-- Google sign-in. Does NOT load Google's script on first paint — it injects
        accounts.google.com/gsi/client only when the sign-in button is actually built, so a
        taker who never signs in never touches Google here. -->
-  <script src="/google-signin.js?v=121"></script>
+  <script src="/google-signin.js?v=122"></script>
   <!-- Plain (non-module), same as above — attaches itself as window.Analytics.
        Loaded before every other script below so they can all call it unconditionally. -->
-  <script src="analytics.js?v=121"></script>
+  <script src="analytics.js?v=122"></script>
   <!-- type="module": each file gets its own isolated top-level scope, so nothing
        declared in these (evaluate, supabase, etc.) can ever collide with the
        library above or with each other — that's what caused the blank-page
        SyntaxError. They still communicate via window.X, same as before;
        modules just can't leak their own top-level names into the global scope. -->
   <!-- strings.js first: every other module reads its user-facing text from window.S. -->
-  <script type="module" src="strings.js?v=121"></script>
-  <script type="module" src="evaluator.js?v=121"></script>
-  <script type="module" src="fillblank.js?v=121"></script>
-  <script type="module" src="poll.js?v=121"></script>
-  <script type="module" src="supabase-client.js?v=121"></script>
-  <script type="module" src="app.js?v=121"></script>
+  <script type="module" src="strings.js?v=122"></script>
+  <script type="module" src="evaluator.js?v=122"></script>
+  <script type="module" src="fillblank.js?v=122"></script>
+  <script type="module" src="poll.js?v=122"></script>
+  <script type="module" src="supabase-client.js?v=122"></script>
+  <script type="module" src="app.js?v=122"></script>
 </body>
 </html>
