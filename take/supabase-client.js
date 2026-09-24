@@ -46,11 +46,29 @@ async function getCurrentUser() {
   return data?.user ?? null;
 }
 
+/** The fallback path. Kept because it is the only one that works when Google's script can't
+ *  load at all — see google-signin.js. It redirects through the Supabase callback, which is
+ *  why Google names supabase.co on the consent screen; that is the whole reason
+ *  signInWithIdToken below is preferred. */
 async function signInWithGoogle(redirectTo) {
   return supabaseClient.auth.signInWithOAuth({
     provider: "google",
     options: { redirectTo },
   });
+}
+
+/** The preferred path: the browser already has the ID token, so there is no redirect and
+ *  Google shows Quizoma rather than the Supabase project URL. [rawNonce] must be the
+ *  UNHASHED nonce — Supabase hashes it itself to compare against the token's claim, while
+ *  Google was handed the hashed one. Mirrors AuthRepository.signInWithGoogle's
+ *  signInWith(IDToken) { idToken; provider = Google; nonce = rawNonce }. */
+async function signInWithIdToken(credential, rawNonce) {
+  const { error } = await supabaseClient.auth.signInWithIdToken({
+    provider: "google",
+    token: credential,
+    nonce: rawNonce,
+  });
+  if (error) throw error;
 }
 
 async function signOut() {
@@ -489,6 +507,7 @@ window.SupabaseClient = {
   getCurrentUser,
   resolveDisplayName,
   signInWithGoogle,
+  signInWithIdToken,
   signOut,
   fetchNameConfirmed,
   confirmDisplayName,

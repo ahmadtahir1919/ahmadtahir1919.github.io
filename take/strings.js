@@ -19,6 +19,10 @@ const S = {
   ERR_GENERIC_TITLE: "Oops, that didn't work",
   ERR_QUIZ_NOT_FOUND: "Quiz not found. Double-check the code.",
   ERR_SUPABASE_CDN: "Supabase library failed to load from CDN.",
+  // Shown on the landing card when Google returned a token but Supabase rejected it — a
+  // stale clock, a revoked account, a nonce mismatch. Deliberately vague: none of the real
+  // causes are anything the taker can act on beyond trying again.
+  ERR_SIGN_IN: "Sign-in didn't complete. Please try again.",
 
   // ── Shared shell (header + footer on every screen) ─────────────────────
   BRAND: "Quizoma",

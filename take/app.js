@@ -757,6 +757,67 @@ function renderEnterCode() {
   focusBox(firstEmpty === -1 ? CODE_LENGTH - 1 : firstEmpty);
 }
 
+/** The signed-out call to action.
+ *
+ *  Google's rendered button when Google Identity Services is available — its markup, because
+ *  the credential flow cannot be driven from a custom button — and our own button calling the
+ *  old redirect when it isn't. The fallback matters: a blocked script would otherwise leave a
+ *  taker with no way to sign in at all, and the redirect still works, it just shows the
+ *  Supabase project URL on Google's consent screen.
+ *
+ *  Note this returns a container that fills in later. renderButton() measures the element, so
+ *  it can only run once render() has attached it to the document. */
+function buildGoogleSignIn() {
+  const wrap = el("div", { class: "google-signin" }, []);
+
+  const useRedirect = () => {
+    if (!wrap.isConnected) return;
+    wrap.textContent = "";
+    const btn = el(
+      "button",
+      {
+        class: "google",
+        onclick: async () => {
+          const redirectTo = `${window.location.origin}${window.location.pathname}?code=${shareCode}`;
+          await SC.signInWithGoogle(redirectTo);
+        },
+      },
+      [S.SIGN_IN_GOOGLE]
+    );
+    btn.prepend(html(GOOGLE_G_SVG));
+    wrap.appendChild(btn);
+  };
+
+  const GSI = window.QuizomaGoogleSignIn;
+  if (!GSI) {
+    // The script tag is missing entirely (older cached index.html, or a test stubbing it out).
+    queueMicrotask(useRedirect);
+    return wrap;
+  }
+
+  requestAnimationFrame(() => {
+    if (!wrap.isConnected) return; // navigated away while the script was loading
+    GSI.renderButton(wrap, {
+      onCredential: async (credential, rawNonce) => {
+        try {
+          state.joinError = null;
+          await SC.signInWithIdToken(credential, rawNonce);
+          // No page reload on this path, so the work boot() would have done on the way back
+          // from the redirect has to happen here instead — including the name gate.
+          await loadUserQuizState();
+          await routeSignedInTaker(false);
+        } catch (e) {
+          state.joinError = S.ERR_SIGN_IN;
+          render();
+        }
+      },
+      onUnavailable: useRedirect,
+    });
+  });
+
+  return wrap;
+}
+
 function renderLanding() {
   const quiz = state.quiz;
   const accent = themeColorFromName(quiz.themeColorName);
@@ -818,21 +879,19 @@ function renderLanding() {
   }
 
   if (!state.user) {
-    const googleBtn = el(
-      "button",
-      {
-        class: "google",
-        onclick: async () => {
-          const redirectTo = `${window.location.origin}${window.location.pathname}?code=${shareCode}`;
-          await SC.signInWithGoogle(redirectTo);
-        },
-      },
-      [S.SIGN_IN_GOOGLE]
-    );
-    googleBtn.prepend(html(GOOGLE_G_SVG));
+    // Google's own button, not ours: the credential flow cannot be driven from a custom
+    // button, so renderButton() owns this markup. buildGoogleSignIn swaps in the old
+    // custom button if Google's script can't load — see google-signin.js.
     body.push(
       el("div", { class: "info-box" }, [html(INFO_SVG), el("span", {}, [S.SIGN_IN_BLURB])]),
-      googleBtn,
+      buildGoogleSignIn()
+    );
+    // Same inline treatment the join failures below use — a rejected token is not worth
+    // throwing the whole page over to the error screen for.
+    if (state.joinError) {
+      body.push(el("p", { class: "muted", style: "color:var(--error)" }, [state.joinError]));
+    }
+    body.push(
       el("div", { class: "card-meta-row" }, [
         el("span", {}, [S.sessionLine(n)]),
         el("span", {}, [S.version(WEB_VERSION, BUILD_NUMBER)]),
@@ -3494,6 +3553,82 @@ const CHECK_STAT_SVG = `<svg viewBox="0 0 16 16" fill="none" width="14" height="
 const REFRESH_SVG = `<svg viewBox="0 0 20 20" fill="none" width="16" height="16"><path d="M16 10a6 6 0 01-10.5 4M4 10a6 6 0 0110.5-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14.5 3v3.5H11M5.5 17v-3.5H9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const PDF_SVG = `<svg viewBox="0 0 20 20" fill="none" width="16" height="16"><path d="M5 3h7l4 4v10H5V3z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 3v4h4M7.5 11h5M7.5 14h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
 
+// ── Session → screen ───────────────────────────────────────────────────────
+// Shared by boot() and the in-page Google sign-in. They used to be the same code path
+// because signing in meant a redirect and a fresh page load; with the ID-token flow the
+// page never reloads, so everything boot() did after login has to run in the callback
+// too. Keeping it in one place is what stops the two drifting — the name-confirmation
+// gate in particular, which is silent when it is missed.
+
+/** Loads everything about this quiz that depends on who is signed in. Safe to call with no
+ *  session: it just leaves state.user null. Requires state.quiz to already be set. */
+async function loadUserQuizState() {
+  state.user = await SC.getCurrentUser();
+  if (!state.user) return;
+  // Pseudonymous id only, same as the Android app (AuthRepository.identifyIfNeeded):
+  // the privacy policy promises analytics never receives email or name.
+  window.Analytics.identify(state.user.id);
+  state.existingAttempt = await SC.fetchExistingAttempt(state.quiz.id, state.user.id);
+  // With no existingAttempt, a non-null stamp means this account started the quiz
+  // (here or in the app) and left without submitting — Retake, or locked when the
+  // creator does not allow retakes. Mirrors JoinedQuizItem.hasAbandonedStart.
+  state.lastStartedAt = await SC.fetchLastStartedAt(state.quiz.id, state.user.id);
+  // Started before means membership already exists — no separate Join step needed.
+  if (state.lastStartedAt) state.hasJoined = true;
+}
+
+/** Sends a taker to wherever they belong now that the session is known, and renders.
+ *
+ *  [isBoot] guards the two steps that only make sense on a fresh page load: stripping the
+ *  OAuth fragment, and the ?edit=name deep link. The fragment strip sits between the two
+ *  routing branches deliberately — it has to happen before the name gate can return, or the
+ *  access token stays visible in the address bar for exactly the people seeing that gate. */
+async function routeSignedInTaker(isBoot) {
+  // No retake and already completed: land straight on the real result screen (score
+  // breakdown, review cards) instead of a one-line "you've already completed this"
+  // blurb with no way to actually see it — mirrors what re-opening a finished attempt
+  // in the Android app shows. Only auto-redirects when there's genuinely nothing left
+  // to do here (retake off); when retake IS allowed, the landing screen offers both
+  // "See Result" and "Retake Exam" instead (see renderLanding).
+  if (state.user && state.existingAttempt && state.quiz.allowRetake === false) {
+    await goToExistingResult();
+    return;
+  }
+
+  // The redirect fallback leaves an extra "in transit" history entry (this page -> Google
+  // -> back here) and a #access_token=... fragment in the address bar. Now that the
+  // session has definitely been read out of it, collapse it into a clean current URL —
+  // pressing Back later goes to wherever the user actually came from (WhatsApp's browser,
+  // the join page, …), not back into that OAuth hop, and the token stops sitting visibly
+  // in the address bar. The ID-token path never produces a fragment at all.
+  if (isBoot && window.location.hash) {
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
+  }
+
+  // Some Google accounts have a wrong/nickname-y name attached — a brand-new
+  // signup (mirrors the same one-time gate the Android app now has) is asked
+  // to confirm/correct it once before taking the quiz, since that name is
+  // what the quiz creator and other participants will see them as.
+  if (state.user && !(await SC.fetchNameConfirmed(state.user.id))) {
+    state.screen = "confirmName";
+    render();
+    return;
+  }
+
+  // ?edit=name is the deep link the home page's account menu uses — that page has no
+  // name editor of its own, so it hands the job here. nameEditReturn makes it an edit
+  // (cancellable, returns to the landing screen) rather than the gate above.
+  if (isBoot && state.user && wantsNameEdit) {
+    state.nameEditReturn = "landing";
+    state.screen = "confirmName";
+    render();
+    return;
+  }
+
+  state.screen = "landing";
+  render();
+}
+
 // ── Boot ───────────────────────────────────────────────────────────────────
 async function boot() {
   // Before the first render, so the very first paint is already in the right layout
@@ -3554,64 +3689,8 @@ async function boot() {
       return;
     }
     state.quiz = quiz;
-    state.user = await SC.getCurrentUser();
-    if (state.user) {
-      // Pseudonymous id only, same as the Android app (AuthRepository.identifyIfNeeded):
-      // the privacy policy promises analytics never receives email or name.
-      window.Analytics.identify(state.user.id);
-      state.existingAttempt = await SC.fetchExistingAttempt(quiz.id, state.user.id);
-      // With no existingAttempt, a non-null stamp means this account started the quiz
-      // (here or in the app) and left without submitting — Retake, or locked when the
-      // creator does not allow retakes. Mirrors JoinedQuizItem.hasAbandonedStart.
-      state.lastStartedAt = await SC.fetchLastStartedAt(quiz.id, state.user.id);
-      // Started before means membership already exists — no separate Join step needed.
-      if (state.lastStartedAt) state.hasJoined = true;
-    }
-
-    // No retake and already completed: land straight on the real result screen (score
-    // breakdown, review cards) instead of a one-line "you've already completed this"
-    // blurb with no way to actually see it — mirrors what re-opening a finished attempt
-    // in the Android app shows. Only auto-redirects when there's genuinely nothing left
-    // to do here (retake off); when retake IS allowed, the landing screen offers both
-    // "See Result" and "Retake Exam" instead (see renderLanding).
-    if (state.user && state.existingAttempt && quiz.allowRetake === false) {
-      await goToExistingResult();
-      return;
-    }
-
-    // The Google sign-in redirect leaves an extra "in transit" history entry
-    // (this page -> Google -> back here) and a #access_token=... fragment in
-    // the address bar. Now that the session has definitely been read out of
-    // it, collapse it into a clean current URL — pressing Back later goes to
-    // wherever the user actually came from (WhatsApp's browser, the join
-    // page, …), not back into that OAuth hop, and the token stops sitting
-    // visibly in the address bar.
-    if (window.location.hash) {
-      window.history.replaceState(null, "", window.location.pathname + window.location.search);
-    }
-
-    // Some Google accounts have a wrong/nickname-y name attached — a brand-new
-    // signup (mirrors the same one-time gate the Android app now has) is asked
-    // to confirm/correct it once before taking the quiz, since that name is
-    // what the quiz creator and other participants will see them as.
-    if (state.user && !(await SC.fetchNameConfirmed(state.user.id))) {
-      state.screen = "confirmName";
-      render();
-      return;
-    }
-
-    // ?edit=name is the deep link the home page's account menu uses — that page has no
-    // name editor of its own, so it hands the job here. nameEditReturn makes it an edit
-    // (cancellable, returns to the landing screen) rather than the gate above.
-    if (state.user && wantsNameEdit) {
-      state.nameEditReturn = "landing";
-      state.screen = "confirmName";
-      render();
-      return;
-    }
-
-    state.screen = "landing";
-    render();
+    await loadUserQuizState();
+    await routeSignedInTaker(true);
   } catch (e) {
     // Any unexpected failure (network drop, a Supabase error, …) now shows a
     // message instead of leaving the loading spinner stuck forever.

@@ -630,6 +630,16 @@ button.google {
   width: 100%;
   box-shadow: 0 1px 6px rgba(17, 24, 39, 0.06);
 }
+/* Holds whichever sign-in control we ended up with: Google's rendered button (an iframe we
+   cannot style from here, so only placement is ours) or button.google as the fallback. The
+   min-height reserves the row so the card does not jump when Google's script resolves. */
+.google-signin {
+  display: flex;
+  justify-content: center;
+  min-height: 56px;
+}
+.google-signin > button.google { width: 100%; }
+
 button.google:hover { background: #FAFAFD; }
 button.google:active { transform: scale(0.98); }
 button.google svg { width: 20px; height: 20px; flex-shrink: 0; }
