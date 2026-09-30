@@ -44,7 +44,7 @@ if (window.SupabaseClient.initError) {
   throw new Error("Quizoma web: Supabase client failed to initialize — aborting boot.");
 }
 
-const { evaluate, computeScore, defaultAnswerRule } = window.Evaluator;
+const { evaluate, gradeWritten, defaultAnswerRule } = window.Evaluator;
 const S = window.S;
 const SC = window.SupabaseClient;
 const FB = window.FillBlank;
@@ -103,6 +103,7 @@ const state = {
   questionTimings: {}, // questionId -> seconds
   instantFeedback: null,
   hintVisible: false, // current question's hint panel open/closed
+  rapidInfoVisible: false, // current question's "Rapid bonus" explainer open/closed
   hintUsed: {}, // questionId -> true once its hint was opened (sticky, unlike hintVisible)
   result: null, // { score, total, answers }
   landingTickerHandle: null, // ticks the Scheduled-quiz countdown on the landing card
@@ -601,7 +602,8 @@ const CLOCK_SVG = `<svg viewBox="0 0 20 20" fill="none" width="13" height="13"><
 const CHEVRON_RIGHT_SVG = `<svg viewBox="0 0 16 16" fill="none" width="14" height="14"><path d="M6 3l5 5-5 5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 // Quiz-taking screen icons (Material Rounded/Outlined equivalents used on Android).
 const BULB_SVG = `<svg viewBox="0 0 24 24" fill="none" width="15" height="15"><path d="M9 18h6M10 21h4M12 3a6 6 0 00-3.6 10.8c.6.5 1 1.2 1 2V16h5.2v-.2c0-.8.4-1.5 1-2A6 6 0 0012 3z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-const LOCK_SVG = `<svg viewBox="0 0 24 24" fill="none" width="13" height="13"><rect x="5" y="11" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 11V8a4 4 0 018 0v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+const BOLT_SVG = `<svg viewBox="0 0 24 24" fill="none" width="13" height="13"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`;
+const LOCK_SVG =`<svg viewBox="0 0 24 24" fill="none" width="13" height="13"><rect x="5" y="11" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 11V8a4 4 0 018 0v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
 const PENCIL_SVG = `<svg viewBox="0 0 24 24" fill="none" width="14" height="14"><path d="M4 20h4L19 9l-4-4L4 16v4z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`;
 const TEXT_FIELDS_SVG = `<svg viewBox="0 0 24 24" fill="none" width="14" height="14"><path d="M4 7V5h11v2M9.5 5v14M7.5 19h4M14 12v-1.5h6V12M17 10.5V19M15.5 19h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const BAR_CHART_SVG = `<svg viewBox="0 0 24 24" fill="none" width="14" height="14"><path d="M6 20V11M12 20V4M18 20v-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>`;
@@ -1381,6 +1383,7 @@ function prepareCurrentQuestion() {
     : [];
   state.instantFeedback = null;
   state.hintVisible = false;
+  state.rapidInfoVisible = false;
   state.questionStartSec = Math.floor(Date.now() / 1000);
   if (q.type === "POLL") {
     // Polls are never previewed — and a preview left over from an earlier question (its
@@ -1888,7 +1891,7 @@ function buildInstantFeedback(q, rawKeys) {
     // so an any-one-is-enough question can't flash red here and then score as correct.
     const eq = q.type === "MULTIPLE_CORRECT"
       ? window.Evaluator.isMultipleCorrectAnswer(correctIndices, selectedIndices, !!q.acceptAnyCorrect)
-      : selectedIndices.size === correctIndices.size && [...selectedIndices].every((i) => correctIndices.has(i));
+      : selectedIndices.size > 0 && selectedIndices.size === correctIndices.size && [...selectedIndices].every((i) => correctIndices.has(i));
     return { isCorrect: eq, correctOptionIndices: correctIndices, wrongSelectedIndices: new Set([...selectedIndices].filter((i) => !correctIndices.has(i))) };
   }
   if (q.type === "WRITTEN") {
@@ -1902,9 +1905,8 @@ function buildInstantFeedback(q, rawKeys) {
         correct = true;
       } else {
         const rule = q.answerRule || defaultAnswerRule();
-        // Math.max(points, 1): see finishQuiz — a no-marks question would otherwise
-        // multiply every verdict down to zero and always read as wrong.
-        correct = computeScore(evaluate(userInput, expected, rule), Math.max(q.points, 1), rule) > 0;
+        // Same verdict finishQuiz stores — see gradeWritten.
+        correct = gradeWritten(evaluate(userInput, expected, rule), q.points, rule).isCorrect;
       }
     }
     return { isCorrect: correct, correctWrittenAnswer: !correct && expected.trim() ? expected : null };
@@ -2016,16 +2018,11 @@ async function finishQuiz() {
         } else {
           const rule = q.answerRule || defaultAnswerRule();
           evaluationResult = evaluator.evaluate(userInput, expected, rule);
-          // Math.max(points, 1): for a 0-points (correctness-track) question, computeScore
-          // against the real points (0) would always read as 0 regardless of verdict — score
-          // against a nominal 1 purely to read off correctness.
-          const nominalPoints = Math.max(q.points, 1);
-          const earned = evaluator.computeScore(evaluationResult, nominalPoints, rule);
-          isCorrect = earned > 0;
-          // G-01: the marks track's award IS whatever computeScore returned, not a flat
-          // "correct means full marks" — mirrors QuizPreviewViewModel.finishPreview's
-          // identical fix on the Android side. A 0-points question earns 0 either way.
-          rawPoints = q.points > 0 ? Math.round(earned) : 0;
+          // G-01: the award IS computeScore's partial credit rounded to a whole mark, and the
+          // verdict comes from that same number — mirrors finishPreview via gradeWritten.
+          const grade = evaluator.gradeWritten(evaluationResult, q.points, rule);
+          isCorrect = grade.isCorrect;
+          rawPoints = grade.awardedPoints;
         }
       } else if (q.type === "FILL_BLANK") {
         isCorrect = q.fillBlankContent ? FB.fillBlankIsQuestionCorrect(q.fillBlankContent, given) : false;
@@ -2050,16 +2047,18 @@ async function finishQuiz() {
         }
       } else {
         const a = new Set(given), b = new Set(q.correctAnswers || []);
-        isCorrect = a.size === b.size && [...a].every((x) => b.has(x));
+        // Non-empty: a skipped question must never match a keyless one (empty == empty).
+        isCorrect = a.size > 0 && a.size === b.size && [...a].every((x) => b.has(x));
         rawPoints = isCorrect ? q.points : 0;
       }
     }
 
-    // Uniform across every scored type — no-op when the toggle is off or this question
-    // has no active timer (see applyTimeWeightage's doc in evaluator.js).
+    // Uniform across every scored type — no-op when the toggle is off, when the creator opted
+    // this question out of it, or when it has no active timer (see applyTimeWeightage's doc
+    // in evaluator.js).
     const elapsedSec = state.questionTimings[q.id] || 0;
     const effectiveTimeLimitSec = state.quiz.showTimers ? q.timeSec : 0;
-    const finalPoints = evaluator.applyTimeWeightage(rawPoints, elapsedSec, effectiveTimeLimitSec, state.quiz.timeWeightageEnabled);
+    const finalPoints = evaluator.applyTimeWeightage(rawPoints, elapsedSec, effectiveTimeLimitSec, rapidBonusApplies(q, state.quiz));
 
     return {
       questionId: q.id,
@@ -2248,6 +2247,33 @@ function buildHintBox(hint) {
   ]);
 }
 
+/** Whether this question's own rapid bonus choice (Question.rapidBonus) or, failing one, the
+ *  quiz-wide toggle switches the bonus on. Mirrors Models.kt's rapidBonusApplies. */
+function rapidBonusApplies(q, quiz) {
+  return q.rapidBonus ?? quiz.timeWeightageEnabled === true;
+}
+
+/** Whether the rapid bonus really scales this question — the same condition scoring applies
+ *  (bonus applies, a live timer, auto-marked, not a poll). Mirrors QuizSetupSummary.kt's
+ *  showsRapidBonus, and gates the "Rapid bonus" chip so it never promises a bonus the score
+ *  won't give. */
+function showsRapidBonus(q, quiz) {
+  const pollUntimed = q.type === "POLL" && PL.pollSettingsOrDefaults(q.pollSettings).noTimeLimit;
+  const timed = quiz.showTimers && !pollUntimed && q.timeSec > 0;
+  return q.type !== "POLL" && !requiresManualMarking(q, quiz) && rapidBonusApplies(q, quiz) && timed;
+}
+
+/** The rapid bonus rule, opened from the chip — inline like the hint box, same "Got it". */
+function buildRapidInfoBox() {
+  return el("div", { class: "hint-box" }, [
+    el("div", { class: "hint-box-header" }, [
+      el("span", { class: "hint-box-title" }, [S.RAPID_BONUS]),
+      el("button", { class: "skip-link", onclick: () => { state.rapidInfoVisible = false; render(); } }, [S.GOT_IT]),
+    ]),
+    el("p", { class: "hint-box-text" }, [S.RAPID_BONUS_EXPLAINER]),
+  ]);
+}
+
 /** "QUESTION X OF N" + Hint (and Anonymous on a poll) — mirrors the badge row in
  *  QuizPreviewScreen.kt. The number is gated by quiz.showQuestionNumbers. */
 function buildBadgeRow(quiz, q) {
@@ -2257,6 +2283,12 @@ function buildBadgeRow(quiz, q) {
   const anonymous = q.type === "POLL" && PL.pollSettingsOrDefaults(q.pollSettings).anonymous;
   const end = [];
   if (anonymous) end.push(el("span", { class: "anon-chip" }, [html(LOCK_SVG), S.ANONYMOUS]));
+  if (showsRapidBonus(q, quiz)) {
+    end.push(el("button", {
+      class: "rapid-chip",
+      onclick: () => { state.rapidInfoVisible = !state.rapidInfoVisible; render(); },
+    }, [html(BOLT_SVG), S.RAPID_BONUS]));
+  }
   if (q.hint) {
     const hintBtn = el("button", { class: "hint-link", onclick: showHintAction }, [html(BULB_SVG), S.HINT_BUTTON]);
     // Disabled during instant feedback: the question is settled, nothing left to hint at.
@@ -2391,6 +2423,9 @@ function renderQuiz() {
   questionArea.appendChild(buildQuestionCard(q));
   if (q.hint && state.hintVisible) {
     questionArea.appendChild(buildHintBox(q.hint));
+  }
+  if (state.rapidInfoVisible && showsRapidBonus(q, quiz)) {
+    questionArea.appendChild(buildRapidInfoBox());
   }
 
   if (q.type === "POLL") {

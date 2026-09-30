@@ -131,6 +131,9 @@ function questionFromRow(row) {
     // Multiple: "any one correct is enough" (Question.acceptAnyCorrect). Missing column =
     // the original all-or-nothing rule.
     acceptAnyCorrect: row.accept_any_correct ?? false,
+    // This question's own rapid response bonus choice (Question.rapidBonus): true / false
+    // overrides the quiz's toggle; null or a missing column = follows the quiz.
+    rapidBonus: row.rapid_bonus ?? null,
   };
 }
 

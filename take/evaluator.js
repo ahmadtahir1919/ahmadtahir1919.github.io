@@ -13,6 +13,18 @@ const TextNormalizer = {
   // this whitelist silently deleted Devanagari/Bengali/etc. vowel signs as "punctuation"
   // before, and why Arabic harakat is stripped separately below rather than folded in here.
   _punct: /[^\p{L}\p{N}\p{M} ]/gu,
+  _digit: /\p{N}/u,
+  /** Punctuation that survives: a decimal point between digits, and a minus that starts a
+   *  number (after a space or at the start), so "3.14" never equals "314" nor "-5" "5".
+   *  Mirrors TextNormalizer.kt's punctuationRegex exactly — checked here by looking at the
+   *  neighbours instead of with a lookbehind, which Safari before 16.4 can't parse (the whole
+   *  file would fail to load on those iPhones). */
+  _keepsNumericMark(ch, i, str) {
+    const next = str[i + 1] || "";
+    if (ch === ".") return this._digit.test(str[i - 1] || "") && this._digit.test(next);
+    if (ch === "-") return (i === 0 || str[i - 1] === " ") && this._digit.test(next);
+    return false;
+  },
   // Arabic/Urdu diacritics only — mirrors TextNormalizer.kt's arabicHarakatRegex exactly,
   // including the doc there on why this can't be a \p{Script=Arabic} regex property (the
   // marks' own Script is "Common"/"Inherited", not "Arabic", on both JS and Java's engines —
@@ -32,7 +44,10 @@ const TextNormalizer = {
   _clean(input, dropPunctuation) {
     const collapsed = input.replace(this._space, " ");
     const stripped = dropPunctuation
-      ? collapsed.replace(this._punct, "").replace(this._arabicHarakat, "").replace(this._space, " ")
+      ? collapsed
+          .replace(this._punct, (ch, i, str) => (this._keepsNumericMark(ch, i, str) ? ch : ""))
+          .replace(this._arabicHarakat, "")
+          .replace(this._space, " ")
       : collapsed;
     return stripped.trim();
   },
@@ -228,6 +243,15 @@ function computeScore(result, points, rule) {
     raw = exactish ? points * 1 : 0;
   }
   return Math.trunc(raw * 100) / 100; // truncate to 2dp, matches (raw*100).toLong()/100f
+}
+
+/** Mirrors gradeWritten() in AnswerModels.kt: a written answer's verdict and whole-mark
+ *  award come from ONE rounded number, so "correct" can never earn 0 marks (the verdict used
+ *  to be computeScore > 0 while marks were Math.round of it). A 0-points question reads its
+ *  verdict against a nominal 1 and always awards 0. */
+function gradeWritten(result, points, rule) {
+  const marks = Math.round(computeScore(result, points > 0 ? points : 1, rule));
+  return { isCorrect: marks > 0, awardedPoints: points > 0 ? marks : 0 };
 }
 
 // ── Grading.kt's splitCorrectOptionPoints / applyTimeWeightage ─────────────
@@ -449,6 +473,7 @@ function isAnswerSkipped(givenAnswers) {
 window.Evaluator = {
   evaluate,
   computeScore,
+  gradeWritten,
   defaultAnswerRule,
   isAnswerSkipped,
   TextNormalizer,

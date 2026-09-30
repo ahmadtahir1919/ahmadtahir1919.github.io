@@ -156,6 +156,8 @@ const S = {
   HINT_BUTTON: "Hint",
   CLEAR: "Clear",
   ANONYMOUS: "Anonymous",
+  RAPID_BONUS: "Rapid bonus",
+  RAPID_BONUS_EXPLAINER: "Answer correctly within the first 5 seconds for full points. Slower correct answers earn less — never below half.",
   SKIP_POLL: "Skip Poll",
   POLL_CHIP: "Poll",
   POLL_OVERLINE: "Community poll",

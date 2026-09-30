@@ -1922,6 +1922,20 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
   font-size: 12px;
   font-weight: 500;
 }
+.quiz-screen .rapid-chip {
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  border-radius: 6px;
+  border: 1px solid var(--q-soft-border);
+  background: var(--q-soft);
+  color: var(--q-primary-text);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
 .quiz-screen .hint-box { margin: 0 0 20px; }
 
 /* Question card */
