@@ -165,6 +165,8 @@ function quizFromRow(row, questions) {
     // Seconds each non-poll question shows on its own before its choices (0 = off) —
     // Quiz.questionPreviewSec, a per-quiz rule set by the creator.
     questionPreviewSec: row.question_preview_sec ?? 5,
+    // Quiz.allowBack — the Previous button. Missing column (unmigrated) = forward-only.
+    allowBack: row.allow_back ?? false,
     themeColorName: row.theme_color_name,
     createdAt: row.created_at,
     questions: questions.sort((a, b) => a.orderIndex - b.orderIndex),

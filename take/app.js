@@ -599,6 +599,7 @@ const FULLSCREEN_ENTER_SVG = `<svg viewBox="0 0 24 24" fill="none"><path d="M4 9
 const FULLSCREEN_EXIT_SVG = `<svg viewBox="0 0 24 24" fill="none"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const SIGN_OUT_SVG = `<svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M15 17l5-5-5-5M20 12H9M12 4H6a1 1 0 00-1 1v14a1 1 0 001 1h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const CLOCK_SVG = `<svg viewBox="0 0 20 20" fill="none" width="13" height="13"><circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="1.6"/><path d="M10 6v4l2.6 2.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+const CHEVRON_LEFT_SVG = `<svg viewBox="0 0 16 16" fill="none" width="16" height="16"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const CHEVRON_RIGHT_SVG = `<svg viewBox="0 0 16 16" fill="none" width="14" height="14"><path d="M6 3l5 5-5 5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 // Quiz-taking screen icons (Material Rounded/Outlined equivalents used on Android).
 const BULB_SVG = `<svg viewBox="0 0 24 24" fill="none" width="15" height="15"><path d="M9 18h6M10 21h4M12 3a6 6 0 00-3.6 10.8c.6.5 1 1.2 1 2V16h5.2v-.2c0-.8.4-1.5 1-2A6 6 0 0012 3z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -1345,6 +1346,13 @@ async function startQuiz() {
   // — a retake there gets a brand-new ViewModel.)
   state.isFinishing = false;
   state.skipConfirmOpen = false;
+  // The last attempt's answers, times and hints too: prepareCurrentQuestion() fills a question
+  // back in from questionAnswers (for Previous), so a retake would otherwise open with the old
+  // answers already picked, skip the read-first preview, add the old time to the new, and
+  // count hints it never opened.
+  state.questionAnswers = {};
+  state.questionTimings = {};
+  state.hintUsed = {};
   state.screen = "quiz";
   render();
   prepareCurrentQuestion();
@@ -1381,6 +1389,18 @@ function prepareCurrentQuestion() {
   state.fillBlankDraft = q.type === "FILL_BLANK" && q.fillBlankContent
     ? new Array(FB.orderedBlanks(q.fillBlankContent).length).fill("")
     : [];
+  // A question answered once already (the taker went back to it, or is moving forward again
+  // after going back) shows that answer again — mirrors restoredInput in QuizPreviewViewModel.kt.
+  const recorded = state.questionAnswers[q.id];
+  if (recorded && q.type !== "POLL") {
+    if (q.type === "WRITTEN") {
+      state.writtenAnswer = recorded[0] || "";
+    } else if (q.type === "FILL_BLANK") {
+      recorded.forEach((v, i) => { if (i < state.fillBlankDraft.length) state.fillBlankDraft[i] = v || ""; });
+    } else {
+      state.selectedAnswers = new Set(recorded);
+    }
+  }
   state.instantFeedback = null;
   state.hintVisible = false;
   state.rapidInfoVisible = false;
@@ -1412,7 +1432,9 @@ function prepareCurrentQuestion() {
   // off, or this question's own timeSec is 0) — same as it's skipped when the quiz's
   // preview setting itself is off.
   const questionHasTimer = state.quiz.showTimers && (q.timeSec || 0) > 0;
-  if (previewSec > 0 && questionHasTimer) {
+  // A question returned to was already read the first time — its clock starts straight away.
+  const seenBefore = Object.prototype.hasOwnProperty.call(state.questionTimings, q.id);
+  if (previewSec > 0 && questionHasTimer && !seenBefore) {
     startQuestionReveal(q, previewSec);
     return;
   }
@@ -1851,15 +1873,7 @@ async function advance(keepAnswer) {
     return;
   }
 
-  const elapsed = Math.max(1, Math.floor(Date.now() / 1000) - state.questionStartSec);
-  state.questionTimings[q.id] = elapsed;
-  if (q.type === "WRITTEN") {
-    state.questionAnswers[q.id] = state.writtenAnswer.trim() ? [state.writtenAnswer] : [];
-  } else if (q.type === "FILL_BLANK") {
-    state.questionAnswers[q.id] = [...state.fillBlankDraft];
-  } else {
-    state.questionAnswers[q.id] = Array.from(state.selectedAnswers);
-  }
+  recordCurrentAnswer(q);
 
   const quiz = state.quiz;
   // Never flash right/wrong on a question the owner marks by hand — nobody has decided
@@ -1879,6 +1893,57 @@ async function advance(keepAnswer) {
     return;
   }
   proceedPastQuestion();
+}
+
+/** Records [q]'s answer and time taken from the live draft. Time taken is the SUM of every
+ *  visit (the taker may come back via Previous), so going back never hands time — or the rapid
+ *  bonus — back. Mirrors QuizPreviewViewModel.recordAnswer. */
+function recordCurrentAnswer(q) {
+  const elapsed = Math.floor(Date.now() / 1000) - state.questionStartSec;
+  state.questionTimings[q.id] = Math.max(1, (state.questionTimings[q.id] || 0) + elapsed);
+  if (q.type === "WRITTEN") {
+    state.questionAnswers[q.id] = state.writtenAnswer.trim() ? [state.writtenAnswer] : [];
+  } else if (q.type === "FILL_BLANK") {
+    state.questionAnswers[q.id] = [...state.fillBlankDraft];
+  } else {
+    state.questionAnswers[q.id] = Array.from(state.selectedAnswers);
+  }
+}
+
+/** Where the Previous button goes: the nearest earlier question that isn't a poll, or null.
+ *  Mirrors previousAnswerableIndex in QuizPreviewViewModel.kt. */
+function previousAnswerableIndex() {
+  if (!state.quiz || !state.quiz.allowBack) return null;
+  const qs = state.quiz.questions;
+  for (let i = state.currentIndex - 1; i >= 0; i--) {
+    if (qs[i].type !== "POLL") return i;
+  }
+  return null;
+}
+
+/** Previous is usable right now — not mid instant-feedback, not while submitting. */
+function canGoBack() {
+  return previousAnswerableIndex() !== null && !state.instantFeedback && !state.isFinishing;
+}
+
+/** The Previous button (quiz.allowBack). Keeps what is filled in here exactly like Next would —
+ *  minus the instant-feedback pause — then returns to the nearest earlier non-poll question with
+ *  its answer filled back in and its timer restarted at full time. A poll on screen is left
+ *  unvoted, as Skip Poll would. Mirrors QuizPreviewViewModel.onPrevious. */
+function onPrevious() {
+  if (state.screen !== "quiz" || !canGoBack()) return;
+  const target = previousAnswerableIndex();
+  cancelLastQuestionAutoFinish();
+  clearInterval(state.timerHandle);
+  clearTimeout(state.revealHandle);
+  state.revealHandle = null;
+  state.skipConfirmOpen = false;
+  const q = currentQuestion();
+  // Still previewing on its own: nothing answered and no answer time spent yet.
+  if (q && q.type !== "POLL" && !state.revealing) recordCurrentAnswer(q);
+  state.revealing = false;
+  state.currentIndex = target;
+  prepareCurrentQuestion();
 }
 
 function buildInstantFeedback(q, rawKeys) {
@@ -2218,7 +2283,22 @@ function buildBottomBar(q, isLastQuestion, onSkipFn, onNextFn) {
   const skipBtn = el("button", { class: "quiz-skip", onclick: onSkipFn }, [showVoteLabel ? S.SKIP_POLL : S.SKIP]);
   if (disabled) skipBtn.disabled = true;
 
-  rows.push(el("div", { class: "bar-row" }, [skipBtn, nextBtn]));
+  // Previous (←) — only when the quiz allows going back and there is an earlier non-poll
+  // question. Mirrors PreviewBottomBar's onPrevious on Android.
+  const barChildren = [skipBtn, nextBtn];
+  if (previousAnswerableIndex() !== null) {
+    const prevBtn = el("button", {
+      class: "quiz-prev",
+      type: "button",
+      "aria-label": S.NAV_PREVIOUS,
+      title: S.NAV_PREVIOUS,
+      onclick: onPrevious,
+    }, []);
+    prevBtn.appendChild(html(CHEVRON_LEFT_SVG));
+    if (!canGoBack()) prevBtn.disabled = true;
+    barChildren.unshift(prevBtn);
+  }
+  rows.push(el("div", { class: "bar-row" + (barChildren.length > 2 ? " has-prev" : "") }, barChildren));
   // Slides up with the choices on the render right after a question preview ends.
   return el("div", { class: "quiz-bottombar" + (state.revealJustEnded ? " bar-in" : "") }, rows);
 }

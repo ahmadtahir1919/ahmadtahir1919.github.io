@@ -2465,3 +2465,29 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
   cursor: not-allowed;
 }
 .quiz-screen .tactile-btn.wide { width: auto; flex: 1; margin-left: 24px; }
+/* With Previous in the row there is no room for a fixed 200px Next on a narrow phone. */
+.quiz-screen .bar-row.has-prev .tactile-btn:not(.wide) { width: auto; flex: 1; margin-left: 8px; }
+/* The Previous (←) button (quiz.allowBack): same 48px face + 4px edge as Next, quiet outline
+   so Next stays the obvious main action. Mirrors PreviousTactileButton on Android. */
+.quiz-screen .quiz-prev {
+  flex: none;
+  width: 52px;
+  height: 48px;
+  margin: 0 4px 4px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--q-border, rgba(17, 24, 39, 0.12));
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--q-text-title, var(--text-primary));
+  cursor: pointer;
+  box-shadow: 0 4px 0 var(--q-border-strong, rgba(17, 24, 39, 0.18));
+  transition: transform 80ms ease, box-shadow 80ms ease;
+}
+.quiz-screen .quiz-prev svg { width: 20px; height: 20px; }
+.quiz-screen .quiz-prev:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--q-border-strong, rgba(17, 24, 39, 0.18));
+}
+.quiz-screen .quiz-prev:disabled { opacity: 0.4; cursor: not-allowed; }

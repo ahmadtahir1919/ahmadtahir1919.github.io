@@ -145,6 +145,8 @@ const S = {
   SELECT_ALL_THAT_APPLY: "Select all that apply",
   SELECT_ANY_CORRECT: "Select any correct answer",
   NAV_NEXT: "Next",
+  // Accessible name of the Previous (←) button — quiz.allowBack only.
+  NAV_PREVIOUS: "Previous question",
   NAV_FINISH: "Finish",
   NAV_VOTE: "Vote",
   ANSWER_PLACEHOLDER: "Type your answer…",
