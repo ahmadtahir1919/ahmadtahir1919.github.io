@@ -2846,9 +2846,12 @@ function buildPollReviewCard(item, index) {
     if (dist.other.count > 0) {
       bodyEl.appendChild(buildPollResultRow(dist.other, myVoteIndices.has(PL.POLL_OTHER_INDEX), dist.otherEntries));
     }
+    // "Doesn't affect your score" only means something beside scored questions — on a
+    // poll-only quiz there is no score at all, so the note would only confuse.
+    const hasScored = !!state.quiz?.questions?.some((qq) => qq.type !== "POLL");
     bodyEl.appendChild(el("div", { class: "poll-footer" }, [
       el("span", {}, [S.pollRespondents(dist.voterCount)]),
-      el("span", { class: "poll-unscored" }, [S.POLL_UNSCORED]),
+      ...(hasScored ? [el("span", { class: "poll-unscored" }, [S.POLL_UNSCORED])] : []),
     ]));
     card.appendChild(bodyEl);
   }
