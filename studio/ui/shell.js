@@ -80,7 +80,7 @@ export function mountShell(root, { user, active, title, crumbs = [], actions = [
 
   const sidebar = el("aside", { class: "sidebar", "aria-label": S.NAV_LABEL }, [
     el("a", { class: "brand", href: route("") }, [
-      el("span", { class: "brand-mark", text: "Q" }),
+      el("img", { class: "brand-logo", src: route("ui/logo.webp"), alt: "", width: "36", height: "36" }),
       el("span", { class: "brand-text" }, [
         el("span", { class: "brand-name", text: S.APP_NAME }),
         el("span", { class: "brand-sub" }, [S.STUDIO, el("span", { class: "beta-tag", text: S.BETA })]),

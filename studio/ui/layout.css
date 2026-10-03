@@ -363,3 +363,14 @@
 .beta-bar .beta-tag { margin-left: 0; }
 .gate-card .beta-bar { width: 100%; border: 1px solid var(--warning-border); border-radius: var(--r-md); }
 .gate-signin { display: flex; justify-content: center; min-height: 48px; width: 100%; }
+
+/* The app's own launcher icon (copied from deploy/icon-192.webp). */
+.brand-logo {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: contain;
+}
+
+.brand-logo-lg { width: 64px; height: 64px; box-shadow: 0 6px 16px -4px rgba(53, 37, 205, 0.45); }
