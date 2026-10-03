@@ -1,0 +1,11 @@
+/* =========================================================
+   Quizoma Studio (web-v2) — stylesheet entry point
+   Split by concern; this file only orders them. No build step, so plain @import.
+   Live as a hidden beta at /studio/ — see web-v2/README.md.
+   ========================================================= */
+
+@import url("./tokens.css");
+@import url("./base.css");
+@import url("./components.css");
+@import url("./layout.css");
+@import url("./pages.css");
