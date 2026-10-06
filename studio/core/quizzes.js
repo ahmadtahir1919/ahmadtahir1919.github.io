@@ -5,6 +5,7 @@
 
 import * as backend from "./backend/index.js";
 import { newId, randomShareCode } from "./models.js";
+import { duplicateDraft } from "./release.js";
 
 export { loadQuiz, loadQuestions, questionsFor, questionCounts, deleteQuiz } from "./backend/index.js";
 
@@ -73,25 +74,26 @@ export async function endQuizNow(quiz) {
   return { ...quiz, startAt, endAt: now };
 }
 
+/** The owner's Announce / Hide (set_results_release). false = refused; nothing was written. */
+export async function setResultsRelease(quizId, mode, releasedAt) {
+  return backend.setResultsRelease(quizId, mode, releasedAt);
+}
+
 /** QuizRepository.duplicateQuiz: a fresh draft with a new id and share code, " (Copy)" fitted
- *  inside the title cap, not archived, and no schedule. Questions get new ids. */
+ *  inside the title cap, not archived, and no schedule. Questions get new ids. The results-release MODE is
+ *  copied, the announcement never is (core/release.js). */
 export async function duplicateQuiz(quizId, ownerId, { suffix, maxTitleChars }) {
   const original = await backend.loadQuiz(quizId);
   if (!original) throw new Error("not found");
   const questions = await backend.loadQuestions(quizId);
   const base = (original.title ?? "").slice(0, Math.max(0, maxTitleChars - suffix.length));
-  const copy = {
-    ...original,
+  const copy = duplicateDraft(original, {
     id: newId(),
     ownerId,
     title: `${base}${suffix}`,
     shareCode: await generateUniqueShareCode(),
-    isDraft: true,
-    isArchived: false,
-    startAt: null,
-    endAt: null,
     createdAt: Date.now(),
-  };
+  });
   const copiedQuestions = questions.map((question) => ({ ...question, id: newId() }));
   await saveQuiz(copy, copiedQuestions, ownerId, { checkLock: false });
   return copy;

@@ -8,7 +8,7 @@
 import { displayNameOf } from "../core/auth.js";
 // The take page reads quizzes as database rows (its quizFromRow/questionFromRow), so the
 // preview hands it the very rows saveQuiz would write, built by the same mappers.
-import { questionToRow, quizToRow } from "../core/backend/supabase/rows.js";
+import { previewQuestionRow, previewQuizRow } from "../core/backend/index.js";
 import { S } from "../core/strings.js";
 import { el } from "../ui/components.js";
 import { prefersReducedMotion } from "../ui/motion.js";
@@ -30,8 +30,8 @@ export function openPreview(host, quiz, questions, { user = null } = {}) {
 
   const payload = {
     type: "quizoma-preview-load",
-    quiz: quizToRow(quiz, quiz.ownerId),
-    questions: questions.map((q, i) => questionToRow({ ...q, orderIndex: i }, quiz.id)),
+    quiz: previewQuizRow(quiz, quiz.ownerId),
+    questions: questions.map((q, i) => previewQuestionRow({ ...q, orderIndex: i }, quiz.id)),
     userName: user ? displayNameOf(user) : "",
   };
 

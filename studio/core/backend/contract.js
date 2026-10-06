@@ -31,8 +31,10 @@ export const BACKEND_FUNCTIONS = {
     "publishQuiz",
     "setArchived",
     "setSchedule",
+    "setResultsRelease",
     "deleteQuiz",
   ],
+  preview: ["previewQuizRow", "previewQuestionRow"],
   results: [
     "loadAttempts",
     "loadAnswers",
@@ -178,6 +180,7 @@ export const BACKEND_FUNCTIONS = {
 //   publishQuiz(quizId)                           draft → published; no-op if published
 //   setArchived(quizId, isArchived)
 //   setSchedule(quizId, startAt|null, endAt|null)
+//   setResultsRelease(quizId, "AUTO"|"MANUAL", releasedAt|null) -> boolean  (the owner's Announce / Hide; false = refused)
 //   deleteQuiz(quizId)                            questions, attempts and votes go with it
 //
 // results — owner's view; snake_case rows as typed above

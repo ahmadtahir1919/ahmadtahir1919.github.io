@@ -278,6 +278,9 @@ export function newQuiz() {
     splitPointsAcrossChoices: false,
     timeWeightageEnabled: false,
     questionPreviewSec: DEFAULT_PREVIEW_SEC,
+    // Same defaults as the app's new quiz (Quiz.resultsReleaseMode / resultsReleasedAt).
+    resultsReleaseMode: "AUTO",
+    resultsReleasedAt: null,
   };
 }
 

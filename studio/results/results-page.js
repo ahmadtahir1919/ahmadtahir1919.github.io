@@ -2,7 +2,8 @@
 // and quiz actions (copy link, grade, end now). Owner only.
 
 import { QUESTION_TYPES, joinLink, themeColor } from "../core/models.js";
-import { endQuizNow, loadQuestions, loadQuiz } from "../core/quizzes.js";
+import { loadQuestions, loadQuiz } from "../core/quizzes.js";
+import { announceState } from "../core/announce.js";
 import { displayNames, groupByAttempt, loadAnswersFor, loadAttemptsFor, loadJoinedUsers, loadPollVotes, removeParticipant } from "../core/results.js";
 import { pendingMarkingCount, questionStats, scoreBreakdown } from "../core/scoring.js";
 import { QUIZ_STATUS, quizCardStatus } from "../core/status.js";
@@ -28,6 +29,7 @@ import { icon } from "../ui/icons.js";
 import { stagger } from "../ui/motion.js";
 import { mountShell } from "../ui/shell.js";
 import { statusPill } from "../ui/status-pill.js";
+import { announceCard, announceMenuItem, openAnnounceFlow } from "../ui/announce-flow.js";
 import { accuracyBars, pollBars, scoreDistribution } from "./charts.js";
 import { buildCsv, downloadCsv, plainQuestionText, pollTally } from "./csv.js";
 import { BUCKET, participantsSection } from "./participants-table.js";
@@ -128,6 +130,8 @@ function render() {
   const scoredQuestions = state.questions.filter((q) => q.type !== QUESTION_TYPES.POLL);
   const pollOnly = state.questions.length > 0 && !scoredQuestions.length;
 
+  // End quiz / Announce / Hide: one item whose label follows the quiz (core/announce.js), same as the app.
+  const endItem = quiz.isArchived ? null : announceMenuItem(announceState(quiz, Date.now()));
   shell.setActions([
     pendingTotal
       ? button({ label: t(S.MARK_N, { n: pendingTotal }), icon: "marking", variant: "primary", href: route(`grading/?quiz=${encodeURIComponent(quiz.id)}`) })
@@ -137,12 +141,12 @@ function render() {
       !quiz.isDraft ? { label: S.COPY_LINK, iconName: "link", onSelect: () => copyText(joinLink(quiz.shareCode), S.LINK_COPIED) } : null,
       { label: S.EDIT_QUIZ, iconName: "pencil", onSelect: () => (window.location.href = route(`create/?id=${encodeURIComponent(quiz.id)}`)) },
       { label: S.EXPORT_CSV, iconName: "download", disabled: pollOnly || !state.submitted.length, onSelect: exportCsv },
-      !quiz.isDraft && status !== QUIZ_STATUS.ENDED && status !== QUIZ_STATUS.ARCHIVED ? "sep" : null,
-      !quiz.isDraft && status !== QUIZ_STATUS.ENDED && status !== QUIZ_STATUS.ARCHIVED
-        ? { label: S.END_QUIZ_NOW, iconName: "stop", danger: true, onSelect: endNow }
-        : null,
+      endItem ? "sep" : null,
+      endItem ? { ...endItem, danger: endItem.iconName === "stop", onSelect: openAnnounce } : null,
     ], { size: "md" }),
   ]);
+
+  const releaseCard = announceCard({ quiz, now: Date.now(), pendingPapers: state.submitted.filter((r) => r.pending > 0).length, onAction: openAnnounce });
 
   const header = el("section", { class: "card results-head" }, [
     el("div", { class: "results-accent" }),
@@ -196,7 +200,7 @@ function render() {
   renderPeople();
 
   const content = state.rows.length
-    ? [header, stats, charts, pollSection, peopleRegion]
+    ? [header, releaseCard, stats, charts, pollSection, peopleRegion]
     : [
         header,
         el("div", { class: "card" }, [
@@ -265,17 +269,15 @@ async function removeRow(row) {
   }
 }
 
-async function endNow() {
-  const ok = await confirmDialog({ title: S.END_QUIZ_TITLE, body: S.END_QUIZ_BODY, confirmLabel: S.END_QUIZ_NOW });
-  if (!ok) return;
-  try {
-    state.quiz = await endQuizNow(state.quiz);
-    toast(S.QUIZ_ENDED, { tone: "success" });
-    render();
-  } catch (error) {
-    console.error(error);
-    toast(S.ERR_SAVE_FAILED, { tone: "error" });
-  }
+/** The one entry for End quiz / Announce / Hide — the shared flow (ui/announce-flow.js). */
+function openAnnounce() {
+  return openAnnounceFlow({
+    quizId: state.quiz.id,
+    // Papers still waiting for the owner's marks, counted the way the app's Participants screen does.
+    pendingCount: state.submitted.filter((r) => r.pending > 0).length,
+    onMarkFirst: (q) => (window.location.href = route(`grading/?quiz=${encodeURIComponent(q.id)}`)),
+    onDone: load,
+  });
 }
 
 function exportCsv() {

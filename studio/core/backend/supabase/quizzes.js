@@ -117,6 +117,18 @@ export async function setSchedule(quizId, startAt, endAt) {
   if (error) throw error;
 }
 
+/**
+ * The owner's Announce / Hide, through the set_results_release RPC (the same one the app calls): writes only
+ * results_release_mode and results_released_at (null = not announced). Resolves to the RPC's answer —
+ * false means "not the owner, or the quiz isn't on the server" and nothing was written.
+ */
+export async function setResultsRelease(quizId, mode, releasedAt) {
+  if (mode !== "AUTO" && mode !== "MANUAL") throw new Error("unknown results release mode");
+  const { data, error } = await db.rpc("set_results_release", { p_quiz_id: quizId, p_mode: mode, p_released_at: releasedAt });
+  if (error) throw error;
+  return data === true;
+}
+
 export async function deleteQuiz(quizId) {
   const { error } = await db.from("quizzes").delete().eq("id", quizId);
   if (error) throw error;

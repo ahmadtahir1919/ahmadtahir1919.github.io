@@ -31,9 +31,17 @@ export function quizFromRow(row) {
     splitPointsAcrossChoices: row.split_points_across_choices === true,
     timeWeightageEnabled: row.time_weightage_enabled === true,
     questionPreviewSec: normalizePreviewSec(row.question_preview_sec ?? DEFAULT_PREVIEW_SEC),
+    // When students see their result while Show Score is off (Quiz.resultsReleaseMode / resultsReleasedAt
+    // in the app). The mode is also written by quizToRow; the announcement never is, so a Studio save
+    // cannot undo one — the app (its RPC) is the only writer of results_released_at.
+    resultsReleaseMode: row.results_release_mode === "MANUAL" ? "MANUAL" : "AUTO",
+    resultsReleasedAt: row.results_released_at ?? null,
   };
 }
 
+// results_release_mode IS written (like the app's pushQuiz: it is a rule saved with the quiz); results_released_at
+// is deliberately NOT — an announcement is state, written only by the app's set_results_release RPC, so a Studio
+// save can never undo one. An unknown or missing mode is written as AUTO, the column's default.
 export function quizToRow(quiz, ownerId) {
   return {
     id: quiz.id,
@@ -63,6 +71,7 @@ export function quizToRow(quiz, ownerId) {
     split_points_across_choices: quiz.manualMarkingDefault ? false : quiz.splitPointsAcrossChoices,
     time_weightage_enabled: quiz.manualMarkingDefault ? false : quiz.timeWeightageEnabled,
     question_preview_sec: normalizePreviewSec(quiz.questionPreviewSec),
+    results_release_mode: quiz.resultsReleaseMode === "MANUAL" ? "MANUAL" : "AUTO",
   };
 }
 

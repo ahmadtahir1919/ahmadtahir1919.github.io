@@ -5,11 +5,13 @@
 //
 // item: { quiz, bucket, questionCount, pollOnly, pollCount, votes, submitted, avgPct, pending,
 //         ready, answersSet, missing }
-// actions: { publish, closePoll, share, duplicate, archive, remove }
+// actions: { publish, closePoll, share, duplicate, archive, remove, saveToBank, announce }
 
+import { announceState, homeResultsChipKind, showsHomeAnnounceButton } from "../core/announce.js";
 import { joinLink, themeColor } from "../core/models.js";
 import { route } from "../core/paths.js";
 import { S, t } from "../core/strings.js";
+import { announceMenuItem, chipText } from "../ui/announce-flow.js";
 import { copyText, el, openMenu, withLoading } from "../ui/components.js";
 import { copyWithTip, initialsOf, plural, relativeDay, timeOrDate } from "./dash-util.js";
 
@@ -48,9 +50,9 @@ export function quizCard(item, index, actions, { startIndex = 6 } = {}) {
       el("div", { class: "dv-bd" }, [
         el("a", { class: "dv-qtitle", href, dir: "auto", text: title }),
         el("div", { class: "dv-m", text: metaLine(item) }),
-        el("div", { class: "dv-check" }, chips(item)),
+        el("div", { class: "dv-check" }, [...chips(item), releaseChip(item)]),
       ]),
-      el("div", { class: "dv-ft" }, [...footerActions(item, actions), more]),
+      el("div", { class: "dv-ft" }, [...footerActions(item, actions), announceButton(item, actions), more]),
     ]
   );
   if (index >= STAGGER_CAP) card.style.animationDelay = "0ms";
@@ -116,6 +118,23 @@ function chips({ quiz, bucket, questionCount, ready, missing, pending, submitted
   return [plain(t(S.META_SUBMITTED, { n: submitted }))];
 }
 
+/** What students will see and when (the app's Home-row chip) — only for a published quiz with Show Score off. */
+function releaseChip({ quiz }) {
+  if (quiz.isDraft) return null;
+  const kind = homeResultsChipKind(quiz, Date.now());
+  if (!kind) return null;
+  const tone = kind === "MANUAL_NOT_ANNOUNCED" ? "warn" : kind === "ANNOUNCED" ? "ok" : "";
+  return el("span", { class: tone, text: chipText(kind, quiz.endAt), "data-release": kind });
+}
+
+/** The small Announce button: only a finished MANUAL quiz that has not been announced. */
+function announceButton({ quiz }, actions) {
+  if (!showsHomeAnnounceButton(quiz, Date.now())) return null;
+  const btn = el("button", { type: "button", class: "dv-btn", text: S.HOME_RESULTS_ANNOUNCE });
+  btn.addEventListener("click", () => withLoading(btn, () => actions.announce(quiz)));
+  return btn;
+}
+
 /** One primary action and at most one secondary, per the spec's table. */
 function footerActions(item, actions) {
   const { quiz, bucket, pending, ready } = item;
@@ -140,6 +159,8 @@ function menuItems({ quiz, bucket, pollOnly, questionCount }, actions) {
     !quiz.isDraft ? { label: S.VIEW_RESULTS, iconName: "chart", onSelect: () => (window.location.href = resultsHref(quiz)) } : null,
     !quiz.isDraft ? { label: S.COPY_LINK, iconName: "link", onSelect: () => copyText(joinLink(quiz.shareCode), S.LINK_COPIED) } : null,
     bucket === "live" && pollOnly ? { label: S.ACT_CLOSE_POLL, iconName: "stop", onSelect: () => actions.closePoll(quiz) } : null,
+    // End quiz / Announce / Hide: one item whose label follows the quiz, the same as the app's Home menu.
+    ...(!quiz.isDraft && !quiz.isArchived && !(bucket === "live" && pollOnly) ? [announceMenuItem(announceState(quiz, Date.now()))].filter(Boolean).map((item) => ({ ...item, onSelect: () => actions.announce(quiz) })) : []),
     { label: S.DUPLICATE, iconName: "copy", onSelect: () => actions.duplicate(quiz) },
     questionCount > 0 ? { label: S.BANK_SAVE_QUIZ, iconName: "book", onSelect: () => actions.saveToBank(quiz) } : null,
     !quiz.isDraft

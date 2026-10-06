@@ -253,6 +253,34 @@ function ruleRow({ title, sub, on, blocked = null, onChange, extra = null, ro })
   return el("div", { class: `tg ${blocked ? "blocked" : ""}` }, [el("div", {}, [el("b", { text: title }), el("small", { text: blocked ?? sub }), extra]), sw]);
 }
 
+/** "Show results": When the quiz ends (AUTO) / When I announce them (MANUAL), with the app's no-end-time hint. */
+function releaseRow({ quiz, ro, set }) {
+  const mode = quiz.resultsReleaseMode === "MANUAL" ? "MANUAL" : "AUTO";
+  const hint = mode === "AUTO" && quiz.endAt == null ? S.RESULTS_RELEASE_NO_END : null;
+  const chip = (value, label) =>
+    el("button", {
+      type: "button",
+      class: mode === value ? "on" : "",
+      role: "radio",
+      "aria-checked": String(mode === value),
+      text: label,
+      disabled: ro || undefined,
+      onclick: () => set("release-mode", (q) => (q.resultsReleaseMode = value)),
+    });
+  return el("div", { class: "tg", "data-fk": "rule-release-mode" }, [
+    el("div", {}, [
+      el("b", { text: S.RESULTS_RELEASE_TITLE }),
+      el("div", { class: "extra" }, [
+        el("div", { class: "chips", role: "radiogroup", "aria-label": S.RESULTS_RELEASE_TITLE }, [
+          chip("AUTO", S.RESULTS_RELEASE_AUTO),
+          chip("MANUAL", S.RESULTS_RELEASE_MANUAL),
+        ]),
+      ]),
+      hint ? el("small", { text: hint }) : null,
+    ]),
+  ]);
+}
+
 function ruleGroups(ctx, render) {
   const quiz = ctx.quiz();
   const ro = ctx.readOnly();
@@ -352,6 +380,9 @@ function ruleGroups(ctx, render) {
           });
         },
       }),
+      // Show results — only while Show Score is off (the app's ResultsReleaseModeRow): when students see their
+      // result. Not a stored default; written with the quiz (quizToRow), the announcement itself never is.
+      quiz.showResult ? null : releaseRow({ quiz, ro, set }),
       ruleRow({ ro, title: S.RULE_RETAKE, sub: S.QE_R_RETAKE_SUB, on: quiz.allowRetake, onChange: (on) => set("retake", (q) => (q.allowRetake = on)) }),
     ]),
     el("div", { class: "grp" }, [

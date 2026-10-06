@@ -11,13 +11,14 @@
 import { displayNameOf, requireUser } from "../core/auth.js";
 import { saveAllToBank } from "../core/bank.js";
 import { fetchLimits } from "../core/limits.js";
-import { deleteQuiz, duplicateQuiz, endQuizNow, listMyQuizzes, loadQuestions, publishQuiz, questionsFor, setArchived } from "../core/quizzes.js";
+import { deleteQuiz, duplicateQuiz, listMyQuizzes, loadQuestions, publishQuiz, questionsFor, setArchived } from "../core/quizzes.js";
 import { QUESTION_TYPES, joinLink } from "../core/models.js";
 import { attemptStats, gradedStats, loadPollVotes, manualMarkingProgress, participantIds, pendingMarking } from "../core/results.js";
 import { QUIZ_STATUS, quizCardStatus } from "../core/status.js";
 import { S, t } from "../core/strings.js";
 import { validateQuiz } from "../core/validate.js";
 import { confirmDialog, copyText, el, errorBlock, renderSignInGate, renderSpinner, toast } from "../ui/components.js";
+import { openAnnounceFlow } from "../ui/announce-flow.js";
 import { confetti } from "../ui/motion.js";
 import { mountShell } from "../ui/shell.js";
 import { route } from "../core/paths.js";
@@ -170,6 +171,22 @@ async function load() {
   render();
 }
 
+let refreshTimer = null;
+
+/** One timer, at the soonest end time among open quizzes, so a chip ("Results at ...") and its Announce button
+ *  change the moment a quiz ends — no polling. A delay a browser timer cannot hold is skipped. */
+function scheduleRefresh(items) {
+  clearTimeout(refreshTimer);
+  refreshTimer = null;
+  const now = Date.now();
+  const next = items
+    .filter((i) => !i.quiz.isDraft && !i.quiz.isArchived && i.quiz.endAt != null && i.quiz.endAt > now)
+    .map((i) => i.quiz.endAt - now)
+    .sort((a, b) => a - b)[0];
+  if (next == null || next > 2147483647) return;
+  refreshTimer = setTimeout(load, next + 500);
+}
+
 function render() {
   cleanup();
   cleanup = () => {};
@@ -197,8 +214,9 @@ function render() {
     limits: state.limits,
     filter: state.filter,
     onFilter: (filter) => (state.filter = filter),
-    actions: { publish, closePoll, share, duplicate, archive, remove, saveToBank },
+    actions: { publish, closePoll, announce, share, duplicate, archive, remove, saveToBank },
   });
+  scheduleRefresh(items);
 }
 
 // ── Actions ─────────────────────────────────────────────────────────────────
@@ -234,22 +252,19 @@ async function publish(quiz) {
   }
 }
 
-/** Closing a poll ends the quiz now (QuizRepository.endQuizNow) — votes stop, results stay. */
-async function closePoll(quiz) {
-  const ok = await confirmDialog({
-    title: S.CONFIRM_CLOSE_POLL_TITLE,
-    body: S.CONFIRM_CLOSE_POLL_BODY,
-    confirmLabel: S.ACT_CLOSE_POLL,
+/** End quiz / Announce / Hide / Close poll: the one shared flow (ui/announce-flow.js), the same as the app's Home menu.
+ *  The dashboard has no count of unmarked papers (like the app's Home), so it passes none. */
+function announce(quiz) {
+  return openAnnounceFlow({
+    quizId: quiz.id,
+    onMarkFirst: (q) => (window.location.href = route(`grading/?quiz=${encodeURIComponent(q.id)}`)),
+    onDone: load,
   });
-  if (!ok) return;
-  try {
-    await endQuizNow(quiz);
-    toast(S.POLL_CLOSED, { tone: "success" });
-    await load();
-  } catch (error) {
-    console.error(error);
-    toast(S.ERR_SAVE_FAILED, { tone: "error" });
-  }
+}
+
+/** Close poll: the same flow, with the poll's own wording for the plain confirm. */
+function closePoll(quiz) {
+  return openAnnounceFlow({ quizId: quiz.id, poll: true, onDone: load });
 }
 
 /** The system share sheet where there is one, otherwise the join link on the clipboard. */
