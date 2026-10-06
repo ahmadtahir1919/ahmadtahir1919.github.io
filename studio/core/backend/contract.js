@@ -27,8 +27,7 @@ export const BACKEND_FUNCTIONS = {
     "questionCounts",
     "hasParticipants",
     "shareCodeExists",
-    "upsertQuiz",
-    "replaceQuestions",
+    "saveQuizChecked",
     "publishQuiz",
     "setArchived",
     "setSchedule",
@@ -193,10 +192,12 @@ export const BACKEND_FUNCTIONS = {
 //   questionCounts(quizIds): Map<quizId, number>  every id present
 //   hasParticipants(quizId): boolean              anyone joined, or any non-preview attempt
 //   shareCodeExists(code, excludeQuizId?): boolean
-//   upsertQuiz(quiz, ownerId)                     insert or replace by id
-//   replaceQuestions(quizId, questions)           afterwards the quiz has exactly these;
-//                                                 removed ones go BEFORE new ones are added
-//                                                 (the per-quiz cap counts existing rows)
+//   saveQuizChecked(quiz, questions, ownerId, expected|null)
+//     -> {ok:true, serverUpdatedAt} | {ok:false, conflict:"stale"|"deleted"|"has_answers"}
+//                                                 one transaction; afterwards the quiz has exactly
+//                                                 these questions. expected = the quiz's
+//                                                 serverUpdatedAt as loaded (null = new); refused,
+//                                                 writing nothing, when the server's differs
 //   publishQuiz(quizId)                           draft → published; no-op if published
 //   setArchived(quizId, isArchived)
 //   setSchedule(quizId, startAt|null, endAt|null)

@@ -39,19 +39,35 @@ export class QuizLockedError extends Error {
   }
 }
 
-/** Writes a quiz and its questions, in editor order. Re-checks the edit lock on the server
- *  copy right before writing. */
+/** Raised when a save is refused: the quiz changed elsewhere (the app, another tab) since it was
+ *  loaded, was deleted, or the save would delete a question someone already answered. The server
+ *  copy wins — nothing was written. kind: "stale" | "deleted" | "has_answers". */
+export class QuizChangedError extends Error {
+  constructor(kind) {
+    super(`quiz changed elsewhere (${kind})`);
+    this.name = "QuizChangedError";
+    this.kind = kind;
+  }
+}
+
+/** Writes a quiz and its questions, in editor order, in one transaction — refused with
+ *  QuizChangedError if the server's copy is no longer the one [quiz] was loaded from
+ *  (quiz.serverUpdatedAt). Re-checks the edit lock on the server copy right before writing.
+ *  Resolves to the quiz's new serverUpdatedAt, which the caller keeps for its next save. */
 export async function saveQuiz(quiz, questions, ownerId, { checkLock = true } = {}) {
   if (checkLock) {
     const stored = await backend.loadQuiz(quiz.id);
     if (stored && (await isLockedForEditing(stored))) throw new QuizLockedError();
   }
 
-  await backend.upsertQuiz(quiz, ownerId);
-  await backend.replaceQuestions(
-    quiz.id,
-    questions.map((question, index) => ({ ...question, orderIndex: index }))
+  const result = await backend.saveQuizChecked(
+    quiz,
+    questions.map((question, index) => ({ ...question, orderIndex: index })),
+    ownerId,
+    quiz.serverUpdatedAt ?? null
   );
+  if (!result.ok) throw new QuizChangedError(result.conflict);
+  return result.serverUpdatedAt;
 }
 
 /** Draft → published only. Once published a quiz never goes back to draft — its share code

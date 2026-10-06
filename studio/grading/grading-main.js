@@ -18,7 +18,7 @@ import { renderHome } from "./home.js";
 import { mountSuite } from "./suite.js";
 import { openReport } from "./reports.js";
 import { bottomTabs } from "./mtabs.js";
-import { mountToast } from "./toast.js";
+import { mountToast, toast } from "./toast.js";
 import { loadAll, pendingTotal, store, subscribe } from "./store.js";
 
 const root = document.getElementById("root");
@@ -54,12 +54,14 @@ async function start() {
       },
     });
 
+  const renderHub = () =>
+    renderHome(hub, { onOpen: (qm, mode) => openQuiz(qm, mode), onReport: (qm) => report(qm, { scope: "class" }) });
   const showHome = ({ push = true } = {}) => {
     suite.close();
     suiteSec.hidden = true;
     hub.hidden = false;
     document.title = `${S.GRADING_TITLE} — ${S.APP_NAME} ${S.STUDIO} (${S.BETA})`;
-    renderHome(hub, { onOpen: (qm, mode) => openQuiz(qm, mode), onReport: (qm) => report(qm, { scope: "class" }) });
+    renderHub();
     // Re-trigger the entrance on every return, like the reference.
     hub.style.animation = "none";
     void hub.offsetWidth;
@@ -74,9 +76,26 @@ async function start() {
     if (push) history.pushState({ v: "suite" }, "", route(`grading/?quiz=${encodeURIComponent(qm.id)}&mode=${suite.ctx.mode}`));
   };
 
+  // Back on the home list: show what's there at once, then re-read from the server so marks made in
+  // the app (or another tab) meanwhile show without a page reload. A failed refresh keeps what's shown.
+  const refreshHome = async () => {
+    try {
+      await loadAll(user);
+    } catch (error) {
+      console.error(error);
+      return;
+    }
+    nav.setPendingCount(pendingTotal());
+    if (store.markedElsewhere) toast(S.GX_MARKED_ELSEWHERE);
+    if (!hub.hidden) renderHub();
+  };
+
   const suite = mountSuite(suiteSec, {
     onBack: async () => {
-      if (await suite.confirmLeave()) showHome();
+      if (await suite.confirmLeave()) {
+        showHome();
+        refreshHome();
+      }
     },
     openReport: (qm, opts) => report(qm, opts),
     onModeChange: (qm, mode) => {
@@ -108,6 +127,7 @@ async function start() {
       return;
     }
     nav.setPendingCount(pendingTotal());
+    if (store.markedElsewhere) toast(S.GX_MARKED_ELSEWHERE);
     route_({ push: false });
   };
 
@@ -132,7 +152,11 @@ async function start() {
     showHome({ push: false });
     if (location.search) history.replaceState({ v: "home" }, "", route("grading/"));
   }
-  window.addEventListener("popstate", () => store.quizzes && route_({ push: false }));
+  window.addEventListener("popstate", () => {
+    if (!store.quizzes) return;
+    route_({ push: false });
+    if (!hub.hidden) refreshHome();
+  });
 
   // The quota card, as on every other page (the badge is ours, so the sidebar doesn't fetch it).
   Promise.all([listMyQuizzes(user.id), fetchLimits()])

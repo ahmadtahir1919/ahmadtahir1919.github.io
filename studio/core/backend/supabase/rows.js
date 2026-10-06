@@ -36,6 +36,9 @@ export function quizFromRow(row) {
     // cannot undo one — the app (its RPC) is the only writer of results_released_at.
     resultsReleaseMode: row.results_release_mode === "MANUAL" ? "MANUAL" : "AUTO",
     resultsReleasedAt: row.results_released_at ?? null,
+    // The server's version of the quiz (and its questions) when this copy was read; a save sends it back
+    // and is refused if the quiz changed elsewhere since. Never written by quizToRow.
+    serverUpdatedAt: row.server_updated_at ?? null,
   };
 }
 

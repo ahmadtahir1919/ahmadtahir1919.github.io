@@ -797,6 +797,10 @@ export const S = {
   FIX_BEFORE_PUBLISH: "Fix the highlighted problems, then publish.",
   FIX_BEFORE_SAVE: "Fix the highlighted problems, then save.",
   QUIZ_NOW_LOCKED: "Someone has joined this quiz, so it can't be edited any more.",
+  // The checked save was refused: the server copy wins, the page stops saving until reloaded.
+  QE_CHANGED_ELSEWHERE: "This quiz was changed in the app or another tab. Reload to see the latest — edits made here since then weren't saved.",
+  QE_HAS_ANSWERS: "A question you removed has already been answered, so it can't be deleted. Reload to get it back — edits made here since then weren't saved.",
+  QE_RELOAD: "Reload",
   LOCKED_TITLE: "People have already joined or taken this quiz",
   LOCKED_BODY: "Its questions and rules can't change now, so everyone's results stay fair. Duplicate it to make an editable copy.",
   QUESTIONS_NEED_ATTENTION_ONE: "1 question needs attention.",
@@ -1468,6 +1472,8 @@ export const S = {
   GX_SUITE_LABEL: "Grading suite",
   GX_WEB: "Web",
   GX_ANDROID: "Android",
+  // Stored draft marks dropped on load: those answers were marked in the app or another tab after them.
+  GX_MARKED_ELSEWHERE: "Some answers were marked elsewhere since. Your unsent marks for them were dropped.",
   GX_MIN_AGO: "{n} min ago",
   GX_H_AGO: "{n} h ago",
   GX_CHARS: "{n} / {max}",

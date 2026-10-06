@@ -77,27 +77,23 @@ export async function shareCodeExists(code, excludeQuizId = null) {
   return data === true;
 }
 
-export async function upsertQuiz(quiz, ownerId) {
-  const { error } = await db.from("quizzes").upsert(quizToRow(quiz, ownerId));
+/**
+ * Writes the quiz and makes its questions exactly [questions], in one transaction, through the
+ * save_quiz_checked RPC (the same one the app uses). [expected] is the server_updated_at the caller
+ * loaded (null = a new quiz). Resolves to { ok: true, serverUpdatedAt } or { ok: false, conflict }:
+ * "stale" (changed elsewhere since), "deleted" (gone elsewhere) or "has_answers" (a removed question
+ * was already answered). Nothing is written when ok is false.
+ */
+export async function saveQuizChecked(quiz, questions, ownerId, expected) {
+  const { data, error } = await db.rpc("save_quiz_checked", {
+    p_quiz: quizToRow(quiz, ownerId),
+    p_questions: questions.map((question) => questionToRow(question, quiz.id)),
+    p_expected: expected ?? null,
+  });
+  if (error?.hint === "question_has_answers") return { ok: false, conflict: "has_answers" };
   if (error) throw error;
-}
-
-/** Makes the quiz's questions exactly [questions]. Removed ones are deleted FIRST:
- *  questions_insert_owner counts existing rows against the per-quiz cap, so at the cap
- *  "delete one, add one" would otherwise be rejected (SupabaseSyncRepository.kt:161-188). */
-export async function replaceQuestions(quizId, questions) {
-  const rows = questions.map((question) => questionToRow(question, quizId));
-
-  const keepIds = rows.map((row) => row.id);
-  let deleteQuery = db.from("questions").delete().eq("quiz_id", quizId);
-  if (keepIds.length) deleteQuery = deleteQuery.not("id", "in", `(${keepIds.join(",")})`);
-  const { error: deleteError } = await deleteQuery;
-  if (deleteError) throw deleteError;
-
-  if (rows.length) {
-    const { error: questionError } = await db.from("questions").upsert(rows);
-    if (questionError) throw questionError;
-  }
+  if (data?.ok === true) return { ok: true, serverUpdatedAt: data.server_updated_at };
+  return { ok: false, conflict: data?.conflict ?? "stale" };
 }
 
 /** Draft → published; a no-op on a quiz that is already published. */

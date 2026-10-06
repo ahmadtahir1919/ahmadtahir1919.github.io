@@ -17,7 +17,7 @@ import { S, t } from "../core/strings.js";
 import { displayNameOf, signOut } from "../core/auth.js";
 import { fetchLimits } from "../core/limits.js";
 import { listMyQuizzes } from "../core/quizzes.js";
-import { pendingMarking } from "../core/results.js";
+import { displayNames, pendingMarking } from "../core/results.js";
 import { route } from "../core/paths.js";
 import { avatar, el, openMenu } from "./components.js";
 import { icon } from "./icons.js";
@@ -110,14 +110,28 @@ export function buildSidebar({ user, active, fetchPending = true }) {
 
   // ── Account ──
   const name = displayNameOf(user) || user?.email || "";
+  const nameEl = el("span", { class: "sb-user-name ellipsis", text: name });
   const userBtn = el("button", { type: "button", class: "sb-user", title: name, "aria-label": `${S.ACCOUNT_MENU}: ${name}`, "aria-haspopup": "menu" }, [
     avatar(name),
     el("span", { class: "sb-user-text" }, [
-      el("span", { class: "sb-user-name ellipsis", text: name }),
+      nameEl,
       user?.email && user.email !== name ? el("span", { class: "sb-user-email ellipsis", text: user.email }) : null,
     ]),
     icon("chevron-up", "icon sb-user-chev"),
   ]);
+  // The name the app shows and lets you rename (profiles.display_name); Google's name until it arrives.
+  if (user?.id) {
+    displayNames([user.id])
+      .then((names) => {
+        const own = names.get(user.id);
+        if (!own || own === name) return;
+        nameEl.textContent = own;
+        userBtn.title = own;
+        userBtn.setAttribute("aria-label", `${S.ACCOUNT_MENU}: ${own}`);
+        userBtn.firstChild.replaceWith(avatar(own));
+      })
+      .catch(() => {});
+  }
   userBtn.addEventListener("click", () => {
     userBtn.setAttribute("aria-expanded", "true");
     openMenu(userBtn, [

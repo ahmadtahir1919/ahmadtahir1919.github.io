@@ -281,6 +281,8 @@ export function newQuiz() {
     // Same defaults as the app's new quiz (Quiz.resultsReleaseMode / resultsReleasedAt).
     resultsReleaseMode: "AUTO",
     resultsReleasedAt: null,
+    // Not on the server yet (Quiz.serverUpdatedAt in the app): its first save creates it.
+    serverUpdatedAt: null,
   };
 }
 

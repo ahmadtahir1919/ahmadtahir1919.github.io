@@ -13,7 +13,7 @@
 // motion helpers (ui/motion.js) so nothing appears or disappears instantly.
 
 import { DEFAULT_PREVIEW_SEC, QUESTION_TYPES as T, newQuiz, themeColor } from "../core/models.js";
-import { QuizLockedError, duplicateQuiz, generateUniqueShareCode, isLockedForEditing, listMyQuizzes, loadQuestions, loadQuiz, saveQuiz, saveTitleAndTheme } from "../core/quizzes.js";
+import { QuizChangedError, QuizLockedError, duplicateQuiz, generateUniqueShareCode, isLockedForEditing, listMyQuizzes, loadQuestions, loadQuiz, saveQuiz, saveTitleAndTheme } from "../core/quizzes.js";
 import { createHistory } from "../core/store.js";
 import { S, t } from "../core/strings.js";
 import { requireUser } from "../core/auth.js";
@@ -55,6 +55,9 @@ const state = {
   isLocked: false,
   /** null | "quota" | "maintenance" — a new quiz that can't be saved at all. */
   blocked: null,
+  /** null | "stale" | "deleted" | "has_answers" — a save was refused because the quiz changed elsewhere
+   *  (the server copy wins); nothing saves until the page is reloaded. */
+  conflict: null,
   /** The settings the questions were last saved under (the setup review compares against them); null = never saved. */
   savedSettings: null,
   version: 0,
@@ -323,6 +326,15 @@ function renderNotices() {
         el("span", { class: "sp" }),
         el("a", { href: route(`results/?id=${encodeURIComponent(state.quiz.id)}`), text: S.VIEW_RESULTS }),
         el("button", { type: "button", text: S.DUPLICATE, onclick: duplicateLocked }),
+      ])
+    );
+  }
+  if (state.conflict) {
+    items.push(
+      el("div", { class: "qnotice err" }, [
+        el("span", { text: state.conflict === "has_answers" ? S.QE_HAS_ANSWERS : S.QE_CHANGED_ELSEWHERE }),
+        el("span", { class: "sp" }),
+        el("button", { type: "button", text: S.QE_RELOAD, onclick: () => window.location.reload() }),
       ])
     );
   }
@@ -1323,7 +1335,7 @@ function validation() {
 
 function scheduleAutosave(delay = AUTOSAVE_MS) {
   clearTimeout(autosaveTimer);
-  if (readOnly() || !state.quiz.isDraft || !isDirty()) return;
+  if (readOnly() || state.conflict || !state.quiz.isDraft || !isDirty()) return;
   autosaveTimer = setTimeout(() => save("auto"), delay);
 }
 
@@ -1341,6 +1353,8 @@ async function saveLockedDetails() {
   const version = state.version;
   try {
     await saveTitleAndTheme(state.quiz.id, title, state.quiz.themeColorName);
+    // That write moved the server's version; keep ours in step so returning to the tab isn't read as a change elsewhere.
+    state.quiz.serverUpdatedAt = (await loadQuiz(state.quiz.id))?.serverUpdatedAt ?? state.quiz.serverUpdatedAt;
     state.quiz.title = title;
     state.savedVersion = version;
     state.saveError = null;
@@ -1359,7 +1373,7 @@ async function saveLockedDetails() {
 /** reason: "auto" (draft autosave), "manual" (Save / Ctrl+S / Import), "publish". */
 async function save(reason) {
   clearTimeout(autosaveTimer);
-  if (readOnly()) return false;
+  if (readOnly() || state.conflict) return false;
   if (state.saving) {
     state.saveQueued = true;
     return false;
@@ -1393,7 +1407,7 @@ async function save(reason) {
   try {
     if (!state.quiz.shareCode) state.quiz.shareCode = await generateUniqueShareCode(state.quiz.id);
     const quiz = { ...state.quiz, isDraft: publishing ? false : state.quiz.isDraft };
-    await saveQuiz(quiz, questions.map(normalizeQuestion), state.user.id, { checkLock: !state.isNew });
+    state.quiz.serverUpdatedAt = await saveQuiz(quiz, questions.map(normalizeQuestion), state.user.id, { checkLock: !state.isNew });
     state.quiz.isDraft = quiz.isDraft;
     if (state.isNew) {
       state.isNew = false;
@@ -1411,6 +1425,9 @@ async function save(reason) {
       state.isLocked = true;
       toast(S.QUIZ_NOW_LOCKED);
       window.location.reload();
+    } else if (error instanceof QuizChangedError) {
+      state.conflict = error.kind;
+      renderNotices();
     } else {
       state.saveError = S.QE_SAVE_FAILED;
     }
@@ -1475,6 +1492,23 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
+// Back on this tab: if the quiz changed elsewhere meanwhile (the app, another tab), reload when nothing
+// here is unsaved; otherwise say so now — the next save would be refused anyway.
+document.addEventListener("visibilitychange", async () => {
+  if (document.visibilityState !== "visible" || !state.quiz || state.isNew || state.conflict || state.saving) return;
+  const fresh = await loadQuiz(state.quiz.id).catch(() => undefined);
+  if (fresh === undefined || state.saving || fresh?.serverUpdatedAt === state.quiz.serverUpdatedAt) return;
+  if (!isDirty()) {
+    window.location.reload();
+    return;
+  }
+  state.conflict = fresh ? "stale" : "deleted";
+  clearTimeout(autosaveTimer);
+  renderNotices();
+});
+
+// A draft's unsaved edits go out on the way out — through the same checked save, so a page left open
+// while the quiz changed elsewhere can't overwrite it.
 window.addEventListener("beforeunload", (e) => {
   if (state.quiz && isDirty() && !readOnly() && (state.quiz.isDraft ? !(state.isNew && !(state.quiz.title ?? "").trim() && !state.forms.some(started)) : true)) {
     if (state.quiz.isDraft) save("auto");

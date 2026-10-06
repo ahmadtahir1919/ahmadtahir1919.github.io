@@ -25,5 +25,7 @@ export function duplicateDraft(original, { id, ownerId, title, shareCode, create
     createdAt,
     resultsReleaseMode: original.resultsReleaseMode === "MANUAL" ? "MANUAL" : "AUTO",
     resultsReleasedAt: null,
+    // A new quiz to the server: its first save creates it, not checked against the original's version.
+    serverUpdatedAt: null,
   };
 }

@@ -46,6 +46,8 @@ export const store = {
   user: null,
   quizzes: [],
   byId: new Map(),
+  /** Stored draft marks the last loadAll dropped because the answer was marked elsewhere after them. */
+  markedElsewhere: 0,
 };
 
 const listeners = new Set();
@@ -60,6 +62,7 @@ const emit = (kind, qm) => listeners.forEach((fn) => fn(kind, qm));
 
 export async function loadAll(user) {
   store.user = user;
+  store.markedElsewhere = 0;
   const quizzes = (await listMyQuizzes(user.id)).filter((q) => !q.isDraft);
   const ids = quizzes.map((q) => q.id);
   const [attempts, questions, people] = await Promise.all([loadAttemptsFor(ids), questionsFor(ids), participantIds(ids)]);
@@ -312,11 +315,41 @@ export const isDraft = (a) => !!a && (markDiffers(a) || fbDiffers(a));
 const draftsKey = (quizId) => `gx-drafts:${store.user?.id}:${quizId}`;
 const DRAFTS_PREFIX = () => `gx-drafts:${store.user?.id}:`;
 
+/** A stored draft answer made at [at] loses to a server mark made after it ([serverGradedAt]); a draft
+ *  stored before drafts had a time ([at] missing) is kept. */
+export const draftMarkedElsewhere = (at, serverGradedAt) => at != null && (serverGradedAt ?? 0) > at;
+
+const sameDraft = (a, b) => DRAFT_FIELDS.every((f) => (a[f] ?? null) === (b[f] ?? null));
+
+/** A stored overall note: { text, at }, or a bare string from before notes had a time (kept). */
+export const storedOverall = (entry) => (typeof entry === "string" ? { text: entry, at: null } : entry);
+
+function storedDrafts(quizId) {
+  try {
+    return JSON.parse(localStorage.getItem(draftsKey(quizId)) ?? "null");
+  } catch {
+    return null;
+  }
+}
+
 function persistDrafts(qm) {
+  // Each answer and overall note keeps the time it was last changed here (`at`), so a mark made elsewhere later wins on
+  // restore. An unchanged one keeps its old time; drafts stored before this have none and stay kept.
+  const stored = storedDrafts(qm.id);
+  const before = stored?.answers ?? {};
   const answers = {};
-  for (const key of draftKeys(qm)) answers[key] = pickDraft(qm.A.get(key).row);
+  for (const key of draftKeys(qm)) {
+    const fields = pickDraft(qm.A.get(key).row);
+    const old = before[key];
+    answers[key] = { ...fields, at: old && sameDraft(old, fields) ? old.at : Date.now() };
+  }
   const overall = {};
-  for (const s of qm.studs) if (overallDiffers(s)) overall[s.attemptId] = s.attempt.overall_feedback ?? "";
+  for (const s of qm.studs) {
+    if (!overallDiffers(s)) continue;
+    const text = s.attempt.overall_feedback ?? "";
+    const old = stored?.overall?.[s.attemptId] != null ? storedOverall(stored.overall[s.attemptId]) : null;
+    overall[s.attemptId] = { text, at: old && old.text === text ? old.at : Date.now() };
+  }
   try {
     if (Object.keys(answers).length || Object.keys(overall).length) localStorage.setItem(draftsKey(qm.id), JSON.stringify({ answers, overall }));
     else localStorage.removeItem(draftsKey(qm.id));
@@ -327,22 +360,29 @@ function persistDrafts(qm) {
 
 /** Lays this quiz's stored drafts over the rows just loaded; drops any whose answer is gone. */
 function restoreDrafts(qm) {
-  let saved = null;
-  try {
-    saved = JSON.parse(localStorage.getItem(draftsKey(qm.id)) ?? "null");
-  } catch {
-    saved = null;
-  }
+  const saved = storedDrafts(qm.id);
   if (!saved) return;
-  for (const [key, fields] of Object.entries(saved.answers ?? {})) {
+  for (const [key, { at, ...fields }] of Object.entries(saved.answers ?? {})) {
     const a = qm.A.get(key);
     if (!a) continue;
+    // Marked elsewhere (the app, another tab) after this draft was made: the newer server mark wins.
+    if (draftMarkedElsewhere(at, a.row.graded_at)) {
+      store.markedElsewhere++;
+      continue;
+    }
     a.row = { ...a.row, ...fields };
     derive(a);
   }
-  for (const [attemptId, text] of Object.entries(saved.overall ?? {})) {
+  for (const [attemptId, entry] of Object.entries(saved.overall ?? {})) {
     const s = qm.studs.find((x) => x.attemptId === attemptId);
-    if (s?.attempt) s.attempt = { ...s.attempt, overall_feedback: text };
+    if (!s?.attempt) continue;
+    const { text, at } = storedOverall(entry);
+    // Same rule as an answer: marked elsewhere after this note was written, the server's note wins.
+    if (draftMarkedElsewhere(at, s.attempt.graded_at)) {
+      store.markedElsewhere++;
+      continue;
+    }
+    s.attempt = { ...s.attempt, overall_feedback: text };
   }
   persistDrafts(qm);
 }
