@@ -76,8 +76,6 @@ html[data-page="editor"] body { background: var(--bg); color: var(--fg); font-fa
 .qe .pub:hover { transform: translateY(-1px); filter: brightness(1.07); }
 .qe .pub:active { transform: translateY(1px) scale(.98); }
 .qe .pub:disabled { opacity: .6; cursor: default; transform: none; filter: none; }
-.qe .pcount { font-size: 11px; font-weight: 800; padding: 2px 7px; border-radius: 99px; background: rgba(255, 255, 255, .22); color: #fff; font-variant-numeric: tabular-nums; }
-.qe .pub[data-locked="false"] .pcount { background: #fff; color: var(--live); }
 .qe .pub[data-locked="false"] { overflow: hidden; }
 .qe .pub[data-locked="false"]::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, .35) 50%, transparent 65%); transform: translateX(-100%); animation: pshine 3.5s 1s infinite; pointer-events: none; }
 @keyframes pshine { 30%, 100% { transform: translateX(100%); } }
@@ -572,7 +570,6 @@ html.theming *, html.theming *::before { transition: background-color .4s ease, 
   .qe .cb-cur .bar-title { max-width: none; display: block; overflow: hidden; text-overflow: ellipsis; }
   .qe .ghost.bd { padding: 8px 9px; }
   .qe .pub { padding: 9px 12px; }
-  .qe .pub .pcount { display: none; }
   .qe .pubtip { right: -6px; width: min(250px, calc(100vw - 24px)); }
   .qe .import-btn { display: none; }
   .qe .editor { padding-inline: 12px; gap: 16px; }

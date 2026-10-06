@@ -48,8 +48,9 @@ export async function saveBankQuestion(userId, question, limits) {
  * Bulk save — file import, "import from quizzes", "save quiz questions to bank". All or
  * nothing against the cap. Every question gets a fresh id (reusing a quiz question's id would
  * make a second save overwrite the first and leave a bank entry sharing an id with a live quiz
- * question), and createdAt is spread by index so the batch keeps its order under the
- * newest-first sort — the first question on top. Returns { saved: count } or { atCap: limit }.
+ * question), and createdAt is spread by index exactly like QuestionBankRepository.saveAll: the
+ * batch's last question is the newest, on top under the newest-first sort — so a batch saved here
+ * and one saved on the phone line up the same way. Returns { saved: count } or { atCap: limit }.
  */
 export async function saveAllToBank(userId, questions, limits) {
   if (!questions.length) return { saved: 0 };
@@ -57,8 +58,7 @@ export async function saveAllToBank(userId, questions, limits) {
     return { atCap: limits.maxBankQuestions };
   }
   const now = Date.now();
-  const last = questions.length - 1;
-  const entries = questions.map((q, i) => asEntry({ ...q, id: newId() }, now + (last - i), now + (last - i)));
+  const entries = questions.map((q, i) => asEntry({ ...q, id: newId() }, now + i, now + i));
   await backend.upsertBankQuestions(userId, entries);
   return { saved: entries.length };
 }

@@ -78,6 +78,8 @@ export function validateQuestion(question, limits, quiz = null) {
     if (CHOICE_TYPES.has(question.type) && !skipCorrectness) {
       const correct = (question.correct ?? []).map(clean).filter((c) => c && filled.includes(c));
       if (!correct.length) errors.push(S.ERR_NO_CORRECT);
+      // A "multiple answers" question with one correct answer is a Single choice in disguise.
+      else if (question.type === QUESTION_TYPES.MULTIPLE_CORRECT && correct.length < 2) errors.push(S.ERR_NEED_TWO_CORRECT);
     }
   }
 

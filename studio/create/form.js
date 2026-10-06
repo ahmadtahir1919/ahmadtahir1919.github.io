@@ -205,6 +205,8 @@ export function convertType(form, type) {
     next.items.forEach((i, idx) => (i.correct = idx === (first >= 0 ? first : -1)));
   } else if (type === QUESTION_TYPES.MULTIPLE_CORRECT) {
     next.items = form.items.length && fromType !== QUESTION_TYPES.TRUE_FALSE ? form.items.map((i) => ({ ...i })) : [item(), item()];
+    // Fewer than two correct (e.g. coming from Single): the first two become the correct pair, as in the app.
+    if (next.items.filter((i) => i.correct).length < 2) next.items.forEach((i, idx) => (i.correct = idx < 2));
   } else if (type === QUESTION_TYPES.POLL) {
     next.items = (form.items.length >= 2 && fromType !== QUESTION_TYPES.TRUE_FALSE ? form.items : [item(), item()]).map((i) => ({
       ...i,

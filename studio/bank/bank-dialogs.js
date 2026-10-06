@@ -198,8 +198,9 @@ export function openImportSource({ user, limits, bank, onImported }) {
 }
 
 /** What "import from quizzes" did: how many landed and, by name, which were duplicates. */
-function importResult(added, skippedTexts) {
+export function importResult(added, skippedTexts, onClose) {
   notice({
+    onClose,
     badge: t(S.BANK_IMPORT_RESULT_BADGE, { n: added }),
     badgeTone: "success",
     title: S.BANK_IMPORT_RESULT_TITLE,

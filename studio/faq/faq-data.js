@@ -389,7 +389,7 @@ export const FAQ_ITEMS = [
     category: "rules",
     question: "What are Class test, Practice and Speed drill?",
     answer:
-      "Quick starting points under **What kind of quiz is this?**:\n\n- **Class test** — students only see that their paper was submitted; no score or answers.\n- **Practice** — students see their score, the right answers and your explanations straight after, and can retry.\n- **Speed drill** — timed, each answer flashes right or wrong, faster answers earn more.\n\nTune the individual switches afterwards and the label changes to your own settings.",
+      "Quick starting points under **What kind of quiz is this?**:\n\n- **Class test** — students only see that their paper was submitted; their score and answers appear when the quiz ends (or when you announce them).\n- **Practice** — students see their score, the right answers and your explanations straight after, and can retry.\n- **Speed drill** — timed, each answer flashes right or wrong, faster answers earn more.\n\nTune the individual switches afterwards and the label changes to your own settings.",
     keywords: ["preset", "kind of quiz", "template", "exam", "practice"],
   },
   {

@@ -112,10 +112,8 @@
 
 /* ── Grid + card ─────────────────────────────────────────────────────────── */
 
+/* One column at every width, like the app: newest first, read top to bottom (two columns read Q1, Q3, …). */
 .bk-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-items: start; }
-@media (min-width: 1100px) {
-  .bk-grid:not(.is-empty) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
 .bk-page.has-selection .bk-grid { padding-bottom: 84px; }
 
 .bk-card {

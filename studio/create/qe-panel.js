@@ -103,12 +103,15 @@ export function buildPanel(ctx) {
     el("div", { class: "ptabs" }, [el("span", { class: "pt-h", text: S.QE_QUIZ_SETTINGS }), el("span", { class: "pt-s", text: S.QE_FOR_WHOLE }), hide]),
     body,
   ]);
+  // Same order as the app's Create Quiz: presets, then the schedule, then the rules and the look.
   const schedule = scheduleGroup(ctx);
+  const presets = el("div", { class: "prest" });
   const rest = el("div", { class: "prest" });
-  body.append(schedule.node, rest);
+  body.append(presets, schedule.node, rest);
   const render = () => {
     schedule.sync();
-    swap(rest, presetGroup(ctx, render), ...ruleGroups(ctx, render), paletteGroup(ctx, render));
+    swap(presets, presetGroup(ctx, render));
+    swap(rest, ...ruleGroups(ctx, render), paletteGroup(ctx, render));
   };
   render();
   return { panel, render, syncSchedule: schedule.sync };
@@ -344,10 +347,50 @@ function ruleGroups(ctx, render) {
       ])
     : null;
 
+  // Same order as the app's QuizRuleCards: by importance, and every switch above the rows it greys out.
   return [
     el("div", { class: "grp" }, [
-      el("h5", { text: S.QE_SEC_MECHANICS }),
-      ruleRow({ ro, title: S.RULE_NUMBERED, sub: S.QE_R_NUMBERED_SUB, on: quiz.showQuestionNumbers, onChange: (on) => set("numbers", (q) => (q.showQuestionNumbers = on)) }),
+      el("h5", { text: S.QE_SEC_RESULTS }),
+      ruleRow({
+        ro,
+        title: S.RULE_SCORE,
+        sub: S.QE_R_SCORE_SUB,
+        on: quiz.showResult,
+        onChange: async (on) => {
+          if (on && !quiz.showResult && !(await askInstant())) return false;
+          set("score", (q) => {
+            q.showResult = on;
+            q.showAnswers = on;
+          });
+        },
+      }),
+      // Show results — only while Show Score is off (the app's ResultsReleaseModeRow): when students see their
+      // result. Not a stored default; written with the quiz (quizToRow), the announcement itself never is.
+      quiz.showResult ? null : releaseRow({ quiz, ro, set }),
+      ruleRow({ ro, title: S.RULE_RETAKE, sub: S.QE_R_RETAKE_SUB, on: quiz.allowRetake, onChange: (on) => set("retake", (q) => (q.allowRetake = on)) }),
+    ]),
+    el("div", { class: "grp" }, [
+      el("h5", { text: S.QE_SEC_MARKING }),
+      ruleRow({
+        ro,
+        title: S.RULE_MANUAL,
+        sub: S.QE_R_MANUAL_SUB,
+        on: manual && !blocks.manual,
+        blocked: reasonText(blocks.manual),
+        onChange: (on) =>
+          set("manual", (q) => {
+            q.manualMarkingDefault = on;
+            if (on) {
+              q.showCorrectnessInstantly = false;
+              q.splitPointsAcrossChoices = false;
+              q.timeWeightageEnabled = false;
+            }
+          }),
+      }),
+      ruleRow({ ro, title: S.RULE_PARTIAL, sub: S.QE_R_PARTIAL_SUB, on: quiz.splitPointsAcrossChoices && !blocks.partial, blocked: reasonText(blocks.partial, "partial"), onChange: (on) => set("partial", (q) => (q.splitPointsAcrossChoices = on)) }),
+    ]),
+    el("div", { class: "grp" }, [
+      el("h5", { text: S.QE_SEC_WHILE_TAKING }),
       ruleRow({ ro, title: S.RULE_TIMER, sub: S.QE_R_TIMER_SUB, on: quiz.showTimers && !timerBlocked, blocked: timerBlocked, onChange: (on) => set("timers", (q) => (q.showTimers = on)) }),
       ruleRow({
         ro,
@@ -358,6 +401,7 @@ function ruleGroups(ctx, render) {
         extra: readingChips,
         onChange: (on) => set("preview", (q) => (q.questionPreviewSec = on ? ctx.lastPreviewSec() : 0)),
       }),
+      ruleRow({ ro, title: S.RULE_RAPID, sub: S.QE_R_RAPID_SUB, on: quiz.timeWeightageEnabled && !rapidBlocked, blocked: rapidBlocked, onChange: (on) => set("rapid", (q) => (q.timeWeightageEnabled = on)) }),
       ruleRow({
         ro,
         title: S.RULE_FLASH,
@@ -383,45 +427,8 @@ function ruleGroups(ctx, render) {
       }),
     ]),
     el("div", { class: "grp" }, [
-      el("h5", { text: S.QE_SEC_REVIEW }),
-      ruleRow({
-        ro,
-        title: S.RULE_SCORE,
-        sub: S.QE_R_SCORE_SUB,
-        on: quiz.showResult,
-        onChange: async (on) => {
-          if (on && !quiz.showResult && !(await askInstant())) return false;
-          set("score", (q) => {
-            q.showResult = on;
-            q.showAnswers = on;
-          });
-        },
-      }),
-      // Show results — only while Show Score is off (the app's ResultsReleaseModeRow): when students see their
-      // result. Not a stored default; written with the quiz (quizToRow), the announcement itself never is.
-      quiz.showResult ? null : releaseRow({ quiz, ro, set }),
-      ruleRow({ ro, title: S.RULE_RETAKE, sub: S.QE_R_RETAKE_SUB, on: quiz.allowRetake, onChange: (on) => set("retake", (q) => (q.allowRetake = on)) }),
-    ]),
-    el("div", { class: "grp" }, [
-      el("h5", { text: S.QE_SEC_EVALUATION }),
-      ruleRow({
-        ro,
-        title: S.RULE_MANUAL,
-        sub: S.QE_R_MANUAL_SUB,
-        on: manual && !blocks.manual,
-        blocked: reasonText(blocks.manual),
-        onChange: (on) =>
-          set("manual", (q) => {
-            q.manualMarkingDefault = on;
-            if (on) {
-              q.showCorrectnessInstantly = false;
-              q.splitPointsAcrossChoices = false;
-              q.timeWeightageEnabled = false;
-            }
-          }),
-      }),
-      ruleRow({ ro, title: S.RULE_PARTIAL, sub: S.QE_R_PARTIAL_SUB, on: quiz.splitPointsAcrossChoices && !blocks.partial, blocked: reasonText(blocks.partial, "partial"), onChange: (on) => set("partial", (q) => (q.splitPointsAcrossChoices = on)) }),
-      ruleRow({ ro, title: S.RULE_RAPID, sub: S.QE_R_RAPID_SUB, on: quiz.timeWeightageEnabled && !rapidBlocked, blocked: rapidBlocked, onChange: (on) => set("rapid", (q) => (q.timeWeightageEnabled = on)) }),
+      el("h5", { text: S.QE_SEC_LOOK }),
+      ruleRow({ ro, title: S.RULE_NUMBERED, sub: S.QE_R_NUMBERED_SUB, on: quiz.showQuestionNumbers, onChange: (on) => set("numbers", (q) => (q.showQuestionNumbers = on)) }),
     ]),
   ];
 }

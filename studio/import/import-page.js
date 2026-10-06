@@ -13,11 +13,12 @@ import { MAX_FILE_BYTES, SAMPLE_FORMATS, SAMPLE_QUESTION_TYPES, buildSample, det
 import { QuizLockedError, generateUniqueShareCode, isLockedForEditing, listMyQuizzes, loadQuestions, loadQuiz, saveQuiz } from "../core/quizzes.js";
 import { S, t } from "../core/strings.js";
 import { requireUser } from "../core/auth.js";
-import { saveAllToBank } from "../core/bank.js";
+import { dedupeForBank, listMyBank, saveAllToBank } from "../core/bank.js";
 import { fetchLimits } from "../core/limits.js";
 import { normalizeQuestion } from "../core/validate.js";
 import { button, confirmDialog, copyText, el, emptyState, errorBlock, loadingBlock, openDialog, renderSignInGate, renderSpinner, swap, toast } from "../ui/components.js";
 import { mountShell } from "../ui/shell.js";
+import { importResult } from "../bank/bank-dialogs.js";
 import * as V from "./import-views.js";
 
 const { TRUE_FALSE } = QUESTION_TYPES;
@@ -419,12 +420,17 @@ async function importToBank(parsed) {
   try {
     const timeSec = newQuiz().defaultTimeSec;
     const questions = parsed.map((p) => normalizeQuestion({ ...toQuestion(p, { timeSec, orderIndex: 0 }), points: DEFAULT_POINTS }));
-    const result = await saveAllToBank(state.user.id, questions, state.limits);
+    // Questions already in the bank are left out, as on every bulk save (the app's importToBank too).
+    const { toImport, skippedTexts } = dedupeForBank(await listMyBank(state.user.id), questions);
+    const result = await saveAllToBank(state.user.id, toImport, state.limits);
     if (result.atCap) {
       limitDialog(S.IMP_LIMIT_BANK_BADGE, S.BANK_FULL_TITLE, t(S.BANK_FULL_IMPORT_BODY, { n: result.atCap }));
       return;
     }
-    window.location.href = route(`bank/?imported=${result.saved}`);
+    const toBank = () => (window.location.href = route(`bank/?imported=${result.saved}`));
+    // Some were already there: say which first, like "Import from quizzes", then go to the bank.
+    if (skippedTexts.length) importResult(result.saved, skippedTexts, toBank);
+    else toBank();
   } catch (error) {
     console.error(error);
     toast(S.ERR_SAVE_FAILED, { tone: "error" });

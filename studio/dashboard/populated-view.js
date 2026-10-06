@@ -24,13 +24,8 @@ const FILTERS = [
 /** "All" is everything except archived, which only shows under its own chip. */
 const inFilter = (bucket, filter) => (filter === "all" ? bucket !== "archived" : bucket === filter);
 
-/** Live first, then scheduled (soonest), drafts (newest), ended (newest); archived last. */
-const ORDER = { live: 0, sched: 1, draft: 2, ended: 3, archived: 4 };
+/** Newest first, whatever the status — the app's Home default (SortMode.NEWEST). The chips filter by status. */
 function compareItems(a, b) {
-  const byBucket = ORDER[a.bucket] - ORDER[b.bucket];
-  if (byBucket) return byBucket;
-  if (a.bucket === "sched") return a.quiz.startAt - b.quiz.startAt;
-  if (a.bucket === "ended") return (b.quiz.endAt ?? b.quiz.createdAt) - (a.quiz.endAt ?? a.quiz.createdAt);
   return (b.quiz.createdAt ?? 0) - (a.quiz.createdAt ?? 0);
 }
 

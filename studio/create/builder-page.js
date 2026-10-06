@@ -165,7 +165,6 @@ function buildLayout() {
   R.undo = el("button", { type: "button", title: S.QE_UNDO_TITLE, "aria-label": S.UNDO, disabled: true, onclick: undo }, [svg(G.undo)]);
   R.redo = el("button", { type: "button", title: S.QE_REDO_TITLE, "aria-label": S.REDO, disabled: true, onclick: redo }, [svg(G.redo)]);
   R.pubChecks = el("ul");
-  R.pcount = el("span", { class: "pcount" });
   R.pubLabel = el("span");
   R.pubIcon = el("span", { class: "pico" });
   const tipLink = el("u", { text: S.QE_SAFE_TIP_U });
@@ -179,7 +178,7 @@ function buildLayout() {
     el("span", { class: "lbl", text: S.QE_PREVIEW }),
     el("span", { class: "prtip", role: "tooltip" }, [el("b", { text: S.QE_PREV_LOCK_T }), S.QE_PREV_LOCK_B]),
   ]);
-  R.pub = el("button", { class: "pub", type: "button", onclick: onPublishClick }, [R.pubIcon, R.pubLabel, R.pcount, R.pubTip]);
+  R.pub = el("button", { class: "pub", type: "button", onclick: onPublishClick }, [R.pubIcon, R.pubLabel, R.pubTip]);
   R.importBtn = el("button", { class: "ghost bd import-btn", type: "button", onclick: importFromFile }, [svg(G.importIcon), el("span", { class: "lbl", text: S.QE_IMPORT })]);
   R.resultsBtn = el("a", { class: "ghost bd", href: route(`results/?id=${encodeURIComponent(state.quiz.id)}`) }, [svg(G.results), el("span", { class: "lbl", text: S.QE_RESULTS })]);
   const kb = shortcutsPopover();
@@ -526,7 +525,6 @@ function refreshTop() {
     R.pub.removeAttribute("data-locked");
     R.pubIcon.append(svg(isDirty() ? G.save : G.copy16));
     R.pubLabel.textContent = isDirty() ? S.QE_SAVE : S.DUPLICATE;
-    R.pcount.hidden = true;
     R.pubTip.hidden = true;
     return;
   }
@@ -534,9 +532,6 @@ function refreshTop() {
   R.pub.setAttribute("data-locked", left ? "true" : "false");
   R.pubIcon.append(svg(state.quiz.isDraft ? G.send : G.save));
   R.pubLabel.textContent = state.quiz.isDraft ? S.QE_PUBLISH : S.QE_SAVE;
-  R.pcount.hidden = !state.quiz.isDraft && !left;
-  R.pcount.textContent = left ? t(S.QE_LEFT, { n: left }) : S.QE_READY;
-  R.pcount.title = left ? (left === 1 ? S.QE_LEFT_TITLE_ONE : t(S.QE_LEFT_TITLE_MANY, { n: left })) : S.QE_READY_TITLE;
   R.pubTip.hidden = false;
   R.pubChecks.replaceChildren(...checklist().map(([label, ok]) => el("li", { class: ok ? "ok" : "", text: `${ok ? "✓" : "○"} ${label}` })));
 }

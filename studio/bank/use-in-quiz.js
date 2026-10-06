@@ -40,11 +40,12 @@ const FAILED = {
 };
 
 /** A one-button notice in the app's ConfirmActionDialog style. */
-export function notice({ badge, badgeTone = "warn", title, body, list, actions }) {
+export function notice({ badge, badgeTone = "warn", title, body, list, actions, onClose }) {
   const dlg = openDialog({
     badge,
     badgeTone,
     title,
+    onClose,
     content: [
       body ? el("p", { class: "dialog-body", text: body }) : null,
       list?.length ? el("ul", { class: "bk-notice-list" }, list.map((text) => el("li", { dir: "auto", text }))) : null,

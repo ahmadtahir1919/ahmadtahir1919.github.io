@@ -259,35 +259,70 @@ export function buildSidebar({ user, active, fetchPending = true }) {
     if (!e.matches && isOpen()) setOpen(false);
   });
 
+  // The last numbers this tab showed, so the next page draws them at once instead of blank-then-filled.
+  const cacheKey = user ? `quizoma.studio.sidebar:${user.id}` : null;
+  const cached = () => {
+    if (!cacheKey) return null;
+    try {
+      return JSON.parse(sessionStorage.getItem(cacheKey) ?? "null");
+    } catch {
+      return null;
+    }
+  };
+  const remember = (patch) => {
+    if (!cacheKey) return;
+    try {
+      sessionStorage.setItem(cacheKey, JSON.stringify({ ...cached(), ...patch }));
+    } catch {
+      // storage blocked: the sidebar simply fills in after the refresh, as before
+    }
+  };
+
+  const showPending = (count) => {
+    for (const badge of badges) {
+      badge.hidden = !count;
+      badge.textContent = count > 99 ? "99+" : String(count || "");
+    }
+  };
+  /** The quota card: "used of limit" with a bar once a quiz exists, the allowance before. The bar
+   *  grows in only the first time; a page drawing a known value shows it at its width straight away. */
+  const showQuota = ({ used, limit, maxQuestions }, grow) => {
+    quotaNode.hidden = false;
+    if (!used) {
+      quotaNode.className = "sb-quota is-empty";
+      quotaNode.replaceChildren(
+        el("small", {}, [S.QUOTA_EMPTY_PRE, el("b", { text: t(S.QUOTA_EMPTY_N, { n: limit }) }), t(S.QUOTA_EMPTY_POST, { q: maxQuestions })])
+      );
+      return;
+    }
+    const ratio = limit > 0 ? Math.min(1, used / limit) : 1;
+    const fill = el("i");
+    quotaNode.className = `sb-quota ${ratio >= 0.8 ? "is-warn" : ""}`;
+    quotaNode.replaceChildren(
+      el("small", {}, [el("b", { text: t(S.QUOTA_USED_OF, { used, limit }) }), S.QUOTA_USED_POST]),
+      el("div", { class: "sb-bar", role: "progressbar", "aria-valuemin": "0", "aria-valuemax": String(limit), "aria-valuenow": String(used), "aria-label": S.QUOTA_LABEL }, [fill]),
+      el("small", { text: S.QUOTA_HELP })
+    );
+    const width = `${Math.round(ratio * 100)}%`;
+    if (grow) requestAnimationFrame(() => requestAnimationFrame(() => (fill.style.width = width)));
+    else fill.style.width = width;
+  };
+
+  const known = cached();
+  if (known?.quota) showQuota(known.quota, false);
+  if (known?.pending != null) showPending(known.pending);
+
   const api = {
     sidebar,
     mobileBar,
     scrim,
     setPendingCount(count) {
-      for (const badge of badges) {
-        badge.hidden = !count;
-        badge.textContent = count > 99 ? "99+" : String(count || "");
-      }
+      showPending(count);
+      remember({ pending: count });
     },
-    /** The quota card: "used of limit" with a bar once a quiz exists, the allowance before. */
-    setQuota({ used, limit, maxQuestions }) {
-      quotaNode.hidden = false;
-      if (!used) {
-        quotaNode.className = "sb-quota is-empty";
-        quotaNode.replaceChildren(
-          el("small", {}, [S.QUOTA_EMPTY_PRE, el("b", { text: t(S.QUOTA_EMPTY_N, { n: limit }) }), t(S.QUOTA_EMPTY_POST, { q: maxQuestions })])
-        );
-        return;
-      }
-      const ratio = limit > 0 ? Math.min(1, used / limit) : 1;
-      const fill = el("i");
-      quotaNode.className = `sb-quota ${ratio >= 0.8 ? "is-warn" : ""}`;
-      quotaNode.replaceChildren(
-        el("small", {}, [el("b", { text: t(S.QUOTA_USED_OF, { used, limit }) }), S.QUOTA_USED_POST]),
-        el("div", { class: "sb-bar", role: "progressbar", "aria-valuemin": "0", "aria-valuemax": String(limit), "aria-valuenow": String(used), "aria-label": S.QUOTA_LABEL }, [fill]),
-        el("small", { text: S.QUOTA_HELP })
-      );
-      requestAnimationFrame(() => requestAnimationFrame(() => (fill.style.width = `${Math.round(ratio * 100)}%`)));
+    setQuota(quota) {
+      showQuota(quota, !cached()?.quota);
+      remember({ quota });
     },
   };
 

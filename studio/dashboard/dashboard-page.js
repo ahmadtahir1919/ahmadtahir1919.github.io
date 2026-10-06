@@ -9,7 +9,7 @@
 // "x of y marked" for the quiz the Next step spotlight is about.
 
 import { displayNameOf, requireUser } from "../core/auth.js";
-import { saveAllToBank } from "../core/bank.js";
+import { dedupeForBank, listMyBank, saveAllToBank } from "../core/bank.js";
 import { fetchLimits } from "../core/limits.js";
 import { deleteQuiz, duplicateQuiz, listMyQuizzes, loadQuestions, publishQuiz, questionsFor, setArchived } from "../core/quizzes.js";
 import { QUESTION_TYPES, joinLink } from "../core/models.js";
@@ -311,13 +311,18 @@ async function saveToBank(quiz) {
       toast(S.BANK_QUIZ_HAS_NO_QUESTIONS, { tone: "info" });
       return;
     }
-    const result = await saveAllToBank(state.user.id, questions, state.limits);
+    // Questions already in the bank are left out, as on every bulk save (the app's HomeViewModel too).
+    const { toImport, skippedTexts } = dedupeForBank(await listMyBank(state.user.id), questions);
+    const result = await saveAllToBank(state.user.id, toImport, state.limits);
     done();
     if (result.atCap) {
       toast(t(S.BANK_FULL_IMPORT_BODY, { n: result.atCap }), { tone: "error", duration: 6000 });
       return;
     }
-    toast(result.saved === 1 ? S.BANK_SAVED_FROM_QUIZ_ONE : t(S.BANK_SAVED_FROM_QUIZ, { n: result.saved }), {
+    const message = skippedTexts.length
+      ? t(S.BANK_SAVED_FROM_QUIZ_SKIPPED, { n: result.saved, m: skippedTexts.length })
+      : result.saved === 1 ? S.BANK_SAVED_FROM_QUIZ_ONE : t(S.BANK_SAVED_FROM_QUIZ, { n: result.saved });
+    toast(message, {
       tone: "success",
       duration: 6000,
       action: { label: S.BANK_VIEW, onClick: () => (window.location.href = route("bank/")) },

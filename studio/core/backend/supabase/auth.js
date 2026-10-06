@@ -3,9 +3,11 @@
 
 import { db } from "./client.js";
 
+/** The signed-in user from the session this browser holds — no network round-trip, so a page can
+ *  draw its shell at once. Every data call is still checked by the server (RLS). */
 export async function getUser() {
-  const { data } = await db.auth.getUser();
-  return data?.user ?? null;
+  const { data } = await db.auth.getSession();
+  return data?.session?.user ?? null;
 }
 
 export async function signInWithGoogle(redirectTo) {
