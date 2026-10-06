@@ -38,9 +38,17 @@ function resultsVisible(quiz, needsMarking, now) {
   return resultsReleased(quiz, now) && !needsMarking;
 }
 
+/** Why results are held back, for choosing the sentence — mirrors resultsHiddenReason() in
+ *  ResultsVisibility.kt. null when they are out. */
+function resultsHiddenReason(quiz, now) {
+  if (resultsReleased(quiz, now)) return null;
+  if ((quiz.resultsReleaseMode ?? "AUTO") === "MANUAL") return "MANUAL_NOT_ANNOUNCED";
+  return quiz.endAt != null ? "AUTO_WITH_END" : "AUTO_NO_END";
+}
+
 /** The attempt's answers include one still waiting for the owner's mark. */
 function answersNeedMarking(answers) {
   return (answers || []).some((a) => a.needsManualMarking === true && a.awardedPoints == null);
 }
 
-window.ResultsVisibility = { resultsReleased, resultsVisible, answersNeedMarking };
+window.ResultsVisibility = { resultsReleased, resultsVisible, resultsHiddenReason, answersNeedMarking };

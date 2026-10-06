@@ -228,12 +228,14 @@ const S = {
   EXPANDER_SHOW: "Show",
   EXPANDER_HIDE: "Hide",
   RESULT_PENDING_TITLE: "Waiting to be marked",
-  RESULT_PENDING_BODY:
-    "Your answers have been submitted. The quiz admin still has to mark them by hand, so there's no result to show yet. Check back a little later.",
+  RESULT_PENDING_BODY: "Your teacher is marking your answers.",
   pendingPartial: (score, graded, pending) =>
     `${score} of ${graded} app-checked questions correct. The other ${pending} still need the quiz admin to mark them by hand, so this isn't your final result yet.`,
   RESULT_AWAITING_MARKING: "Awaiting marking",
-  RESULT_HIDDEN: "Results are hidden for this quiz — check with the quiz creator.",
+  // Why the result is not out yet — mirror result_hidden_auto_* / result_hidden_manual.
+  resultHiddenAutoWithEnd: (when) => `Results will be announced when the quiz ends on ${when}.`,
+  RESULT_HIDDEN_AUTO_NO_END: "Results will be announced when your teacher ends the quiz.",
+  RESULT_HIDDEN_MANUAL: "Your teacher hasn't announced the results yet. They'll appear here once announced.",
   RESULT_CANDIDATE: "Candidate:",
   marksLine: (awarded, total) => `${awarded} / ${total} MARKS`,
   RESULT_STAT_CORRECT: "Correct",

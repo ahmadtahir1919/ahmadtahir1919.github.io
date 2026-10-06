@@ -3233,6 +3233,20 @@ function buildResultExpander(key, title, subtitle, open, body) {
 const EXPANDER_CHEVRON_SVG = `<svg class="expander-chevron" viewBox="0 0 20 20" fill="none" width="20" height="20"><path d="M5 7.5l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 
+/** The sentence under "SUBMITTED" while results are held back — mirrors SubmittedCard in
+ *  ResultScreen.kt (which sentence: ResultsVisibility.resultsHiddenReason). */
+function hiddenResultMessage(quiz, now) {
+  const reason = RV.resultsHiddenReason(quiz, now);
+  if (reason === "MANUAL_NOT_ANNOUNCED") return S.RESULT_HIDDEN_MANUAL;
+  if (reason === "AUTO_WITH_END") {
+    const when = new Date(quiz.endAt).toLocaleString(undefined, {
+      month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
+    });
+    return S.resultHiddenAutoWithEnd(when);
+  }
+  return S.RESULT_HIDDEN_AUTO_NO_END;
+}
+
 /**
  * "Waiting to be marked" — mirrors ResultScreen.kt's PendingReviewCard.
  *
@@ -3542,7 +3556,7 @@ function renderResult() {
     // the "checked so far" part of the card only once the results are out.
     content.appendChild(buildPendingCard(pending, resultsOut ? score : 0, resultsOut ? gradedCount : 0));
   } else if (hidden) {
-    content.appendChild(buildResultInfoCard(S.RESULT_HIDDEN_LABEL, S.RESULT_HIDDEN));
+    content.appendChild(buildResultInfoCard(S.RESULT_HIDDEN_LABEL, hiddenResultMessage(quiz, now)));
   } else if (pollOnly) {
     content.appendChild(buildResultInfoCard(S.RESULT_POLL_RESULTS, S.RESULT_YOU_VOTED));
   } else {
