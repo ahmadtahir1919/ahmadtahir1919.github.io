@@ -35,11 +35,12 @@ const NAV = [
 
 const HELP = [
   { href: `${SITE}/how-it-works/`, label: () => S.QE_USER_GUIDE, iconName: "guide" },
-  { href: `${SITE}/faq/`, label: () => S.QE_FAQS, iconName: "help" },
   { href: `${SITE}/contact/`, label: () => S.QE_SUPPORT, iconName: "support" },
 ];
 
-/** Feedback is written in Studio itself (/feedback/), so it opens in the same tab like the nav. */
+/** Help & FAQs and feedback are written in Studio itself, so they open in the same tab like the nav. */
+const FAQ = { key: "faq", href: route("faq/"), label: () => S.QE_FAQS, iconName: "help" };
+
 const FEEDBACK = { key: "feedback", href: route("feedback/"), label: () => S.QE_FEEDBACK, iconName: "feedback" };
 
 const THEMES = [
@@ -60,7 +61,7 @@ function glyph(paths, strokeWidth) {
 const PLUS = '<path d="M12 5v14M5 12h14"/>';
 const IMPORT = '<path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v3h16v-3"/>';
 
-/** [active]: "dashboard" | "grading" | "bank" | "feedback" | "create" | "import" — the page being shown. */
+/** [active]: "dashboard" | "grading" | "bank" | "feedback" | "faq" | "create" | "import" — the page being shown. */
 export function buildSidebar({ user, active, fetchPending = true }) {
   const html = document.documentElement;
   const badges = [];
@@ -151,7 +152,7 @@ export function buildSidebar({ user, active, fetchPending = true }) {
       el("a", { class: "sb-import", href: route("import/"), title: S.IMPORT_TITLE, "aria-label": S.IMPORT_LABEL, "aria-current": active === "import" ? "page" : undefined }, [glyph(IMPORT, "2.2")]),
     ]),
     el("nav", { class: "sb-nav", "aria-label": S.NAV_SECTION }, [el("div", { class: "sb-navlabel", text: S.NAV_SECTION }), ...NAV.map((item) => navLink(item))]),
-    el("nav", { class: "sb-nav sb-help", "aria-label": S.QE_HELP }, [el("div", { class: "sb-navlabel", text: S.QE_HELP }), ...HELP.map((item) => navLink(item, { external: true })), navLink(FEEDBACK)]),
+    el("nav", { class: "sb-nav sb-help", "aria-label": S.QE_HELP }, [el("div", { class: "sb-navlabel", text: S.QE_HELP }), ...HELP.slice(0, 1).map((item) => navLink(item, { external: true })), navLink(FAQ), ...HELP.slice(1).map((item) => navLink(item, { external: true })), navLink(FEEDBACK)]),
     el("div", { class: "sb-foot" }, [
       el("div", { class: "sb-theme", role: "radiogroup", "aria-label": S.QE_THEME }, themeBtns),
       themeCycle,

@@ -163,6 +163,14 @@ html[data-page="editor"] body { background: var(--bg); color: var(--fg); font-fa
 .qe .ri.on .t small { color: var(--tc); }
 .qe .ri .grip { position: absolute; left: 1px; top: 50%; transform: translateY(-50%); color: var(--faint); opacity: 0; transition: opacity .15s; cursor: grab; padding: 4px 2px; }
 .qe .ri:hover .grip { opacity: 1; }
+/* Trash icon: collapsed to nothing until the row is hovered or focused, then it opens up and the title
+   makes room (no overlap). Touch screens have no hover, so it is always there, softly. */
+.qe .rdel { flex: none; width: 0; height: 28px; margin-left: -10px; border-radius: 8px; display: grid; place-items: center; overflow: hidden; opacity: 0; color: var(--faint); cursor: pointer; transition: width .18s var(--ease), margin .18s var(--ease), opacity .15s, background .15s, color .15s; }
+.qe .ri:hover .rdel, .qe .ri:focus-within .rdel, .qe .rdel:focus-visible { width: 28px; margin-left: 0; opacity: 1; }
+.qe .rdel:hover, .qe .rdel:focus-visible { background: var(--rose-soft); color: var(--rose); }
+.qe .rdel:focus-visible { outline: 2px solid var(--rose); outline-offset: -2px; }
+@media (hover: none) { .qe .rdel { width: 28px; margin-left: 0; opacity: .7; } }
+@media (prefers-reduced-motion: reduce) { .qe .rdel { transition: none; } }
 .qe .ri.dragging { opacity: .4; }
 .qe .ri.drop-before { box-shadow: 0 -3px 0 -1px var(--accent); }
 .qe .ri.drop-after { box-shadow: 0 3px 0 -1px var(--accent); }

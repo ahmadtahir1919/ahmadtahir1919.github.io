@@ -409,6 +409,11 @@ function renderStrip() {
             readOnly() ? null : el("span", { class: "grip", "aria-hidden": "true" }, [svg(G.grip)]),
             el("span", { class: "n", title: typeName(form.type), text: String(i + 1) }),
             el("span", { class: "t" }, [el("b", { class: title ? "" : "is-empty", dir: "auto", text: title || S.QE_NEW_QUESTION }), el("small", {}, [mp, tail])]),
+            // Shown on hover / focus. The last question is reset rather than removed, and a locked
+            // quiz can't lose questions, so neither gets the icon.
+            readOnly() || state.forms.length === 1
+              ? null
+              : el("span", { class: "rdel", role: "button", tabindex: "0", title: t(S.QE_RAIL_DELETE, { n: i + 1 }), "aria-label": t(S.QE_RAIL_DELETE, { n: i + 1 }) }, [svg(G.del)]),
           ]
         );
       })
@@ -673,20 +678,24 @@ function duplicateQuestion() {
   toast(S.QE_DUPLICATED, { label: S.UNDO, fn: undo });
 }
 
-function deleteQuestion() {
-  const card = R.cardHost.querySelector(".qcard");
-  const row = R.ritems.querySelector(".ri.on");
+/** Deletes the open question, or the one with [id] (the rail's hover icon). */
+function deleteQuestion(id = selected().id) {
+  const isOpen = id === selected().id;
+  const card = isOpen ? R.cardHost.querySelector(".qcard") : null;
+  const row = R.ritems.querySelector(`.ri[data-k="${CSS.escape(id)}"]`);
   if (row) animateOut(row, () => {});
   const go = () => {
-    const at = index();
-    changeForms(`del-${selected().id}`, () => {
+    const at = state.forms.findIndex((f) => f.id === id);
+    if (at < 0) return;
+    changeForms(`del-${id}`, () => {
       if (state.forms.length === 1) {
         // The last question is reset instead of removed.
         state.forms = [newForm(T.SINGLE_CHOICE, { timeSec: state.quiz.defaultTimeSec ?? 30 })];
         state.selectedId = state.forms[0].id;
       } else {
         state.forms.splice(at, 1);
-        state.selectedId = state.forms[Math.max(0, at - 1)].id;
+        // Deleting another row leaves the open question open.
+        if (isOpen) state.selectedId = state.forms[Math.max(0, at - 1)].id;
       }
     });
     renderAll();
@@ -694,6 +703,20 @@ function deleteQuestion() {
   };
   if (reduce() || !card) return go();
   card.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "translateY(8px) scale(.98)" }], { duration: 220, easing: "ease-in" }).onfinish = go;
+}
+
+/** The rail's trash icon: always asks first (the card's own delete relies on Undo alone). */
+async function confirmDeleteQuestion(id) {
+  const at = state.forms.findIndex((f) => f.id === id);
+  if (at < 0) return;
+  const text = railTitle(state.forms[at]);
+  const short = text.length > 80 ? `${text.slice(0, 80)}…` : text;
+  const ok = await confirmDialog({
+    title: t(S.QE_DEL_CONFIRM_TITLE, { n: at + 1 }),
+    body: short ? t(S.QE_DEL_CONFIRM_BODY, { text: short }) : S.QE_DEL_CONFIRM_BODY_EMPTY,
+    confirmLabel: S.DELETE,
+  });
+  if (ok) deleteQuestion(id);
 }
 
 function moveQuestion(from, to) {
@@ -832,7 +855,17 @@ function wireRail() {
   const rowIndex = (node) => state.forms.findIndex((f) => f.id === node.dataset.k);
   R.ritems.addEventListener("click", (e) => {
     const b = e.target.closest(".ri");
-    if (b) select(b.dataset.k);
+    if (!b) return;
+    if (e.target.closest(".rdel")) confirmDeleteQuestion(b.dataset.k);
+    else select(b.dataset.k);
+  });
+  // The trash icon is a span inside the row's button, so Enter / Space are wired by hand.
+  R.ritems.addEventListener("keydown", (e) => {
+    const del = e.target.closest?.(".rdel");
+    if (!del || (e.key !== "Enter" && e.key !== " ")) return;
+    e.preventDefault();
+    e.stopPropagation();
+    confirmDeleteQuestion(del.closest(".ri").dataset.k);
   });
   R.ritems.addEventListener("dragstart", (e) => {
     const b = e.target.closest(".ri");
