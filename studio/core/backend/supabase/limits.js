@@ -20,6 +20,7 @@ export async function loadLimits() {
     maxOptionTextChars: row.max_option_text_chars,
     maxAnswerTextChars: row.max_answer_text_chars,
     maxBankQuestions: row.max_bank_questions_per_user,
+    maxFreeTextChars: row.max_free_text_chars,
     createQuizEnabled: row.create_quiz_enabled,
   };
 }

@@ -18,6 +18,7 @@ export const BACKEND_FUNCTIONS = {
   auth: ["getUser", "signInWithGoogle", "signInWithIdToken", "signOut"],
   limits: ["loadLimits"],
   bank: ["listBank", "loadBankQuestion", "countBank", "upsertBankQuestions", "deleteBankQuestions"],
+  feedback: ["listMyFeedback", "insertFeedback"],
   quizzes: [
     "listQuizzes",
     "loadQuiz",
@@ -32,6 +33,7 @@ export const BACKEND_FUNCTIONS = {
     "setArchived",
     "setSchedule",
     "setResultsRelease",
+    "saveTitleAndTheme",
     "deleteQuiz",
   ],
   preview: ["previewQuizRow", "previewQuestionRow"],
@@ -77,6 +79,7 @@ export const BACKEND_FUNCTIONS = {
  * @property {number} maxOptionTextChars
  * @property {number} maxAnswerTextChars
  * @property {number} maxBankQuestions       Question Bank cap, per user
+ * @property {number} maxFreeTextChars       free-text cap (feedback message, grader notes)
  * @property {boolean} createQuizEnabled
  */
 
@@ -86,6 +89,17 @@ export const BACKEND_FUNCTIONS = {
 
 /** @typedef {Omit<Question, "quizId" | "orderIndex" | "rapidBonus"> & { createdAt: number, updatedAt: number }} BankQuestion
  *  One Question Bank entry: a Question that belongs to no quiz, owned by the user directly. */
+
+/**
+ * @typedef {object} Feedback  One piece of the user's own feedback (the app's data/repository/FeedbackRepository.kt).
+ * @property {string} id
+ * @property {number} rating          0 = a plain suggestion (no stars), 1-5 otherwise
+ * @property {string|null} category   BUG | CRASH | SYNC | UI_UX | PERFORMANCE | FEATURE_REQUEST | REPORT_CONTENT | OTHER
+ * @property {string} message
+ * @property {number} createdAt
+ * @property {string|null} adminReply     the team's one-way reply; a user can never write it
+ * @property {number|null} adminReplyAt
+ */
 
 /**
  * @typedef {object} Attempt  One submission. Previews (is_preview) are never returned.
@@ -165,6 +179,12 @@ export const BACKEND_FUNCTIONS = {
 //                                                 are written as given
 //   deleteBankQuestions(ids)
 //
+// feedback — the signed-in user's own only; Feedback out
+//   listMyFeedback(userId): Feedback[]            newest createdAt first
+//   insertFeedback(userId, {rating, category, message, createdAt})
+//                                                 throws when the server refuses (one per 24h → a
+//                                                 Postgres 42501 / "row-level security" error)
+//
 // quizzes — Quiz / Question in, Quiz / Question out
 //   listQuizzes(ownerId): Quiz[]                  newest createdAt first
 //   loadQuiz(quizId): Quiz|null
@@ -181,6 +201,7 @@ export const BACKEND_FUNCTIONS = {
 //   setArchived(quizId, isArchived)
 //   setSchedule(quizId, startAt|null, endAt|null)
 //   setResultsRelease(quizId, "AUTO"|"MANUAL", releasedAt|null) -> boolean  (the owner's Announce / Hide; false = refused)
+//   saveTitleAndTheme(quizId, title, themeColorName)   writes only title and theme_color_name (a locked quiz)
 //   deleteQuiz(quizId)                            questions, attempts and votes go with it
 //
 // results — owner's view; snake_case rows as typed above

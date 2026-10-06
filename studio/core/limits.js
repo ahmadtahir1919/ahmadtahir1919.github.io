@@ -25,6 +25,7 @@ export async function fetchLimits() {
     maxOptionTextChars: 100,
     maxAnswerTextChars: 250,
     maxBankQuestions: 100,
+    maxFreeTextChars: 500,
     createQuizEnabled: true,
   };
   try {

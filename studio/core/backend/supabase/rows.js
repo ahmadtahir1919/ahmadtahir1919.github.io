@@ -132,3 +132,16 @@ export function questionToRow(question, quizId) {
     rapid_bonus: question.type === QUESTION_TYPES.POLL ? null : question.rapidBonus ?? null,
   };
 }
+
+/** A feedback row -> the page model (core/backend/contract.js Feedback). */
+export function feedbackFromRow(row) {
+  return {
+    id: row.id,
+    rating: row.rating ?? 0,
+    category: row.category ?? null,
+    message: row.message ?? "",
+    createdAt: row.created_at,
+    adminReply: row.admin_reply || null,
+    adminReplyAt: row.admin_reply_at ?? null,
+  };
+}

@@ -79,6 +79,11 @@ export async function setResultsRelease(quizId, mode, releasedAt) {
   return backend.setResultsRelease(quizId, mode, releasedAt);
 }
 
+/** Title and theme of a locked quiz (the app allows both while the rules stay locked); writes nothing else. */
+export async function saveTitleAndTheme(quizId, title, themeColorName) {
+  return backend.saveTitleAndTheme(quizId, title, themeColorName);
+}
+
 /** QuizRepository.duplicateQuiz: a fresh draft with a new id and share code, " (Copy)" fitted
  *  inside the title cap, not archived, and no schedule. Questions get new ids. The results-release MODE is
  *  copied, the announcement never is (core/release.js). */

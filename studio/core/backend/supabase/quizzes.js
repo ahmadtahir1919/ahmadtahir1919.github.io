@@ -129,6 +129,12 @@ export async function setResultsRelease(quizId, mode, releasedAt) {
   return data === true;
 }
 
+/** A locked quiz keeps its rules; only the title and the theme may change — nothing else is written. */
+export async function saveTitleAndTheme(quizId, title, themeColorName) {
+  const { error } = await db.from("quizzes").update({ title, theme_color_name: themeColorName }).eq("id", quizId);
+  if (error) throw error;
+}
+
 export async function deleteQuiz(quizId) {
   const { error } = await db.from("quizzes").delete().eq("id", quizId);
   if (error) throw error;

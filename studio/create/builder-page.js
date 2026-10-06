@@ -13,7 +13,7 @@
 // motion helpers (ui/motion.js) so nothing appears or disappears instantly.
 
 import { DEFAULT_PREVIEW_SEC, QUESTION_TYPES as T, newQuiz, themeColor } from "../core/models.js";
-import { QuizLockedError, duplicateQuiz, generateUniqueShareCode, isLockedForEditing, listMyQuizzes, loadQuestions, loadQuiz, saveQuiz } from "../core/quizzes.js";
+import { QuizLockedError, duplicateQuiz, generateUniqueShareCode, isLockedForEditing, listMyQuizzes, loadQuestions, loadQuiz, saveQuiz, saveTitleAndTheme } from "../core/quizzes.js";
 import { createHistory } from "../core/store.js";
 import { S, t } from "../core/strings.js";
 import { requireUser } from "../core/auth.js";
@@ -31,6 +31,9 @@ import { G, TYPE_ICON, svg } from "./qe-icons.js";
 import { TYPES, done, missing, questionText, railTitle, started, steps, takeSeconds, typeName } from "./qe-model.js";
 import { applyLimits, ataText, blankPointsMode, nudgeCard, renderCard as paintCard, renderQset, runTry, syncBlankPoints, wireSmartPaste } from "./qe-card.js";
 import { buildPanel, schedChip } from "./qe-panel.js";
+import { markMyself } from "./qe-presets.js";
+import { reviewQuizSetup, setupSettings } from "../core/rules.js";
+import { showSetupReview } from "../ui/setup-review.js";
 import { buildSidebar } from "../ui/sidebar.js";
 import { openPreview } from "./qe-preview.js";
 
@@ -52,6 +55,8 @@ const state = {
   isLocked: false,
   /** null | "quota" | "maintenance" — a new quiz that can't be saved at all. */
   blocked: null,
+  /** The settings the questions were last saved under (the setup review compares against them); null = never saved. */
+  savedSettings: null,
   version: 0,
   savedVersion: 0,
   saving: false,
@@ -111,6 +116,7 @@ async function load(editing) {
     state.forms = questions.map(toForm);
     state.isNew = false;
     state.isLocked = locked;
+    state.savedSettings = setupSettings(quiz);
   } else {
     state.quiz = { ...newQuiz(), ownerId: state.user.id };
     if (!state.limits.createQuizEnabled) state.blocked = "maintenance";
@@ -193,7 +199,7 @@ function buildLayout() {
   ]);
 
   // Title + ideas + meta
-  R.title = el("input", { class: "qtitle", id: "qe-title", dir: "auto", placeholder: S.QE_TITLE_PH, "aria-label": S.QUIZ_TITLE_LABEL, "data-max": String(state.limits.maxQuizTitleChars), readonly: readOnly() || undefined });
+  R.title = el("input", { class: "qtitle", id: "qe-title", dir: "auto", placeholder: S.QE_TITLE_PH, "aria-label": S.QUIZ_TITLE_LABEL, "data-max": String(state.limits.maxQuizTitleChars), readonly: state.blocked ? true : undefined });
   R.title.value = state.quiz.title ?? "";
   R.ideas = el("div", { class: "tideas", hidden: true });
   R.metaPill = el("span", { class: "dpill" });
@@ -266,6 +272,7 @@ function buildLayout() {
     quiz: () => state.quiz,
     questions: persisted,
     readOnly,
+    themeReadOnly: () => !!state.blocked,
     lastPreviewSec: () => state.lastPreviewSec,
     sched: state.sched,
     setQuiz: changeQuiz,
@@ -477,7 +484,7 @@ function refreshTop() {
   R.redo.disabled = readOnly() || !history.canRedo;
 
   // Save state
-  R.saved.hidden = readOnly();
+  R.saved.hidden = !!state.blocked || (state.isLocked && !isDirty() && !state.saveError);
   R.saved.classList.remove("saving", "dirty", "err");
   R.retry.hidden = true;
   if (state.saveError) {
@@ -498,9 +505,10 @@ function refreshTop() {
   // Publish / Save changes / Duplicate
   R.pubIcon.replaceChildren();
   if (state.isLocked) {
+    // Locked: Duplicate — or, once the title or theme changed, Save changes (only those two are written).
     R.pub.removeAttribute("data-locked");
-    R.pubIcon.append(svg(G.copy16));
-    R.pubLabel.textContent = S.DUPLICATE;
+    R.pubIcon.append(svg(isDirty() ? G.save : G.copy16));
+    R.pubLabel.textContent = isDirty() ? S.QE_SAVE : S.DUPLICATE;
     R.pcount.hidden = true;
     R.pubTip.hidden = true;
     return;
@@ -589,7 +597,8 @@ function touched() {
 }
 
 function changeQuiz(key, fn) {
-  if (readOnly()) return;
+  // A locked quiz still takes a new title and theme (saved by saveLockedDetails); every rule stays put.
+  if (readOnly() && !(state.isLocked && !state.blocked && (key === "title" || key === "theme"))) return;
   history.checkpoint(`quiz-${key}`, snapshot());
   fn(state.quiz);
   if (key === "theme") setQc();
@@ -1089,7 +1098,7 @@ function onPreviewClick() {
 }
 
 function onPublishClick() {
-  if (state.isLocked) return duplicateLocked();
+  if (state.isLocked) return isDirty() ? saveLockedDetails() : duplicateLocked();
   if (R.pub.getAttribute("data-locked") === "true") {
     R.pub.classList.remove("nudge");
     void R.pub.offsetWidth;
@@ -1108,11 +1117,47 @@ function onPublishClick() {
     return;
   }
   if (state.quiz.isDraft) publish();
-  else if (isDirty()) save("manual");
+  else if (isDirty()) reviewedSave("manual");
   else toast(S.QE_SAVED);
 }
 
+/**
+ * The app's "Before your quiz goes out" review, on top of validation() (which stays the stricter gate and
+ * runs first). Resolves true to carry on. A fix that happens in place (Mark them myself, timers on, Rapid off)
+ * re-checks; a fix that sends the author to a question stops here.
+ */
+async function reviewSetup() {
+  if (!validation().ok) return true; // save() shows what validation() blocks
+  for (;;) {
+    let left = false;
+    const findings = reviewQuizSetup(setupSettings(state.quiz), persisted(), state.savedSettings, true);
+    const result = await showSetupReview({
+      findings,
+      onAddQuestion: () => {
+        left = true;
+        addQuestion();
+      },
+      onEditQuestion: (id) => {
+        left = true;
+        select(id);
+      },
+      onMarkMyself: () => changeQuiz("manual", markMyself),
+      onTimersOn: () => changeQuiz("timers", (q) => (q.showTimers = true)),
+      onRapidOff: () => changeQuiz("rapid", (q) => (q.timeWeightageEnabled = false)),
+    });
+    if (result === "go") return true;
+    panelApi.render();
+    if (result === "back" || left) return false;
+  }
+}
+
+async function reviewedSave(reason) {
+  if (await reviewSetup()) return save(reason);
+  return false;
+}
+
 async function publish() {
+  if (!(await reviewSetup())) return;
   const ok = await confirmDialog({ title: S.CONFIRM_PUBLISH_TITLE, body: S.CONFIRM_PUBLISH_BODY, confirmLabel: S.PUBLISH, danger: false });
   if (!ok) return;
   if (await save("publish")) {
@@ -1127,15 +1172,14 @@ function celebrate() {
   const n = state.forms.length;
   const invite = t(S.QE_INVITE, { title, code });
   const canvas = el("canvas", { class: "conf" });
-  const sec = el("b", { text: "5" });
-  const txt = el("span", {}, [S.QE_TAKING_YOU, sec, S.QE_TAKING_S]);
-  const cgo = el("div", { class: "cgo" }, [el("div", { class: "cbar" }, [el("i")]), txt]);
   const copyBtn = el("button", { type: "button", text: S.QE_COPY_CODE });
   const msgBtn = el("button", { type: "button", text: S.QE_COPY_MSG });
   const wa = el("a", { target: "_blank", rel: "noopener", href: `https://wa.me/?text=${encodeURIComponent(invite)}` }, [svg(G.whatsapp), S.QE_WHATSAPP]);
   const stay = el("button", { type: "button", class: "cstay", text: S.QE_STAY });
   const now = el("button", { type: "button", class: "cnow", text: S.QE_GO_DASH });
+  const x = el("button", { type: "button", class: "cx", "aria-label": S.CLOSE, title: S.CLOSE }, [svg(G.close14)]);
   const box = el("div", { class: "cbox" }, [
+    x,
     el("div", { class: "cok" }, [svg(G.okBig)]),
     el("h2", { text: S.QE_LIVE }),
     el("p", {}, [el("b", { text: title }), n === 1 ? S.QE_LIVE_SUB_ONE : t(S.QE_LIVE_SUB_MANY, { n })]),
@@ -1144,7 +1188,6 @@ function celebrate() {
       el("div", { class: "cdig" }, [...code].map((ch, i) => el("span", { text: ch, vars: { d: `${i * 70 + 500}ms` } }))),
       el("div", { class: "cshare" }, [copyBtn, msgBtn, wa]),
     ]),
-    cgo,
     el("div", { class: "cbtns" }, [stay, now]),
   ]);
   const overlay = el("div", { class: "celeb", role: "dialog", "aria-label": S.QE_PUBLISHED_LABEL, "aria-modal": "true" }, [canvas, box]);
@@ -1152,35 +1195,18 @@ function celebrate() {
   confettiCanvas(canvas);
   now.focus();
 
-  let left = 5;
-  let timer = setInterval(() => {
-    left--;
-    sec.textContent = String(left);
-    if (left <= 0) go();
-  }, 1000);
   const close = () => {
-    clearInterval(timer);
     overlay.classList.add("out");
     setTimeout(() => overlay.remove(), reduce() ? 0 : 300);
   };
   function go() {
-    clearInterval(timer);
-    txt.textContent = S.QE_OPENING_DASH;
     overlay.classList.add("leaving");
     setTimeout(() => {
       document.body.classList.add("todash");
       window.location.href = route("");
     }, reduce() ? 0 : 700);
   }
-  const hold = () => {
-    if (!timer) return;
-    clearInterval(timer);
-    timer = 0;
-    cgo.classList.add("held");
-    txt.textContent = S.QE_TAKE_TIME;
-  };
   const copy = async (text, btn, label) => {
-    hold();
     try {
       await navigator.clipboard.writeText(text);
     } catch {
@@ -1190,8 +1216,11 @@ function celebrate() {
   };
   copyBtn.addEventListener("click", () => copy(code, copyBtn, S.QE_COPIED));
   msgBtn.addEventListener("click", () => copy(invite, msgBtn, S.QE_MSG_COPIED));
-  wa.addEventListener("click", hold);
   stay.addEventListener("click", close);
+  x.addEventListener("click", close);
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) close();
+  });
   now.addEventListener("click", go);
   overlay.addEventListener("keydown", (e) => {
     if (e.key === "Escape") close();
@@ -1265,6 +1294,35 @@ function scheduleAutosave(delay = AUTOSAVE_MS) {
   autosaveTimer = setTimeout(() => save("auto"), delay);
 }
 
+/** The locked quiz: writes the title and the theme and nothing else (no rules, questions or schedule). */
+async function saveLockedDetails() {
+  if (state.saving || !state.isLocked || state.blocked || !isDirty()) return false;
+  const title = (state.quiz.title ?? "").trim();
+  if (!title || title.length > state.limits.maxQuizTitleChars) {
+    toast(S.FIX_BEFORE_SAVE);
+    R.title.focus();
+    return false;
+  }
+  state.saving = true;
+  refreshTop();
+  const version = state.version;
+  try {
+    await saveTitleAndTheme(state.quiz.id, title, state.quiz.themeColorName);
+    state.quiz.title = title;
+    state.savedVersion = version;
+    state.saveError = null;
+    toast(S.CHANGES_SAVED);
+    return true;
+  } catch (error) {
+    console.error(error);
+    state.saveError = S.QE_SAVE_FAILED;
+    return false;
+  } finally {
+    state.saving = false;
+    refreshTop();
+  }
+}
+
 /** reason: "auto" (draft autosave), "manual" (Save / Ctrl+S / Import), "publish". */
 async function save(reason) {
   clearTimeout(autosaveTimer);
@@ -1309,6 +1367,7 @@ async function save(reason) {
       window.history.replaceState(null, "", route(`create/?id=${encodeURIComponent(state.quiz.id)}`));
     }
     state.savedVersion = version;
+    state.savedSettings = setupSettings(state.quiz);
     state.lastSavedAt = Date.now();
     state.saveError = null;
     if (reason === "manual" && !state.quiz.isDraft) toast(S.CHANGES_SAVED);
@@ -1345,10 +1404,12 @@ document.addEventListener("keydown", (e) => {
   const key = e.key.toLowerCase();
   if (mod && key === "s") {
     e.preventDefault();
-    if (state.quiz.isDraft || state.isNew) {
+    if (state.isLocked) {
+      if (isDirty()) saveLockedDetails();
+    } else if (state.quiz.isDraft || state.isNew) {
       toast(S.QE_AUTOSAVES);
       if (isDirty()) save("auto");
-    } else if (isDirty()) save("manual");
+    } else if (isDirty()) reviewedSave("manual");
     return;
   }
   if (e.key === "Escape") {

@@ -512,12 +512,8 @@ html[data-page="editor"] body { background: var(--bg); color: var(--fg); font-fa
 .qe .cshare { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
 .qe .cshare a { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 9px; border: 1.5px solid #1fa855; color: #fff; background: #1fa855; font-weight: 700; font-size: 13px; text-decoration: none; }
 .qe .cshare a:hover { filter: brightness(1.07); }
-.qe .cgo { margin-top: 16px; display: grid; gap: 6px; font-size: 12.5px; color: var(--muted); }
-.qe .cbar { height: 4px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
-.qe .cbar i { display: block; height: 100%; width: 100%; background: var(--accent); transform-origin: left; animation: shrink 5s linear forwards; }
-@keyframes shrink { to { transform: scaleX(0); } }
-.qe .cgo.held .cbar { opacity: .3; }
-.qe .cgo.held .cbar i { animation-play-state: paused !important; }
+.qe .cx { position: absolute; top: 12px; right: 12px; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); }
+.qe .cx:hover { background: var(--surface-2); color: var(--fg); }
 .qe .cbtns { display: flex; gap: 8px; margin-top: 14px; }
 .qe .cbtns button { flex: 1; padding: 10px; border-radius: 11px; font-weight: 700; font-size: 13.5px; }
 .qe .cstay { border: 1.5px solid var(--line) !important; background: var(--surface) !important; }
@@ -630,3 +626,27 @@ html.theming *, html.theming *::before { transition: background-color .4s ease, 
 .qe .pvx { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; color: #fff; background: rgba(255, 255, 255, .14); }
 .qe .pvx:hover { background: rgba(255, 255, 255, .26); }
 @media (max-width: 600px) { .qe .pvw { padding: 6px 0 0; } .qe .pvtop { padding: 0 8px; } .qe .pvframe { border-radius: 14px 14px 0 0; } }
+
+/* ── Presets, summary strip and conflict notices (the app's PresetPicker) ─────────────────────── */
+.qe .grp-presets { margin-bottom: 4px; }
+.qe .pcards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.qe .pcard { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 10px 10px 10px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--surface); text-align: left; cursor: pointer; transition: border-color .2s, background .2s; }
+.qe .pcard b { font-size: 13px; }
+.qe .pcard small { font-size: 11.5px; color: var(--muted); }
+.qe .pcard:hover:not(:disabled) { border-color: var(--accent); }
+.qe .pcard.on { border-color: var(--accent); background: var(--accent-soft); }
+.qe .pcard:disabled { opacity: .55; cursor: default; }
+.qe .pcard .pck { position: absolute; top: 6px; right: 6px; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; }
+.qe .pcard .pck svg { width: 10px; height: 10px; stroke: currentColor; fill: none; }
+.qe .psum { margin-top: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); }
+.qe .psum p { margin: 0 0 8px; font-size: 12.5px; line-height: 1.45; }
+.qe .pchips { display: flex; flex-wrap: wrap; gap: 6px; }
+.qe .pchips span { padding: 3px 9px; border-radius: 99px; background: var(--surface); border: 1px solid var(--line); font-size: 11.5px; font-weight: 600; color: var(--muted); }
+.qe .pnote { margin-top: 8px; padding: 9px 12px; border-radius: 12px; background: var(--warn-soft); color: var(--warn-ink); font-size: 12.5px; line-height: 1.45; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.qe .pnote .linkbtn { padding: 5px 10px; border-radius: 9px; background: var(--surface); border: 0; font-size: 12.5px; font-weight: 700; color: var(--warn-ink); cursor: pointer; }
+@media (max-width: 420px) { .qe .pcards { grid-template-columns: 1fr; } }
+
+/* ── Setup review dialog ──────────────────────────────────────────────────────────────────────── */
+.sr-finding { padding: 10px 12px; border-radius: 12px; background: var(--warning-bg, #fef3c7); color: var(--warning, #92400e); font-size: 13px; line-height: 1.45; }
+.sr-finding.must { background: #fee2e2; color: #991b1b; }
+.sr-finding .sr-actions { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px; }

@@ -9,11 +9,13 @@
 //  - Timer OFF → Preview and Rapid bonus unavailable.
 //  - Turning on Show score or Instant correctness asks first; Back + Instant asks first.
 
-import { PREVIEW_OPTIONS, QUIZ_THEMES, hasOnlyUntimedQuestions } from "../core/models.js";
+import { PREVIEW_OPTIONS, QUIZ_THEMES } from "../core/models.js";
+import { blocksFor, questionFacts } from "../core/rules.js";
 import { S, t } from "../core/strings.js";
 import { confirmDialog, el, swap } from "../ui/components.js";
 import { reveal } from "../ui/motion.js";
 import { G, svg } from "./qe-icons.js";
+import { presetGroup } from "./qe-presets.js";
 
 const DURATIONS = [
   [15, () => S.QE_DUR_15],
@@ -106,7 +108,7 @@ export function buildPanel(ctx) {
   body.append(schedule.node, rest);
   const render = () => {
     schedule.sync();
-    swap(rest, ...ruleGroups(ctx, render), paletteGroup(ctx, render));
+    swap(rest, presetGroup(ctx, render), ...ruleGroups(ctx, render), paletteGroup(ctx, render));
   };
   render();
   return { panel, render, syncSchedule: schedule.sync };
@@ -281,19 +283,34 @@ function releaseRow({ quiz, ro, set }) {
   ]);
 }
 
+/** The text for a block reason (RuleBlocks.kt BlockReason); null = the row is usable. The words are the app's. */
+function reasonText(reason, rule) {
+  return reason ? REASON_TEXT[reason](rule) : null;
+}
+
+const REASON_TEXT = {
+  ONLY_POLLS: () => S.BLOCKED_ONLY_POLLS,
+  MANUAL_REVIEW: (rule) => ({ flash: S.FLASH_BLOCKED_MANUAL, partial: S.PARTIAL_BLOCKED_MANUAL, rapid: S.RAPID_BLOCKED_MANUAL })[rule],
+  NO_TIMED_QUESTION: (rule) => ({ timer: S.TIMER_BLOCKED_NO_TIMED, preview: S.PREVIEW_BLOCKED_NO_TIMED, rapid: S.RAPID_BLOCKED_NO_TIMED })[rule],
+  TIMER_OFF: (rule) => ({ preview: S.PREVIEW_BLOCKED_TIMER_OFF, rapid: S.RAPID_BLOCKED_TIMER_OFF })[rule],
+  NO_MULTIPLE_CORRECT: () => S.PARTIAL_BLOCKED_NO_MULTIPLE,
+};
+
 function ruleGroups(ctx, render) {
   const quiz = ctx.quiz();
   const ro = ctx.readOnly();
-  const untimed = hasOnlyUntimedQuestions(ctx.questions());
+  // Which rows are greyed out, and why, is core/rules.js — a port of the app's RuleBlocks.kt, pinned to it by a
+  // shared table. Saved values are kept; a greyed row just reads off and says why.
+  const blocks = blocksFor(quiz, questionFacts(ctx.questions()));
   const manual = quiz.manualMarkingDefault;
-  const flashOn = quiz.showCorrectnessInstantly && !manual;
+  const flashOn = quiz.showCorrectnessInstantly && !blocks.flash;
   const set = (key, fn) => {
     ctx.setQuiz(key, fn);
     render();
   };
-  const previewBlocked = untimed ? S.PREVIEW_BLOCKED_NO_TIMED : !quiz.showTimers ? S.PREVIEW_BLOCKED_TIMER_OFF : null;
-  const timerBlocked = untimed ? S.TIMER_BLOCKED_NO_TIMED : null;
-  const rapidBlocked = manual ? S.RAPID_BLOCKED_MANUAL : untimed ? S.RAPID_BLOCKED_NO_TIMED : !quiz.showTimers ? S.RAPID_BLOCKED_TIMER_OFF : null;
+  const previewBlocked = reasonText(blocks.preview, "preview");
+  const timerBlocked = reasonText(blocks.timer, "timer");
+  const rapidBlocked = reasonText(blocks.rapid, "rapid");
   const previewOn = quiz.questionPreviewSec > 0 && !previewBlocked;
 
   const askInstant = () =>
@@ -346,7 +363,7 @@ function ruleGroups(ctx, render) {
         title: S.RULE_FLASH,
         sub: S.QE_R_FLASH_SUB,
         on: flashOn,
-        blocked: manual ? S.FLASH_BLOCKED_MANUAL : null,
+        blocked: reasonText(blocks.flash, "flash"),
         onChange: async (on) => {
           if (!on) return set("flash", (q) => (q.showCorrectnessInstantly = false));
           if (quiz.allowBack && !(await askBackFlash())) return false;
@@ -391,7 +408,8 @@ function ruleGroups(ctx, render) {
         ro,
         title: S.RULE_MANUAL,
         sub: S.QE_R_MANUAL_SUB,
-        on: manual,
+        on: manual && !blocks.manual,
+        blocked: reasonText(blocks.manual),
         onChange: (on) =>
           set("manual", (q) => {
             q.manualMarkingDefault = on;
@@ -402,7 +420,7 @@ function ruleGroups(ctx, render) {
             }
           }),
       }),
-      ruleRow({ ro, title: S.RULE_PARTIAL, sub: S.QE_R_PARTIAL_SUB, on: quiz.splitPointsAcrossChoices && !manual, blocked: manual ? S.PARTIAL_BLOCKED_MANUAL : null, onChange: (on) => set("partial", (q) => (q.splitPointsAcrossChoices = on)) }),
+      ruleRow({ ro, title: S.RULE_PARTIAL, sub: S.QE_R_PARTIAL_SUB, on: quiz.splitPointsAcrossChoices && !blocks.partial, blocked: reasonText(blocks.partial, "partial"), onChange: (on) => set("partial", (q) => (q.splitPointsAcrossChoices = on)) }),
       ruleRow({ ro, title: S.RULE_RAPID, sub: S.QE_R_RAPID_SUB, on: quiz.timeWeightageEnabled && !rapidBlocked, blocked: rapidBlocked, onChange: (on) => set("rapid", (q) => (q.timeWeightageEnabled = on)) }),
     ]),
   ];
@@ -425,7 +443,8 @@ function paletteGroup(ctx, render) {
           title: theme.name,
           "aria-label": theme.name,
           vars: { c: theme.color },
-          disabled: ctx.readOnly() || undefined,
+          // A locked quiz keeps its rules but may change its theme (like the app).
+          disabled: (ctx.themeReadOnly ?? ctx.readOnly)() || undefined,
           "data-fk": `theme-${theme.name}`,
           onclick: () => {
             ctx.setQuiz("theme", (q) => (q.themeColorName = theme.name));

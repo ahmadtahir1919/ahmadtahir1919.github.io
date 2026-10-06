@@ -517,17 +517,30 @@ function rapidMark(ctx, kind, val) {
     for (const x of clone.querySelectorAll("[id]")) x.removeAttribute("id");
     const stampText = kind === "f" ? S.GX_STAMP_FULL : kind === "z" ? S.GX_STAMP_ZERO : kind === "h" ? S.GX_STAMP_HALF : t(S.GX_STAMP_X, { x: fmt(pts), max });
     clone.prepend(el("span", { class: `stamp ${kind}`, text: stampText }));
-    const dx = kind === "f" ? "115%" : kind === "z" ? "-115%" : "0";
-    const dy = kind === "h" || kind === "x" ? "80px" : "0";
-    const rot = kind === "f" ? 6 : kind === "z" ? -6 : 0;
+    // Full marks float off right, zero left; half and exact follow the side of their score.
+    const side = kind === "f" ? 1 : kind === "z" ? -1 : pts >= max / 2 ? 1 : -1;
+    const from = rc.getBoundingClientRect();
     ctx.di++;
     renderRapid(ctx, { enter: true });
     const w = ctx.stage.querySelector("#dwrap") ?? ctx.stage.querySelector("#deckEl");
     if (w) {
+      // Start exactly where the old card was, whatever height the next card has.
+      const to = w.getBoundingClientRect();
+      Object.assign(clone.style, {
+        left: `${from.left - to.left}px`,
+        top: `${from.top - to.top}px`,
+        width: `${from.width}px`,
+        height: `${from.height}px`,
+        transformOrigin: "50% 100%",
+      });
       w.appendChild(clone);
       const a = clone.animate(
-        [{ transform: "none", opacity: 1 }, { transform: "none", opacity: 1, offset: 0.35 }, { transform: `translate(${dx},${dy}) rotate(${rot}deg)`, opacity: 0 }],
-        { duration: 520, easing: "cubic-bezier(.4,0,.6,1)" }
+        [
+          { transform: "none", opacity: 1 },
+          { opacity: 0.85, offset: 0.55 },
+          { transform: `translate(${side * 42}%, -18px) rotate(${side * 9}deg) scale(.96)`, opacity: 0 },
+        ],
+        { duration: 420, easing: "cubic-bezier(.3,.7,.3,1)" }
       );
       a.onfinish = () => clone.remove();
     }
