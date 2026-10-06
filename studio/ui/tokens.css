@@ -93,7 +93,6 @@
   --sidebar-w: 248px;
   --rail-w: 72px;
   --topbar-h: 60px;
-  --tabbar-h: 64px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -103,3 +102,128 @@
     --dur-slow: 0ms;
   }
 }
+
+/* =========================================================
+   Studio dashboard v3 tokens — copied from design-reference/dashboard-*.html (the spec).
+   --surface, --accent and --ease already hold the same light values above. The reference's
+   --danger (#ef4444) is left out on purpose: it collides with the --danger above that every
+   other page uses, and the reference never paints anything with it.
+   ========================================================= */
+
+:root {
+  --bg: #f5f6fb; --surface: #ffffff; --surface-2: #f0f1fa; --line: #e4e6f2;
+  --fg: #16182b; --muted: #6a6e88; --accent: #4f46e5; --accent-2: #7c74ff; --accent-soft: #eceafe;
+  --live: #10b981; --live-soft: #dcfaee; --warn: #f59e0b; --warn-soft: #fff3d6;
+  --sched: #0ea5e9; --sched-soft: #dff3fd; --draft: #94a3b8; --rose: #e11d48; --rose-soft: #ffe4ea;
+  --shadow: 0 1px 2px rgba(22, 24, 43, .04), 0 6px 24px -12px rgba(79, 70, 229, .18);
+  --font: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  --ease: cubic-bezier(.2, .8, .2, 1); --spring: cubic-bezier(.34, 1.56, .64, 1);
+}
+
+/* =========================================================
+   Quiz editor tokens — copied verbatim from design-reference/editor.html (the spec). Scoped
+   to the editor page so the dashboard keeps its own reference values (its --shadow differs).
+   ========================================================= */
+
+:root[data-page="editor"] {
+  --bg:#f5f6fb; --surface:#ffffff; --surface-2:#f0f1fa; --line:#e4e6f2; --line-2:#d5d8ea;
+  --fg:#16182b; --muted:#6a6e88; --faint:#a3a6bd; --accent:#4f46e5; --accent-2:#7c74ff; --accent-soft:#eceafe;
+  --live:#10b981; --live-soft:#dcfaee; --warn:#f59e0b; --warn-soft:#fff3d6; --warn-ink:#a35e00;
+  --shadow:0 1px 2px rgba(22,24,43,.04),0 10px 30px -14px rgba(79,70,229,.22);
+  --pop:0 12px 40px -10px rgba(22,24,43,.28),0 2px 6px rgba(22,24,43,.06);
+  --glow1:rgba(99,91,255,.13);--glow2:rgba(16,185,129,.08);--dot:rgba(79,70,229,.07);--bg-top:#eef0fb;
+  --font:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  --ease:cubic-bezier(.2,.8,.2,1); --spring:cubic-bezier(.34,1.56,.64,1);
+}
+
+/* =========================================================
+   Grading tokens — copied verbatim from design-reference/grading.html (the spec): the
+   editor's, plus --bad, --bad-soft, --bad-ink and --ok-ink. Dark values are at the end.
+   ========================================================= */
+
+:root[data-page="grading"] {
+  --bg:#f5f6fb; --surface:#ffffff; --surface-2:#f0f1fa; --line:#e4e6f2; --line-2:#d5d8ea;
+  --fg:#16182b; --muted:#6a6e88; --faint:#a3a6bd; --accent:#4f46e5; --accent-2:#7c74ff; --accent-soft:#eceafe;
+  --live:#10b981; --live-soft:#dcfaee; --warn:#f59e0b; --warn-soft:#fff3d6; --warn-ink:#a35e00;
+  --bad:#e5484d; --bad-soft:#fde9e9; --bad-ink:#c23136; --ok-ink:#047857;
+  --shadow:0 1px 2px rgba(22,24,43,.04),0 10px 30px -14px rgba(79,70,229,.22);
+  --pop:0 12px 40px -10px rgba(22,24,43,.28),0 2px 6px rgba(22,24,43,.06);
+  --glow1:rgba(99,91,255,.13);--glow2:rgba(16,185,129,.08);--dot:rgba(79,70,229,.07);--bg-top:#eef0fb;
+  --font:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  --ease:cubic-bezier(.2,.8,.2,1); --spring:cubic-bezier(.34,1.56,.64,1);
+}
+/* =========================================================
+   Dark — every Studio page. Follows the system unless the sidebar's theme switch picked
+   Light or Dark (ui/theme.js → data-theme on <html>). One palette, from the reference.
+   Last in the file: it must win over the light per-page blocks above (same specificity).
+   ========================================================= */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e0f1a; --surface: #171829; --surface-2: #1f2135; --line: #2a2c45; --line-2: #383b5a;
+    --fg: #eceefb; --muted: #9a9dbb; --faint: #6b6e8c; --accent: #8b84ff; --accent-2: #a9a3ff; --accent-soft: #25234a;
+    --live: #34d399; --live-soft: #123a2e; --warn: #fbbf24; --warn-soft: #3a2e10; --warn-ink: #fbbf24;
+    --sched: #38bdf8; --sched-soft: #0f2e3d; --rose: #fb7185; --rose-soft: #3d1520;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 28px -14px rgba(0, 0, 0, .6); --pop: 0 16px 40px -10px rgba(0, 0, 0, .7);
+    --glow1: rgba(139, 132, 255, .16); --glow2: rgba(52, 211, 153, .07); --dot: rgba(169, 163, 255, .07); --bg-top: #13142a;
+    color-scheme: dark;
+
+    /* The older tokens the shared components (menus, dialogs, banners, tables, forms) read. */
+    --canvas: #0e0f1a; --surface-subtle: #1f2135; --surface-hover: #1f2135; --border: #2a2c45; --border-strong: #3a3d5c;
+    --text-strong: #eceefb; --text: #d6d8ef; --text-muted: #9a9dbb; --text-faint: #7d80a0;
+    --primary: #8b84ff; --primary-hover: #a9a3ff; --primary-soft: #25234a; --primary-softer: #1c1b38; --primary-ring: rgba(139, 132, 255, .35);
+    --success: #34d399; --success-strong: #34d399; --success-bg: #123a2e; --success-border: #1f5a45;
+    --danger: #fb7185; --danger-strong: #fb7185; --danger-bg: #3d1520; --danger-border: #5c2434;
+    --warning: #fbbf24; --warning-strong: #fbbf24; --warning-bg: #3a2e10; --warning-border: #5a4718;
+    --info: #7dd3fc; --info-bg: #0f2e3d; --purple: #d8b4fe; --purple-bg: #2e1f45;
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, .3); --shadow-raised: 0 4px 12px -2px rgba(0, 0, 0, .5); --shadow-overlay: 0 20px 40px -8px rgba(0, 0, 0, .6);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0e0f1a; --surface: #171829; --surface-2: #1f2135; --line: #2a2c45; --line-2: #383b5a;
+  --fg: #eceefb; --muted: #9a9dbb; --faint: #6b6e8c; --accent: #8b84ff; --accent-2: #a9a3ff; --accent-soft: #25234a;
+  --live: #34d399; --live-soft: #123a2e; --warn: #fbbf24; --warn-soft: #3a2e10; --warn-ink: #fbbf24;
+  --sched: #38bdf8; --sched-soft: #0f2e3d; --rose: #fb7185; --rose-soft: #3d1520;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 28px -14px rgba(0, 0, 0, .6); --pop: 0 16px 40px -10px rgba(0, 0, 0, .7);
+  --glow1: rgba(139, 132, 255, .16); --glow2: rgba(52, 211, 153, .07); --dot: rgba(169, 163, 255, .07); --bg-top: #13142a;
+  color-scheme: dark;
+
+  /* The older tokens the shared components (menus, dialogs, banners, tables, forms) read. */
+  --canvas: #0e0f1a; --surface-subtle: #1f2135; --surface-hover: #1f2135; --border: #2a2c45; --border-strong: #3a3d5c;
+  --text-strong: #eceefb; --text: #d6d8ef; --text-muted: #9a9dbb; --text-faint: #7d80a0;
+  --primary: #8b84ff; --primary-hover: #a9a3ff; --primary-soft: #25234a; --primary-softer: #1c1b38; --primary-ring: rgba(139, 132, 255, .35);
+  --success: #34d399; --success-strong: #34d399; --success-bg: #123a2e; --success-border: #1f5a45;
+  --danger: #fb7185; --danger-strong: #fb7185; --danger-bg: #3d1520; --danger-border: #5c2434;
+  --warning: #fbbf24; --warning-strong: #fbbf24; --warning-bg: #3a2e10; --warning-border: #5a4718;
+  --info: #7dd3fc; --info-bg: #0f2e3d; --purple: #d8b4fe; --purple-bg: #2e1f45;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, .3); --shadow-raised: 0 4px 12px -2px rgba(0, 0, 0, .5); --shadow-overlay: 0 20px 40px -8px rgba(0, 0, 0, .6);
+}
+
+/* Grading dark — the reference's own dark block (its --shadow differs from the shared one).
+   More specific than the shared dark blocks above, so it wins on the grading page only. */
+@media (prefers-color-scheme: dark) {
+  :root[data-page="grading"]:not([data-theme="light"]) {
+    --glow1:rgba(139,132,255,.16);--glow2:rgba(52,211,153,.07);--dot:rgba(169,163,255,.07);--bg-top:#13142a;
+    --bg:#0e0f1a; --surface:#171829; --surface-2:#1f2135; --line:#2a2c45; --line-2:#383b5a;
+    --fg:#eceefb; --muted:#9a9dbb; --faint:#6b6e8c; --accent:#8b84ff; --accent-2:#a9a3ff; --accent-soft:#25234a;
+    --live:#34d399; --live-soft:#123a2e; --warn:#fbbf24; --warn-soft:#3a2e10; --warn-ink:#fbbf24;
+    --bad:#f0686c; --bad-soft:#3a1719; --bad-ink:#ff8a8d; --ok-ink:#34d399;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px -14px rgba(0,0,0,.6); --pop:0 16px 40px -10px rgba(0,0,0,.7); color-scheme:dark;
+  }
+}
+:root[data-page="grading"][data-theme="dark"] {
+  --glow1:rgba(139,132,255,.16);--glow2:rgba(52,211,153,.07);--dot:rgba(169,163,255,.07);--bg-top:#13142a;
+  --bg:#0e0f1a; --surface:#171829; --surface-2:#1f2135; --line:#2a2c45; --line-2:#383b5a;
+  --fg:#eceefb; --muted:#9a9dbb; --faint:#6b6e8c; --accent:#8b84ff; --accent-2:#a9a3ff; --accent-soft:#25234a;
+  --live:#34d399; --live-soft:#123a2e; --warn:#fbbf24; --warn-soft:#3a2e10; --warn-ink:#fbbf24;
+  --bad:#f0686c; --bad-soft:#3a1719; --bad-ink:#ff8a8d; --ok-ink:#34d399;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px -14px rgba(0,0,0,.6); --pop:0 16px 40px -10px rgba(0,0,0,.7); color-scheme:dark;
+}
+
+/* Status ink that reads on the dark surface. */
+:root[data-theme="dark"] .qe .mchip.open, :root[data-theme="dark"] .qe .dpill.live { color: #34d399; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .qe .mchip.open, :root:not([data-theme="light"]) .qe .dpill.live { color: #34d399; } }

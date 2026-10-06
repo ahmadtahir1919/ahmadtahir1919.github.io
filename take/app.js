@@ -26,16 +26,19 @@ const app = document.getElementById("app");
 // from it, so a page that loaded without it would render blank labels everywhere. The
 // two failure messages below stay inline literals on purpose — they are the LAST
 // resort, shown precisely when the string table may be the thing that failed to load.
-if (!window.Evaluator || !window.SupabaseClient || !window.FillBlank || !window.Poll || !window.S) {
+if (!window.Evaluator || !window.SupabaseClient || !window.FillBlank || !window.Poll || !window.S || !window.ResultsVisibility) {
   app.innerHTML =
     '<div style="padding:24px;font-family:sans-serif;color:#DC2626">' +
     "<b>Couldn't load this page.</b><br><br>" +
     "A required script failed to load (often a slow/blocked connection to the Supabase library CDN). " +
     "Please check your connection and reload the page." +
     "</div>";
-  throw new Error("Quizoma web: required globals missing (Evaluator/SupabaseClient/FillBlank/Poll/S) — aborting boot.");
+  throw new Error("Quizoma web: required globals missing (Evaluator/SupabaseClient/FillBlank/Poll/S/ResultsVisibility) — aborting boot.");
 }
-if (window.SupabaseClient.initError) {
+// The Studio builder's preview (?preview=1, see preview.js): the real taker screens, run
+// on an in-memory client so nothing is read from or written to Supabase.
+const PREVIEW = !!window.PreviewClient;
+if (!PREVIEW && window.SupabaseClient.initError) {
   app.innerHTML =
     '<div style="padding:24px;font-family:sans-serif;color:#DC2626">' +
     "<b>Couldn't connect.</b><br><br>" +
@@ -46,9 +49,10 @@ if (window.SupabaseClient.initError) {
 
 const { evaluate, gradeWritten, defaultAnswerRule } = window.Evaluator;
 const S = window.S;
-const SC = window.SupabaseClient;
+const SC = PREVIEW ? window.PreviewClient : window.SupabaseClient;
 const FB = window.FillBlank;
 const PL = window.Poll;
+const RV = window.ResultsVisibility;
 
 const params = new URLSearchParams(window.location.search);
 const shareCode = (params.get("code") || "").toUpperCase();
@@ -150,7 +154,7 @@ function render() {
   // Every screen shares the same chrome: brand header (with a status chip) on top, the
   // screen's own content in the middle, version/legal footer at the bottom. Only the
   // chip's text changes per screen, so the header reads identically everywhere.
-  app.appendChild(buildSiteHeader(headerStatusFor(state.screen)));
+  app.appendChild(buildSiteHeader(PREVIEW ? S.STATUS_PREVIEW : headerStatusFor(state.screen)));
   main = el("main", { class: "site-main" }, []);
   app.appendChild(main);
   // The footer's Terms/Privacy links navigate away from the page entirely — skip it
@@ -391,8 +395,8 @@ function buildSiteHeader(status) {
     status,
   ]));
   // Last, so the avatar sits in the far corner. Suppressed mid-attempt — see
-  // buildAccountControl's doc.
-  if (state.user && state.screen !== "quiz" && state.screen !== "finishing") {
+  // buildAccountControl's doc. Never in a preview: there is no account to show or sign out.
+  if (!PREVIEW && state.user && state.screen !== "quiz" && state.screen !== "finishing") {
     actions.push(buildAccountControl(state.user));
   }
 
@@ -430,6 +434,11 @@ function leaveQuiz(message) {
   state.feedbackHandle = null;
   state.revealing = false;
   cancelLastQuestionAutoFinish();
+  // A preview has no "you're done" page: the Studio builder that framed it closes it.
+  if (PREVIEW) {
+    window.parent.postMessage({ type: "quizoma-preview-close" }, window.location.origin);
+    return;
+  }
   state.closedMessage = message;
   state.screen = "closed";
   render();
@@ -440,6 +449,7 @@ function leaveQuiz(message) {
  *  renderQuiz). The wording spells out what leaving costs: nothing is submitted, and with
  *  retakes off there is no way back in. */
 function confirmLeave() {
+  if (PREVIEW) return true; // nothing is recorded, so there is nothing to lose
   const msg = state.quiz && state.quiz.allowRetake === false ? S.LEAVE_CONFIRM_NO_RETAKE : S.LEAVE_CONFIRM_RETAKE;
   return confirm(msg);
 }
@@ -448,7 +458,7 @@ function confirmLeave() {
 // browser shows its own generic warning (the text cannot be customized), which still beats
 // silently losing an in-progress attempt.
 window.addEventListener("beforeunload", (e) => {
-  if (state.screen !== "quiz") return;
+  if (PREVIEW || state.screen !== "quiz") return;
   e.preventDefault();
   e.returnValue = "";
 });
@@ -906,7 +916,7 @@ function renderLanding() {
     body.push(
       signedInLine(state.user),
       el("p", { class: "muted" }, [S.LANDING_ALREADY_DONE]),
-      el("p", { class: "quiz-meta" }, [S.yourScore(state.existingAttempt.score, state.existingAttempt.total)]),
+      ...landingScoreLine(quiz),
       signOutRow()
     );
   } else if (state.existingAttempt && quiz.allowRetake) {
@@ -916,7 +926,7 @@ function renderLanding() {
     // Retake as its own separate, explicit action — not the other way around.
     body.push(
       signedInLine(state.user),
-      el("p", { class: "quiz-meta" }, [S.yourScore(state.existingAttempt.score, state.existingAttempt.total)]),
+      ...landingScoreLine(quiz),
       el("button", { class: "primary", onclick: goToExistingResult }, [S.LANDING_SEE_RESULT])
     );
     if (joinPaused) {
@@ -1251,6 +1261,27 @@ async function joinQuizAction() {
   render();
 }
 
+/** The "Your score: x / y" line of the landing screen, or nothing. The landing screen has not
+ *  loaded this attempt's answers, so it can't know whether some are still waiting for the owner:
+ *  it asks resultsVisible with "maybe waiting" — with Show Score on that changes nothing (the
+ *  score shows, as ever); with it off the score stays out of this screen, and "See Result" /
+ *  the result screen decide it properly. */
+function landingScoreLine(quiz) {
+  if (!RV.resultsVisible(quiz, true, Date.now())) return [];
+  return [el("p", { class: "quiz-meta" }, [S.yourScore(state.existingAttempt.score, state.existingAttempt.total)])];
+}
+
+/** Re-reads the quiz's end time, Show Score and release state before a result is shown. state.quiz
+ *  is fetched once when the page loads, so without this an owner who ended or announced the quiz
+ *  since then would not be seen. Only the settings that decide visibility are merged in; if the
+ *  read fails (offline) the quiz is left exactly as it was. */
+async function refreshQuizSettingsForResult() {
+  const fresh = await SC.fetchQuizSettings(state.quiz.shareCode).catch(() => null);
+  if (!fresh) return;
+  for (const key of ["startAt", "endAt", "showResult", "showAnswers", "resultsReleaseMode", "resultsReleasedAt"]) {
+    if (key in fresh) state.quiz[key] = fresh[key];
+  }
+}
 /** Fetches the existing attempt's full answers and switches straight to the result
  *  screen — shared by boot()'s no-retake auto-redirect and the "See Result" button
  *  offered alongside "Retake Exam" when retake is allowed (see renderLanding). */
@@ -1261,12 +1292,14 @@ async function goToExistingResult() {
   await pruneHiddenPolls();
   const pollItems = await buildResultPollItems(state.quiz, state.user);
   state.result = { score: state.existingAttempt.score, total: state.existingAttempt.total, answers, pollItems };
-  openResultScreen();
+  await openResultScreen();
 }
 
 /** Every review card starts expanded and the filter on "All" — the review is the point
  *  of this screen, so nothing should need a tap to be seen. */
-function openResultScreen() {
+async function openResultScreen() {
+  // Read fresh (end time, Show Score, release state) before deciding what this screen may show.
+  await refreshQuizSettingsForResult();
   state.resultFilter = "all";
   state.resultAnimated = false; // the score counts up once per result
   // On a phone the details start folded away — there is no room to show them and the
@@ -2155,7 +2188,7 @@ async function finishQuiz() {
       });
       const pollItems = await buildResultPollItems(state.quiz, state.user);
       state.result = { score, total: scored.length, answers, pollItems };
-      openResultScreen();
+      await openResultScreen();
     })
     .catch((err) => {
       // Backstop for a race (e.g. two tabs submitting at once) — the landing-page
@@ -3498,10 +3531,16 @@ function renderResult() {
   // the score, the stats, the review or a PDF of them); a poll-only quiz has no score at all.
   const incorrect = answers.filter((a) => !isPendingAnswer(a) && !a.isCorrect).length;
   const nothingMarked = pending > 0 && gradedCount === 0;
-  const hidden = !quiz.showResult;
+  // The one visibility rule (results.js, mirrors ResultsVisibility.kt): Show Score on = as ever;
+  // off = released (quiz ended in AUTO mode, or announced) and nothing of this attempt waiting.
+  const now = Date.now();
+  const resultsOut = RV.resultsReleased(quiz, now);
+  const hidden = !RV.resultsVisible(quiz, pending > 0, now);
   const pollOnly = total === 0;
-  if (nothingMarked) {
-    content.appendChild(buildPendingCard(pending, 0, 0));
+  if (nothingMarked || (!quiz.showResult && pending > 0)) {
+    // With Show Score off a partly-marked attempt shows the pending state, never a partial score;
+    // the "checked so far" part of the card only once the results are out.
+    content.appendChild(buildPendingCard(pending, resultsOut ? score : 0, resultsOut ? gradedCount : 0));
   } else if (hidden) {
     content.appendChild(buildResultInfoCard(S.RESULT_HIDDEN_LABEL, S.RESULT_HIDDEN));
   } else if (pollOnly) {
@@ -3770,6 +3809,10 @@ async function boot() {
   watchFullscreenChanges();
   watchAccountMenuDismiss();
   try {
+    if (PREVIEW) {
+      await bootPreview();
+      return;
+    }
     if (!shareCode) {
       // Normally the code boxes paint immediately. But arriving on the home page's
       // "Edit name" deep link, enterCode is scaffolding the visitor never asked for —
@@ -3830,6 +3873,29 @@ async function boot() {
     state.screen = "error";
     render();
   }
+}
+
+/** The Studio builder's preview: asks the framing page for its (possibly unsaved) quiz,
+ *  maps it with the same quizFromRow/questionFromRow a real load uses, and drops straight
+ *  into question 1 — no landing, join or sign-in, which are about a real taker. Only the
+ *  same-origin parent is listened to. */
+function bootPreview() {
+  render(); // loading
+  return new Promise((resolve) => {
+    window.addEventListener("message", function onLoad(e) {
+      if (e.origin !== window.location.origin || e.source !== window.parent) return;
+      const data = e.data || {};
+      if (data.type !== "quizoma-preview-load") return;
+      window.removeEventListener("message", onLoad);
+      SC.user.user_metadata.full_name = data.userName || "";
+      state.user = SC.user;
+      state.quiz = SC.quizFromRow(data.quiz, (data.questions || []).map(SC.questionFromRow));
+      state.hasJoined = true;
+      startQuiz();
+      resolve();
+    });
+    window.parent.postMessage({ type: "quizoma-preview-ready" }, window.location.origin);
+  });
 }
 
 boot();

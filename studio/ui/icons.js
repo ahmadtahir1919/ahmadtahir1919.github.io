@@ -69,7 +69,20 @@ const PATHS = {
   bolt: '<path d="M13 2L3 14h9l-1 8 10-12h-9z"/>',
   hash: '<path d="M4 9h16M4 15h16M10 3L8 21M16 3l-2 18"/>',
   timer: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/>',
+  book: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9 7h7M9 11h5"/>',
+  "plus-circle": '<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>',
+  upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>',
+  file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>',
+  star: '<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/>',
   bulb: '<path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V17h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z"/>',
+  // Sidebar (ui/sidebar.js): help links, theme switch, phone menu button.
+  guide: '<path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/>',
+  support: '<path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>',
+  feedback: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 13h5"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+  monitor: '<rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/>',
+  menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
 };
 
 export function icon(name, className = "icon") {
@@ -104,6 +117,8 @@ export function emptyArt(kind = "quizzes") {
       '<svg class="empty-art" viewBox="0 0 160 120" aria-hidden="true"><rect x="22" y="18" width="84" height="96" rx="12" fill="#eef2ff"/><rect x="40" y="8" width="84" height="96" rx="12" fill="#fff" stroke="#c7d2fe" stroke-width="2"/><rect x="54" y="26" width="48" height="8" rx="4" fill="#3525cd"/><circle cx="58" cy="50" r="5" fill="#a5b4fc"/><rect x="68" y="47" width="40" height="6" rx="3" fill="#e2e8f0"/><circle cx="58" cy="68" r="5" fill="#34d399"/><rect x="68" y="65" width="32" height="6" rx="3" fill="#e2e8f0"/><circle cx="58" cy="86" r="5" fill="#a5b4fc"/><rect x="68" y="83" width="36" height="6" rx="3" fill="#e2e8f0"/><circle cx="130" cy="92" r="16" fill="#3525cd"/><path d="M130 84v16M122 92h16" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>',
     done:
       '<svg class="empty-art" viewBox="0 0 160 120" aria-hidden="true"><circle cx="80" cy="60" r="44" fill="#ecfdf5"/><circle cx="80" cy="60" r="30" fill="#10b981"/><path d="M66 60l10 10 20-22" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="30" cy="30" r="5" fill="#fbbf24"/><circle cx="134" cy="26" r="4" fill="#a5b4fc"/><circle cx="138" cy="92" r="6" fill="#f472b6"/><circle cx="24" cy="94" r="4" fill="#60a5fa"/></svg>',
+    bank:
+      '<svg class="empty-art" viewBox="0 0 160 120" aria-hidden="true"><circle cx="80" cy="62" r="50" fill="#eef2ff"/><rect x="34" y="40" width="72" height="62" rx="10" fill="#c7d2fe" transform="rotate(-8 70 71)"/><rect x="46" y="30" width="72" height="66" rx="10" fill="#fff" stroke="#c7d2fe" stroke-width="2"/><rect x="58" y="44" width="40" height="7" rx="3.5" fill="#3525cd"/><circle cx="62" cy="62" r="4" fill="#34d399"/><rect x="70" y="59" width="36" height="6" rx="3" fill="#e2e8f0"/><circle cx="62" cy="78" r="4" fill="#a5b4fc"/><rect x="70" y="75" width="28" height="6" rx="3" fill="#e2e8f0"/><circle cx="124" cy="34" r="14" fill="#fbbf24"/><path d="M118 34l4 4 8-9" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="28" cy="30" r="4" fill="#f472b6"/><circle cx="136" cy="96" r="5" fill="#60a5fa"/></svg>',
     people:
       '<svg class="empty-art" viewBox="0 0 160 120" aria-hidden="true"><circle cx="80" cy="60" r="46" fill="#eef2ff"/><circle cx="62" cy="52" r="12" fill="#a5b4fc"/><path d="M40 90c2-14 12-22 22-22s20 8 22 22z" fill="#a5b4fc"/><circle cx="98" cy="48" r="14" fill="#3525cd"/><path d="M72 92c2-16 14-26 26-26s24 10 26 26z" fill="#3525cd"/></svg>',
   }[kind];

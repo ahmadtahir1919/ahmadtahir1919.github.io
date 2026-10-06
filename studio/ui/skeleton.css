@@ -1,0 +1,100 @@
+/* Shimmer skeletons — ui/components.js shim() / loadingBlock() / renderSpinner(). Grey shapes
+   in the page's layout with a light sweep across them; each block's --i staggers the sweep so
+   it travels down the page like a wave. Theme-aware through the page's own tokens. */
+
+.shim {
+  --sk-base: color-mix(in srgb, var(--line, #e4e6f2) 75%, var(--surface, #fff));
+  --sk-hi: color-mix(in srgb, var(--surface, #fff) 80%, transparent);
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--sk-base);
+}
+.shim::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(100deg, transparent 20%, var(--sk-hi) 50%, transparent 80%);
+  animation: shim-sweep 1.5s cubic-bezier(.4, 0, .2, 1) infinite;
+  animation-delay: calc(var(--i, 0) * 80ms);
+}
+@keyframes shim-sweep { 60%, 100% { transform: translateX(100%); } }
+:root[data-theme="dark"] .shim { --sk-hi: rgba(255, 255, 255, .07); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .shim { --sk-hi: rgba(255, 255, 255, .07); } }
+@media (prefers-reduced-motion: reduce) { .shim::after { display: none; } }
+
+.sk-grow { flex: 1; }
+.sk-page { display: grid; gap: 14px; padding-top: 8px; animation: enter-up .3s var(--ease) both; }
+.sk-kicker { height: 12px; width: 120px; border-radius: 6px; }
+.sk-title { height: 30px; width: min(320px, 70%); border-radius: 10px; margin-bottom: 6px; }
+.sk-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.sk-tile { height: 110px; border-radius: 18px; }
+.sk-list { display: grid; gap: 4px; margin-top: 6px; padding: 8px; border: 1px solid var(--line, #e4e6f2); border-radius: 18px; background: var(--surface, #fff); }
+.sk-row { display: flex; align-items: center; gap: 12px; padding: 10px 8px; }
+.sk-dot { flex: none; width: 34px; height: 34px; border-radius: 10px; }
+.sk-line { height: 12px; flex: 1; border-radius: 6px; }
+.sk-line.sk-short { flex: 0 0 auto; width: 90px; }
+@media (max-width: 600px) { .sk-tiles { grid-template-columns: minmax(0, 1fr); } .sk-tile { height: 80px; } }
+
+/* The whole page, before sign-in resolves. */
+.sk-shell { display: grid; grid-template-columns: 240px minmax(0, 1fr); min-height: 100dvh; background: var(--bg, var(--canvas)); }
+.sk-side { display: flex; flex-direction: column; gap: 12px; padding: 16px 12px; border-right: 1px solid var(--line, #e4e6f2); background: var(--surface, #fff); height: 100dvh; position: sticky; top: 0; }
+.sk-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+.sk-logo { width: 36px; height: 36px; border-radius: 11px; }
+.sk-name { width: 90px; height: 16px; border-radius: 6px; }
+.sk-btn { height: 42px; border-radius: 12px; }
+.sk-nav { height: 34px; border-radius: 10px; }
+.sk-quota { height: 64px; }
+.sk-user { height: 52px; border-radius: 14px; }
+.sk-main { min-width: 0; display: flex; flex-direction: column; }
+.sk-beta { height: 33px; background: var(--warn-soft, #fff3d6); border-bottom: 1px solid var(--line, #e4e6f2); }
+.sk-bar { display: flex; align-items: center; gap: 10px; padding: 12px clamp(16px, 2.5vw, 32px); background: var(--surface, #fff); border-bottom: 1px solid var(--line, #e4e6f2); }
+.sk-crumb { width: 220px; height: 18px; border-radius: 8px; }
+.sk-chip { width: 84px; height: 34px; border-radius: 10px; }
+.sk-pub { width: 130px; height: 38px; border-radius: 11px; }
+.sk-main > .sk-page, .sk-main > .sk-editor { padding: 22px clamp(16px, 2.5vw, 32px); }
+/* The rail when the sidebar is collapsed (ui/sidebar.js), so the page doesn't jump on load. */
+@media (min-width: 861px) {
+  html.sb-collapsed .sk-shell { grid-template-columns: 72px minmax(0, 1fr); }
+  html.sb-collapsed .sk-name, html.sb-collapsed .sk-quota { display: none; }
+}
+@media (max-width: 860px) {
+  .sk-shell { grid-template-columns: minmax(0, 1fr); }
+  .sk-side, .sk-chip { display: none; }
+  .sk-crumb { width: 140px; }
+  .sk-pub { width: 96px; }
+}
+
+/* The quiz editor's shape. */
+.sk-editor { display: grid; gap: 12px; animation: enter-up .3s var(--ease) both; }
+.sk-etitle { height: 60px; border-radius: 14px; }
+.sk-meta { height: 14px; width: min(380px, 80%); border-radius: 7px; margin-bottom: 8px; }
+.sk-ecols { display: grid; grid-template-columns: 210px minmax(0, 1fr) 290px; gap: 22px; align-items: start; }
+.sk-rail, .sk-col, .sk-panel { display: grid; gap: 12px; min-width: 0; }
+.sk-railbox { height: 118px; border-radius: 16px; }
+.sk-ov { height: 220px; border-radius: 16px; }
+.sk-card { display: grid; gap: 14px; padding: 18px 22px 22px; border: 1px solid var(--line, #e4e6f2); border-radius: 20px; background: var(--surface, #fff); }
+.sk-card > .sk-row { padding: 0; }
+.sk-qtext { height: 54px; border-radius: 14px; }
+.sk-opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.sk-opt { height: 48px; border-radius: 14px; }
+.sk-qset { height: 260px; border-radius: 20px; }
+.sk-panel { padding: 16px; border: 1px solid var(--line, #e4e6f2); border-radius: 18px; background: var(--surface, #fff); }
+.sk-panel > .sk-row { padding: 6px 0; }
+.sk-when { height: 60px; border-radius: 13px; }
+.sk-sw { flex: none; width: 38px; height: 22px; border-radius: 99px; }
+@media (max-width: 1280px) { .sk-ecols { grid-template-columns: 200px minmax(0, 1fr); } .sk-panel { grid-column: 2; } }
+@media (max-width: 900px) { .sk-ecols { grid-template-columns: minmax(0, 1fr); } .sk-panel { grid-column: auto; } .sk-ov { display: none; } }
+@media (max-width: 560px) { .sk-opts { grid-template-columns: minmax(0, 1fr); } }
+
+/* The dashboard's own skeleton (dashboard-page.js) gets the same sweep instead of a pulse. */
+.dv-skel { position: relative; overflow: hidden; animation: none; background: color-mix(in srgb, var(--line, #e4e6f2) 75%, var(--surface, #fff)); }
+.dv-skel::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(100deg, transparent 20%, color-mix(in srgb, var(--surface, #fff) 80%, transparent) 50%, transparent 80%); animation: shim-sweep 1.5s cubic-bezier(.4, 0, .2, 1) infinite; }
+.dv-topgrid .dv-skel:nth-child(2)::after { animation-delay: 80ms; }
+.dv-topgrid .dv-skel:nth-child(3)::after { animation-delay: 160ms; }
+.dv-topgrid .dv-skel:nth-child(4)::after { animation-delay: 240ms; }
+.dv-skel-cards .dv-skel::after { animation-delay: 320ms; }
+:root[data-theme="dark"] .dv-skel::after { background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, .07) 50%, transparent 80%); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .dv-skel::after { background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, .07) 50%, transparent 80%); } }
+@media (prefers-reduced-motion: reduce) { .dv-skel::after { display: none; } }

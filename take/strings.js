@@ -30,6 +30,8 @@ const S = {
   STATUS_LOADING: "Loading",
   STATUS_ERROR: "Error",
   STATUS_IN_PROGRESS: "In progress",
+  // A creator previewing their own quiz from the Studio builder (see preview.js).
+  STATUS_PREVIEW: "Preview",
   STATUS_SESSION_READY: "Session Ready",
   STATUS_PAUSED: "Maintenance",
   // Desktop-only header controls (hidden under 900px — see .header-btn in style.css).

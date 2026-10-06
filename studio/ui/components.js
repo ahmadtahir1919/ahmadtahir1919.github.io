@@ -2,7 +2,7 @@
 // piece of user text goes in through textContent — never innerHTML.
 
 import { S } from "../core/strings.js";
-import { signInWithGoogle, signInWithIdToken } from "../core/supabase.js";
+import { signInWithGoogle, signInWithIdToken } from "../core/auth.js";
 import { emptyArt, googleMark, icon } from "./icons.js";
 import { route } from "../core/paths.js";
 
@@ -343,10 +343,17 @@ const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select
  * A modal dialog with a focus trap, Esc / backdrop to dismiss, and focus returned to where it
  * was. Bottom sheet on phones. Returns { close, node }.
  * content: nodes; actions: nodes; onClose(reason) runs once.
+ * cls / overlayCls: extra classes (e.g. the bank's side drawer). beforeClose(reason): asked
+ * before Esc / backdrop dismiss; resolve false to stay open. close() itself always closes.
  */
-export function openDialog({ title, badge, badgeTone = "warn", content = [], actions = [], wide = false, onClose, initialFocus }) {
+export function openDialog({ title, badge, badgeTone = "warn", content = [], actions = [], wide = false, onClose, initialFocus, cls = "", overlayCls = "", beforeClose }) {
   const previouslyFocused = document.activeElement;
   let closed = false;
+
+  const dismiss = async (reason) => {
+    if (beforeClose && (await beforeClose(reason)) === false) return;
+    close(reason);
+  };
 
   const close = (reason) => {
     if (closed) return;
@@ -359,9 +366,12 @@ export function openDialog({ title, badge, badgeTone = "warn", content = [], act
   };
 
   const onKey = (e) => {
+    // Only the top-most dialog answers keys — one opened over another (a confirm over the
+    // bank's editor) mustn't close both on one Esc.
+    if (overlay !== [...document.querySelectorAll(".overlay")].pop()) return;
     if (e.key === "Escape") {
       e.stopPropagation();
-      close("dismiss");
+      dismiss("dismiss");
     } else if (e.key === "Tab") {
       const items = [...dialog.querySelectorAll(FOCUSABLE)];
       if (!items.length) return;
@@ -378,16 +388,16 @@ export function openDialog({ title, badge, badgeTone = "warn", content = [], act
   };
 
   const titleId = `dlg-${Math.random().toString(36).slice(2)}`;
-  const dialog = el("div", { class: `dialog ${wide ? "dialog-wide" : ""}`, role: "dialog", "aria-modal": "true", "aria-labelledby": titleId }, [
+  const dialog = el("div", { class: `dialog ${wide ? "dialog-wide" : ""} ${cls}`, role: "dialog", "aria-modal": "true", "aria-labelledby": title ? titleId : undefined, "aria-label": title ? undefined : badge }, [
     badge ? pill(badge, badgeTone, { cls: "dialog-badge" }) : null,
     title ? el("h2", { id: titleId, text: title }) : null,
     ...[].concat(content),
     actions.length ? el("div", { class: "dialog-actions" }, actions) : null,
   ]);
 
-  const overlay = el("div", { class: "overlay is-sheet" }, [dialog]);
+  const overlay = el("div", { class: `overlay is-sheet ${overlayCls}` }, [dialog]);
   overlay.addEventListener("mousedown", (e) => {
-    if (e.target === overlay) close("dismiss");
+    if (e.target === overlay) dismiss("dismiss");
   });
 
   document.addEventListener("keydown", onKey, true);
@@ -573,18 +583,76 @@ function renderGoogleSignIn(slot) {
 
 /** "Beta · Test mode" strip shown at the top of every studio page and on the sign-in card. */
 export function betaBar() {
-  return el("div", { class: "beta-bar", role: "note" }, [
-    el("span", { class: "beta-tag", text: S.BETA }),
-    el("span", { text: S.BETA_NOTE }),
+  return el("div", { class: "beta-bar", role: "note" }, [el("b", { text: S.BETA }), S.BETA_SEP, S.BETA_NOTE]);
+}
+
+// ── Loading: shimmer skeletons ──────────────────────────────────────────────
+// Grey shapes in the page's layout with a light sweep running across them, staggered so the
+// sweep travels down the page like a wave. [i] is each block's place in that wave.
+
+/** One shimmering block. */
+export function shim(cls = "", i = 0) {
+  return el("div", { class: `shim ${cls}`, "aria-hidden": "true", vars: { i: String(i) } });
+}
+
+/** The content area while a page loads: a heading, a row of tiles and a list. */
+export function loadingBlock() {
+  let i = 0;
+  return el("div", { class: "sk-page", role: "status", "aria-label": S.LOADING }, [
+    shim("sk-kicker", i++),
+    shim("sk-title", i++),
+    el("div", { class: "sk-tiles" }, [shim("sk-tile", i++), shim("sk-tile", i++), shim("sk-tile", i++)]),
+    el(
+      "div",
+      { class: "sk-list" },
+      Array.from({ length: 5 }, () => el("div", { class: "sk-row" }, [shim("sk-dot", i), shim("sk-line", i), shim("sk-line sk-short", i++)]))
+    ),
   ]);
 }
 
-export function loadingBlock() {
-  return el("div", { class: "center-fill" }, [el("div", { class: "spinner", role: "status", "aria-label": S.LOADING })]);
+/** The whole page before anything is known (signing in): a sidebar silhouette next to
+ *  [variant]'s content — "editor" draws the quiz editor's columns, anything else the default. */
+export function renderSpinner(container, variant = "") {
+  let i = 0;
+  const side = el("div", { class: "sk-side" }, [
+    el("div", { class: "sk-brand" }, [shim("sk-logo", i), shim("sk-name", i++)]),
+    shim("sk-btn", i++),
+    ...Array.from({ length: 3 }, () => shim("sk-nav", i++)),
+    el("div", { class: "sk-grow" }),
+    shim("sk-quota", i++),
+    shim("sk-user", i++),
+  ]);
+  const bar = el("div", { class: "sk-bar" }, [shim("sk-crumb", 0), el("div", { class: "sk-grow" }), shim("sk-chip", 1), shim("sk-chip", 1), shim("sk-pub", 2)]);
+  const body = variant === "editor" ? editorSkeleton() : loadingBlock();
+  container.replaceChildren(
+    el("div", { class: "sk-shell", role: "status", "aria-label": S.LOADING }, [side, el("div", { class: "sk-main" }, [el("div", { class: "sk-beta" }), bar, body])])
+  );
 }
 
-export function renderSpinner(container) {
-  container.replaceChildren(el("div", { class: "bare" }, [el("div", { class: "spinner", role: "status", "aria-label": S.LOADING })]));
+/** The quiz editor's shape: title, then rail · card · settings panel. */
+export function editorSkeleton() {
+  let i = 0;
+  return el("div", { class: "sk-editor" }, [
+    shim("sk-etitle", i++),
+    shim("sk-meta", i++),
+    el("div", { class: "sk-ecols" }, [
+      el("div", { class: "sk-rail" }, [shim("sk-line sk-short", i), shim("sk-railbox", i++), shim("sk-ov", i++)]),
+      el("div", { class: "sk-col" }, [
+        el("div", { class: "sk-card" }, [
+          el("div", { class: "sk-row" }, [shim("sk-line sk-short", i), el("div", { class: "sk-grow" }), shim("sk-chip", i++)]),
+          shim("sk-qtext", i++),
+          el("div", { class: "sk-opts" }, [shim("sk-opt", i), shim("sk-opt", i++), shim("sk-opt", i), shim("sk-opt", i++)]),
+        ]),
+        shim("sk-qset", i++),
+      ]),
+      el("div", { class: "sk-panel" }, [
+        shim("sk-line sk-short", i++),
+        shim("sk-when", i++),
+        shim("sk-when", i++),
+        ...Array.from({ length: 4 }, () => el("div", { class: "sk-row" }, [shim("sk-line", i), shim("sk-sw", i++)])),
+      ]),
+    ]),
+  ]);
 }
 
 export function errorBlock(message, onRetry) {
@@ -592,16 +660,6 @@ export function errorBlock(message, onRetry) {
     banner(message, { tone: "error" }),
     onRetry ? el("div", {}, [button({ label: S.RETRY, icon: "refresh", onClick: onRetry })]) : null,
   ]);
-}
-
-export function skeletonCards(count = 6, cls = "quiz-card") {
-  return Array.from({ length: count }, () =>
-    el("div", { class: `card ${cls} is-skeleton`, "aria-hidden": "true" }, [
-      el("div", { class: "skeleton skeleton-title" }),
-      el("div", { class: "skeleton skeleton-line" }),
-      el("div", { class: "skeleton skeleton-line skeleton-short" }),
-    ])
-  );
 }
 
 // ── Formatting ──────────────────────────────────────────────────────────────

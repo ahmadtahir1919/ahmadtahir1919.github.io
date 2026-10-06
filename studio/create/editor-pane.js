@@ -14,7 +14,9 @@ import { TYPE_META } from "./outline.js";
 
 /**
  * opts: { ctx (get/update/limits/quiz), index, total, readOnly, errors: [msg],
- *         onChangeType(type), onDuplicate(), onMove(delta), onDelete(), canAdd }
+ *         onChangeType(type), onDuplicate(), onMove(delta), onDelete(), canAdd,
+ *         kicker (replaces "Question n of m"), standalone (no ⋮ menu — the Question Bank's
+ *         editor holds one question, so duplicate/move/delete mean nothing there) }
  * Returns { node, errorsNode }.
  */
 export function editorPane(opts) {
@@ -40,11 +42,11 @@ export function editorPane(opts) {
   const head = el("div", { class: "editor-head" }, [
     el("span", { class: "editor-type-icon" }, [icon(meta.iconName)]),
     el("div", { class: "grow" }, [
-      el("div", { class: "editor-kicker", text: t(S.QUESTION_N_OF, { n: index + 1, total }) }),
+      el("div", { class: "editor-kicker", text: opts.kicker ?? t(S.QUESTION_N_OF, { n: index + 1, total }) }),
       el("div", { class: "editor-type-name", text: meta.label() }),
     ]),
     readOnly ? null : typeSelect,
-    readOnly ? null : actions,
+    readOnly || opts.standalone ? null : actions,
   ]);
 
   const errorsNode = el("div", { class: "editor-errors" });

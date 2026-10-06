@@ -51,7 +51,7 @@
   color: var(--primary);
 }
 
-.btn-soft:hover:not(:disabled) { background: #e0e7ff; }
+.btn-soft:hover:not(:disabled) { background: color-mix(in srgb, var(--primary) 16%, var(--surface)); }
 
 .btn-ghost { color: var(--text); }
 .btn-ghost:hover:not(:disabled) { background: var(--surface-subtle); color: var(--text-strong); }
@@ -167,7 +167,7 @@
 
 .input:hover,
 .textarea:hover,
-.select:hover { border-color: #94a3b8; }
+.select:hover { border-color: var(--text-faint); }
 
 .input:focus,
 .textarea:focus,
@@ -429,7 +429,7 @@ button.chip:hover { border-color: var(--primary); color: var(--primary); }
 .pill-draft { background: var(--warning-bg); color: var(--warning); }
 .pill-scheduled { background: var(--purple-bg); color: var(--purple); }
 .pill-ended { background: var(--danger-bg); color: var(--danger); }
-.pill-archived { background: #f1f5f9; color: #475569; }
+.pill-archived { background: var(--surface-2); color: var(--text-muted); }
 .pill-info { background: var(--info-bg); color: var(--info); }
 .pill-warn { background: var(--warning-bg); color: var(--warning); }
 .pill-success { background: var(--success-bg); color: var(--success); }
@@ -551,7 +551,7 @@ a.pill:hover { text-decoration: none; filter: brightness(0.97); }
 
 .banner .icon { margin-top: 1px; }
 .banner-title { font-weight: 700; }
-.banner-info { background: var(--info-bg); border-color: #bae6fd; color: var(--info); }
+.banner-info { background: var(--info-bg); border-color: color-mix(in srgb, var(--info) 30%, var(--info-bg)); color: var(--info); }
 .banner-warn { background: var(--warning-bg); border-color: var(--warning-border); color: var(--warning); }
 .banner-error { background: var(--danger-bg); border-color: var(--danger-border); color: var(--danger); }
 .banner-success { background: var(--success-bg); border-color: var(--success-border); color: var(--success); }
@@ -576,7 +576,7 @@ a.pill:hover { text-decoration: none; filter: brightness(0.97); }
 
 .skeleton {
   border-radius: var(--r-sm);
-  background: linear-gradient(90deg, #eef1f8 0%, #f8f9fd 40%, #eef1f8 80%) 0 0 / 800px 100%;
+  background: linear-gradient(90deg, var(--surface-2) 0%, var(--surface) 40%, var(--surface-2) 80%) 0 0 / 800px 100%;
   animation: shimmer 1.2s linear infinite;
 }
 
@@ -753,7 +753,7 @@ a.pill:hover { text-decoration: none; filter: brightness(0.97); }
 }
 
 @media (max-width: 767px) {
-  .toast-stack { bottom: calc(var(--tabbar-h) + var(--sp-3) + env(safe-area-inset-bottom)); }
+  .toast-stack { bottom: calc(var(--sp-3) + env(safe-area-inset-bottom)); }
 }
 
 .toast {

@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<!-- Before anything paints: the theme and sidebar width chosen on any page (ui/theme.js,
+     ui/sidebar.js), so no page flashes light or jumps from a wide sidebar to the rail. -->
+<script>try{var t=localStorage.getItem("qz-theme");if(t)document.documentElement.dataset.theme=t;if(localStorage.getItem("quizoma.studio.sidebarCollapsed")==="1")document.documentElement.classList.add("sb-collapsed")}catch(e){}</script>
 <!-- interactive-widget=resizes-content: when the on-screen keyboard opens, resize the
      viewport instead of letting the keyboard sit on top of the fixed Save bar and the
      field being typed into. -->
@@ -13,7 +16,7 @@
 <link rel="icon" type="image/png" href="ui/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="ui/styles.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>

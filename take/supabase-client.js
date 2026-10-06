@@ -167,6 +167,11 @@ function quizFromRow(row, questions) {
     questionPreviewSec: row.question_preview_sec ?? 5,
     // Quiz.allowBack — the Previous button. Missing column (unmigrated) = forward-only.
     allowBack: row.allow_back ?? false,
+    // When participants see their result if Show Score is off (Quiz.resultsReleaseMode /
+    // resultsReleasedAt): AUTO once the quiz ends, MANUAL once the owner announces it. A missing
+    // column (unmigrated project) = AUTO and nothing announced, like the database default.
+    resultsReleaseMode: row.results_release_mode ?? "AUTO",
+    resultsReleasedAt: row.results_released_at ?? null,
     themeColorName: row.theme_color_name,
     createdAt: row.created_at,
     questions: questions.sort((a, b) => a.orderIndex - b.orderIndex),
@@ -218,6 +223,19 @@ async function fetchQuizByShareCode(code) {
   if (qErr) return null;
 
   return quizFromRow(quizRow, (questionRows || []).map(questionFromRow));
+}
+
+/** The quiz's CURRENT result-related settings, read fresh — end time, Show Score and the release
+ *  state. state.quiz is fetched once at page load and never refreshed, so a result opened some
+ *  time later (or after the owner ended or announced) has to ask again instead of trusting it.
+ *  One RPC call for the quiz row only — no questions. Null on failure/offline: the caller keeps
+ *  what it has. */
+async function fetchQuizSettings(code) {
+  const { data: quizRows, error } = await supabaseClient.rpc("quiz_by_share_code", { p_code: code });
+  if (error) return null;
+  const quizRow = Array.isArray(quizRows) ? quizRows[0] : quizRows;
+  if (!quizRow) return null;
+  return quizFromRow(quizRow, []);
 }
 
 /** Admin maintenance switches (app_limits.create_quiz_enabled / join_quiz_enabled — see
@@ -517,6 +535,11 @@ window.SupabaseClient = {
   fetchNameConfirmed,
   confirmDisplayName,
   fetchQuizByShareCode,
+  fetchQuizSettings,
+  // The Studio preview (preview.js) maps the builder's rows with these, so a preview
+  // reads its quiz exactly the way a real load does.
+  quizFromRow,
+  questionFromRow,
   fetchFeatureFlags,
   fetchQuizStatus,
   effectiveStatus,

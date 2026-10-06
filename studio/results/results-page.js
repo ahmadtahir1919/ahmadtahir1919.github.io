@@ -7,7 +7,7 @@ import { displayNames, groupByAttempt, loadAnswersFor, loadAttemptsFor, loadJoin
 import { pendingMarkingCount, questionStats, scoreBreakdown } from "../core/scoring.js";
 import { QUIZ_STATUS, quizCardStatus } from "../core/status.js";
 import { S, t } from "../core/strings.js";
-import { requireUser } from "../core/supabase.js";
+import { requireUser } from "../core/auth.js";
 import {
   button,
   codeChip,
@@ -27,7 +27,7 @@ import {
 import { icon } from "../ui/icons.js";
 import { stagger } from "../ui/motion.js";
 import { mountShell } from "../ui/shell.js";
-import { statusPill } from "../dashboard/quiz-card.js";
+import { statusPill } from "../ui/status-pill.js";
 import { accuracyBars, pollBars, scoreDistribution } from "./charts.js";
 import { buildCsv, downloadCsv, plainQuestionText, pollTally } from "./csv.js";
 import { BUCKET, participantsSection } from "./participants-table.js";

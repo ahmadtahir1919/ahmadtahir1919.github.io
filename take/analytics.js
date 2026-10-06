@@ -17,6 +17,8 @@
   function noop() {}
   window.Analytics = { identify: noop, reset: noop, track: noop, screen: noop };
   if (!POSTHOG_API_KEY) return;
+  // A creator's Studio preview (see preview.js) is not a taker — PostHog never loads there.
+  if (new URLSearchParams(window.location.search).get("preview") === "1") return;
 
   function loadPostHog() {
     // Official posthog-js HTML snippet (posthog.com/docs/libraries/js) — loads the real
