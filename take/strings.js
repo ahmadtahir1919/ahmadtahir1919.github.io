@@ -48,7 +48,7 @@ const S = {
   // ── Enter code ─────────────────────────────────────────────────────────
   ENTER_CODE_KICKER: "JOIN A QUIZ",
   ENTER_CODE_TITLE: "Enter Quiz Code",
-  ENTER_CODE_BLURB: "Ask your quiz host or teacher for their 6-character PIN code to jump right in.",
+  ENTER_CODE_BLURB: "Ask your quiz host for their 6-character PIN code to jump right in.",
   ENTER_CODE_LABEL: "6-CHARACTER PIN",
   ENTER_CODE_HINT: "Code not working? Double-check uppercase letters and numbers.",
   ENTER_CODE_JOIN: "Join Quiz",
@@ -228,14 +228,14 @@ const S = {
   EXPANDER_SHOW: "Show",
   EXPANDER_HIDE: "Hide",
   RESULT_PENDING_TITLE: "Waiting to be marked",
-  RESULT_PENDING_BODY: "Your teacher is marking your answers.",
+  RESULT_PENDING_BODY: "The quiz host is marking your answers.",
   pendingPartial: (score, graded, pending) =>
     `${score} of ${graded} app-checked questions correct. The other ${pending} still need the quiz admin to mark them by hand, so this isn't your final result yet.`,
   RESULT_AWAITING_MARKING: "Awaiting marking",
   // Why the result is not out yet — mirror result_hidden_auto_* / result_hidden_manual.
   resultHiddenAutoWithEnd: (when) => `Results will be announced when the quiz ends on ${when}.`,
-  RESULT_HIDDEN_AUTO_NO_END: "Results will be announced when your teacher ends the quiz.",
-  RESULT_HIDDEN_MANUAL: "Your teacher hasn't announced the results yet. They'll appear here once announced.",
+  RESULT_HIDDEN_AUTO_NO_END: "Results will be announced when the quiz host ends the quiz.",
+  RESULT_HIDDEN_MANUAL: "The quiz host hasn't announced the results yet. They'll appear here once announced.",
   RESULT_CANDIDATE: "Candidate:",
   marksLine: (awarded, total) => `${awarded} / ${total} MARKS`,
   RESULT_STAT_CORRECT: "Correct",

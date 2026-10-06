@@ -51,7 +51,7 @@ const frame = () => new Promise((r) => requestAnimationFrame(() => r()));
 /** `{quiz title before "—", spaces→-}_{class | N-students | Student-Name}.{pdf|xlsx|csv}` */
 export function fileName(qm, rs, targets) {
   const base = qm.title.replace(/—.*/, "").trim().replace(/\s+/g, "-") || S.GX_FILE_FALLBACK;
-  const who = rs.scope === "one" && targets[0] ? targets[0].name.trim().replace(/\s+/g, "-") : rs.scope === "some" ? `${targets.length}-students` : "class";
+  const who = rs.scope === "one" && targets[0] ? targets[0].name.trim().replace(/\s+/g, "-") : rs.scope === "some" ? `${targets.length}-participants` : "everyone";
   return `${base}_${who}.${rs.fmt}`;
 }
 
