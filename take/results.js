@@ -46,9 +46,32 @@ function resultsHiddenReason(quiz, now) {
   return quiz.endAt != null ? "AUTO_WITH_END" : "AUTO_NO_END";
 }
 
+/** The largest delay setTimeout can hold: it stores the delay as a signed 32-bit number, so a
+ *  longer one (about 24.8 days) overflows and fires at once — in a loop, if it re-arms. */
+const RESULTS_MAX_TIMER_MS = 2147483647;
+
+/** How long until a hidden result should be looked at again — the moment an AUTO quiz ends, with
+ *  no polling in between. Null = don't schedule: results are out already, the owner announces them
+ *  (MANUAL — that arrives with the next fresh read, not a clock), there is no end time, it is
+ *  already past, or it is further away than a timer can hold (the screen is re-read on the next
+ *  visit instead). Mirrors resultsRecheckDelayMs() in ResultsVisibility.kt, minus that one's cap —
+ *  Kotlin's delay takes any Long. */
+function resultsRecheckDelay(quiz, now) {
+  now = now ?? Date.now();
+  if (resultsReleased(quiz, now)) return null;
+  if ((quiz.resultsReleaseMode ?? "AUTO") !== "AUTO") return null;
+  if (quiz.endAt == null) return null;
+  const delay = quiz.endAt - now;
+  if (!(delay > 0) || delay > RESULTS_MAX_TIMER_MS) return null;
+  return delay;
+}
+
 /** The attempt's answers include one still waiting for the owner's mark. */
 function answersNeedMarking(answers) {
   return (answers || []).some((a) => a.needsManualMarking === true && a.awardedPoints == null);
 }
 
-window.ResultsVisibility = { resultsReleased, resultsVisible, resultsHiddenReason, answersNeedMarking };
+window.ResultsVisibility = {
+  resultsReleased, resultsVisible, resultsHiddenReason, resultsRecheckDelay, answersNeedMarking,
+  MAX_TIMER_MS: RESULTS_MAX_TIMER_MS,
+};

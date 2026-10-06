@@ -111,6 +111,7 @@ const state = {
   hintUsed: {}, // questionId -> true once its hint was opened (sticky, unlike hintVisible)
   result: null, // { score, total, answers }
   landingTickerHandle: null, // ticks the Scheduled-quiz countdown on the landing card
+  resultRecheckHandle: null, // one timer at the end time of a hidden result (see scheduleResultRecheck)
   hasJoined: false, // Join clicked (and joined_quizzes recorded) this session — gates Start Quiz
   // joined_quizzes.last_started_at for this account (epoch ms) or null. With no
   // existingAttempt it means "started, left without submitting" — see renderLanding.
@@ -144,6 +145,11 @@ function render() {
   // The landing countdown ticker only makes sense while its own card is on screen —
   // torn down the moment anything else renders, so it can never re-render (and wipe)
   // an unrelated screen the user has since navigated to (e.g. mid-typing in the quiz).
+  // The result re-check timer only means something while the result screen is up.
+  if (state.screen !== "result" && state.resultRecheckHandle) {
+    clearTimeout(state.resultRecheckHandle);
+    state.resultRecheckHandle = null;
+  }
   if (state.screen !== "landing" && state.landingTickerHandle) {
     clearInterval(state.landingTickerHandle);
     state.landingTickerHandle = null;
@@ -3233,6 +3239,26 @@ function buildResultExpander(key, title, subtitle, open, body) {
 const EXPANDER_CHEVRON_SVG = `<svg class="expander-chevron" viewBox="0 0 20 20" fill="none" width="20" height="20"><path d="M5 7.5l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 
+/** An AUTO quiz's result appears the moment the quiz ends — no refresh needed. One timer, set for
+ *  that moment (never polling), re-read the quiz's settings when it fires (the owner may have moved
+ *  the end time) and redraw. Re-armed on every render, so there is never more than one; render()
+ *  clears it as soon as another screen is up. resultsRecheckDelay returns null for anything a
+ *  timer can't hold (see ResultsVisibility.MAX_TIMER_MS), which are simply not scheduled. */
+function scheduleResultRecheck(quiz, now) {
+  if (state.resultRecheckHandle) {
+    clearTimeout(state.resultRecheckHandle);
+    state.resultRecheckHandle = null;
+  }
+  const delay = RV.resultsRecheckDelay(quiz, now);
+  if (delay == null) return;
+  state.resultRecheckHandle = setTimeout(async () => {
+    state.resultRecheckHandle = null;
+    if (state.screen !== "result") return;
+    await refreshQuizSettingsForResult();
+    if (state.screen === "result") render();
+  }, delay);
+}
+
 /** The sentence under "SUBMITTED" while results are held back — mirrors SubmittedCard in
  *  ResultScreen.kt (which sentence: ResultsVisibility.resultsHiddenReason). */
 function hiddenResultMessage(quiz, now) {
@@ -3550,6 +3576,7 @@ function renderResult() {
   const now = Date.now();
   const resultsOut = RV.resultsReleased(quiz, now);
   const hidden = !RV.resultsVisible(quiz, pending > 0, now);
+  scheduleResultRecheck(quiz, now);
   const pollOnly = total === 0;
   if (nothingMarked || (!quiz.showResult && pending > 0)) {
     // With Show Score off a partly-marked attempt shows the pending state, never a partial score;
