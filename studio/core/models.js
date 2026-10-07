@@ -267,7 +267,8 @@ export function newQuiz() {
     // turning it on asks first because it can leak answers. show_answers follows it.
     showResult: false,
     showAnswers: false,
-    themeColorName: QUIZ_THEMES[0].name,
+    // Teal, the Studio/site brand colour (the app's own new-quiz default is still Indigo).
+    themeColorName: "Teal",
     createdAt: Date.now(),
     startAt: null,
     endAt: null,
