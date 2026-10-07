@@ -42,6 +42,9 @@ export const PALETTES = [
   { value: "forest", name: "Forest", swatch: "#166534" },
   { value: "terracotta", name: "Terracotta", swatch: "#c2410c" },
   { value: "graphite", name: "Graphite", swatch: "#292524" },
+  { value: "berry", name: "Berry", swatch: "#be185d" },
+  { value: "navy", name: "Navy & Gold", swatch: "#1e3a8a" },
+  { value: "plum", name: "Plum", swatch: "#86198f" },
   { value: "indigo", name: "Indigo (old)", swatch: "#4f46e5" },
 ];
 

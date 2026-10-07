@@ -51,6 +51,21 @@
   --p-brand: #292524; --p-brand-hover: #0c0a09; --p-brand-2: #d97706;
   --p-brand-soft: #efebe5; --p-brand-softer: #f6f3ef; --p-brand-line: #d6cfc4;
 }
+:root[data-palette="berry"] {
+  --p-brand: #be185d; --p-brand-hover: #9d174d; --p-brand-2: #ec4899;
+  --p-brand-soft: #fce7f0; --p-brand-softer: #fdf2f7; --p-brand-line: #f5c2d7;
+  --p-highlight: #f59e0b;
+}
+:root[data-palette="navy"] {
+  --p-brand: #1e3a8a; --p-brand-hover: #172554; --p-brand-2: #3b5bdb;
+  --p-brand-soft: #e5eaf6; --p-brand-softer: #f2f5fb; --p-brand-line: #c3cde6;
+  --p-highlight: #eab308;
+}
+:root[data-palette="plum"] {
+  --p-brand: #86198f; --p-brand-hover: #701a75; --p-brand-2: #c026d3;
+  --p-brand-soft: #f7e6f8; --p-brand-softer: #fbf3fb; --p-brand-line: #e6bfe9;
+  --p-highlight: #f59e0b;
+}
 :root[data-palette="indigo"] {
   --p-brand: #4f46e5; --p-brand-hover: #3730a3; --p-brand-2: #7c74ff;
   --p-brand-soft: #eceafe; --p-brand-softer: #f5f6ff; --p-brand-line: #c7d2fe;
@@ -84,6 +99,9 @@
   :root[data-palette="forest"]:not([data-theme="light"]) { --p-brand: #15803d; --p-brand-hover: #16a34a; --p-brand-2: #4ade80; --p-brand-soft: #143a24; --p-brand-softer: #102e1d; --p-brand-line: #1f5a36; }
   :root[data-palette="terracotta"]:not([data-theme="light"]) { --p-brand: #c2410c; --p-brand-hover: #ea580c; --p-brand-2: #fb923c; --p-brand-soft: #3d1f12; --p-brand-softer: #2f180e; --p-brand-line: #6b3218; --p-highlight: #2dd4bf; }
   :root[data-palette="graphite"]:not([data-theme="light"]) { --p-brand: #b45309; --p-brand-hover: #d97706; --p-brand-2: #fbbf24; --p-brand-soft: #3a2a12; --p-brand-softer: #2a1f10; --p-brand-line: #5a4218; }
+  :root[data-palette="berry"]:not([data-theme="light"]) { --p-brand: #db2777; --p-brand-hover: #ec4899; --p-brand-2: #f472b6; --p-brand-soft: #3d1328; --p-brand-softer: #2e0f1f; --p-brand-line: #6b1f43; }
+  :root[data-palette="navy"]:not([data-theme="light"]) { --p-brand: #3b5bdb; --p-brand-hover: #4f6ef0; --p-brand-2: #93a8f4; --p-brand-soft: #1a2547; --p-brand-softer: #141c36; --p-brand-line: #2c3d72; }
+  :root[data-palette="plum"]:not([data-theme="light"]) { --p-brand: #a21caf; --p-brand-hover: #c026d3; --p-brand-2: #e879f9; --p-brand-soft: #36123a; --p-brand-softer: #290e2c; --p-brand-line: #5e1f63; }
   :root[data-palette="indigo"]:not([data-theme="light"]) {
     --p-brand: #8b84ff; --p-brand-hover: #a9a3ff; --p-brand-2: #a9a3ff; --p-brand-soft: #25234a; --p-brand-softer: #1c1b38; --p-brand-line: #4a4690;
     --p-paper: #0e0f1a; --p-paper-2: #1f2135; --p-surface: #171829; --p-hover: #1f2135; --p-line: #2a2c45; --p-line-2: #383b5a;
@@ -93,6 +111,9 @@
 :root[data-palette="forest"][data-theme="dark"] { --p-brand: #15803d; --p-brand-hover: #16a34a; --p-brand-2: #4ade80; --p-brand-soft: #143a24; --p-brand-softer: #102e1d; --p-brand-line: #1f5a36; }
 :root[data-palette="terracotta"][data-theme="dark"] { --p-brand: #c2410c; --p-brand-hover: #ea580c; --p-brand-2: #fb923c; --p-brand-soft: #3d1f12; --p-brand-softer: #2f180e; --p-brand-line: #6b3218; --p-highlight: #2dd4bf; }
 :root[data-palette="graphite"][data-theme="dark"] { --p-brand: #b45309; --p-brand-hover: #d97706; --p-brand-2: #fbbf24; --p-brand-soft: #3a2a12; --p-brand-softer: #2a1f10; --p-brand-line: #5a4218; }
+:root[data-palette="berry"][data-theme="dark"] { --p-brand: #db2777; --p-brand-hover: #ec4899; --p-brand-2: #f472b6; --p-brand-soft: #3d1328; --p-brand-softer: #2e0f1f; --p-brand-line: #6b1f43; }
+:root[data-palette="navy"][data-theme="dark"] { --p-brand: #3b5bdb; --p-brand-hover: #4f6ef0; --p-brand-2: #93a8f4; --p-brand-soft: #1a2547; --p-brand-softer: #141c36; --p-brand-line: #2c3d72; }
+:root[data-palette="plum"][data-theme="dark"] { --p-brand: #a21caf; --p-brand-hover: #c026d3; --p-brand-2: #e879f9; --p-brand-soft: #36123a; --p-brand-softer: #290e2c; --p-brand-line: #5e1f63; }
 :root[data-palette="indigo"][data-theme="dark"] {
   --p-brand: #8b84ff; --p-brand-hover: #a9a3ff; --p-brand-2: #a9a3ff; --p-brand-soft: #25234a; --p-brand-softer: #1c1b38; --p-brand-line: #4a4690;
   --p-paper: #0e0f1a; --p-paper-2: #1f2135; --p-surface: #171829; --p-hover: #1f2135; --p-line: #2a2c45; --p-line-2: #383b5a;
