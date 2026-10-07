@@ -67,31 +67,25 @@
 .sb-burger .icon { width: 18px; height: 18px; }
 .sb-close { display: none; }
 
-/* The app's own launcher icon in the reference's rounded tile, with its one-time shine. */
+/* The Quizoma mark on its own: no tile behind it (ui/icons.js brandMark). */
 .sb-logo {
-  position: relative;
   display: grid;
   place-items: center;
   flex: none;
   width: 36px;
   height: 36px;
-  border-radius: 11px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  overflow: hidden;
 }
 
-.sb-logo img { width: 100%; height: 100%; object-fit: cover; }
-
-.sb-logo::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, .55) 50%, transparent 70%);
-  transform: translateX(-120%);
-  animation: dv-shine 1.2s .3s var(--ease) forwards;
-}
-
-@keyframes dv-shine { to { transform: translateX(120%); } }
+.qz-mark { width: 100%; height: 100%; overflow: visible; }
+.qz-mark .m-back { fill: var(--accent-soft); }
+.qz-mark .m-sheet { fill: var(--surface); stroke: var(--accent); stroke-width: 2.4; stroke-linejoin: round; }
+.qz-mark .m-fold { fill: none; stroke: var(--accent); stroke-width: 2.4; stroke-linejoin: round; }
+.qz-mark .m-dot { fill: none; stroke: var(--accent); stroke-width: 1.8; }
+.qz-mark .m-dot.on { fill: var(--accent); }
+.qz-mark .m-line,
+.qz-mark .m-tick { fill: none; stroke: var(--muted); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.qz-mark .m-tick { stroke: var(--accent); }
+.qz-mark .m-pencil { fill: var(--warn, #f59e0b); stroke: var(--fg); stroke-width: 1.6; stroke-linejoin: round; }
 
 .sb-beta { font-size: 10px; font-weight: 700; background: var(--warn); color: #3a2600; padding: 1px 6px; border-radius: 99px; letter-spacing: .04em; }
 
@@ -124,6 +118,14 @@
 .sb-theme button .icon { width: 14px; height: 14px; }
 .sb-theme button:hover { color: var(--fg); }
 .sb-theme button.on { background: var(--surface); color: var(--fg); box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
+/* Colour palette trial (ui/palette.css): a row of swatches above the theme switch. */
+.sb-pal { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; padding: 2px 4px; font-size: 11.5px; }
+.sb-pal-label { font-weight: 700; color: var(--muted); }
+.sb-pal-name { margin-left: auto; font-weight: 600; color: var(--fg); }
+.sb-pal-sw { display: flex; gap: 8px; width: 100%; }
+.sb-pal-sw button { width: 22px; height: 22px; padding: 0; border: 0; border-radius: 50%; background: var(--sw); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .18), 0 0 0 1px var(--line-2); transition: transform .15s; }
+.sb-pal-sw button:hover { transform: scale(1.12); }
+.sb-pal-sw button.on { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--sw); }
 .sb-theme-cycle { display: none; place-items: center; width: 44px; height: 40px; padding: 0; border: 0; border-radius: 10px; background: var(--surface-2); color: var(--fg); }
 .sb-theme-cycle .icon { width: 18px; height: 18px; }
 
@@ -163,6 +165,7 @@
   .sb-collapsed .sb-navlabel,
   .sb-collapsed .sb-quota,
   .sb-collapsed .sb-theme,
+  .sb-collapsed .sb-pal,
   .sb-collapsed .sb-user-text,
   .sb-collapsed .sb-user-chev { display: none; }
 
@@ -360,13 +363,13 @@
 .gate-card .beta-bar { width: 100%; border: 1px solid var(--line); border-radius: var(--r-md); }
 .gate-signin { display: flex; justify-content: center; min-height: 48px; width: 100%; }
 
-/* The app's own launcher icon (copied from deploy/icon-192.webp). */
+/* The Quizoma mark on the sign-in card (ui/icons.js brandMark). */
 .brand-logo {
+  display: grid;
+  place-items: center;
   flex: none;
   width: 36px;
   height: 36px;
-  border-radius: 50%;
-  object-fit: contain;
 }
 
-.brand-logo-lg { width: 64px; height: 64px; box-shadow: 0 6px 16px -4px rgba(53, 37, 205, 0.45); }
+.brand-logo-lg { width: 64px; height: 64px; }

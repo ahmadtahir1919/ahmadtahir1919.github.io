@@ -1,0 +1,228 @@
+/* =========================================================
+   Studio palette — Deep Teal on warm paper.
+   The one place the Studio's brand colours live. tokens.css still holds the original indigo
+   palette; this file is imported LAST (ui/styles.css) and repaints on top of it.
+
+   To go back to the indigo: delete the palette.css @import line in ui/styles.css. Nothing
+   else reads this file, so the old look returns exactly.
+   To tweak: change the --p-* values in section 1; everything below reads them. Section 1 also
+   holds the trial palettes (Forest, Terracotta, Graphite, Indigo) picked from the sidebar.
+
+   Not touched on purpose: status colours (live / warn / bad / success / danger), per-quiz
+   theme colours (quiz data shared with the app), categorical colours (question types,
+   avatars, confetti) and the white print/PDF report pages.
+   ========================================================= */
+
+/* ── 1. The palette ───────────────────────────────────────────────────────── */
+
+:root {
+  --p-brand: #0f766e;        /* buttons, links, active states */
+  --p-brand-hover: #115e59;
+  --p-brand-2: #14b8a6;      /* the lighter end of gradients and bars */
+  --p-brand-soft: #e3f1ee;   /* selected rows, pills, chips */
+  --p-brand-softer: #f1f7f5;
+  --p-brand-line: #b9dcd5;   /* a brand-tinted border */
+  --p-paper: #faf8f4;        /* page background */
+  --p-paper-2: #f3f0ea;      /* subtle fills, tracks */
+  --p-surface: #ffffff;      /* cards */
+  --p-hover: #f6f3ee;
+  --p-line: #e7e2da;
+  --p-line-2: #d6cfc4;
+  --p-ink: #1c1917;          /* headings */
+  --p-ink-2: #44403c;        /* body text */
+  --p-muted: #78716c;
+  --p-faint: #a8a29e;
+  --p-highlight: #d97706;    /* the warm second colour (spotlight glow, charts) */
+  --p-shadow-ink: 28, 25, 23;
+}
+
+/* Other palettes to try (sidebar → Colour; data-palette on <html>, ui/theme.js). Each only
+   swaps the brand colours; the warm paper neutrals stay, except on "indigo" (the old look). */
+:root[data-palette="forest"] {
+  --p-brand: #166534; --p-brand-hover: #14532d; --p-brand-2: #16a34a;
+  --p-brand-soft: #e6f2ea; --p-brand-softer: #f2f8f4; --p-brand-line: #bcdcc6;
+}
+:root[data-palette="terracotta"] {
+  --p-brand: #c2410c; --p-brand-hover: #9a3412; --p-brand-2: #ea580c;
+  --p-brand-soft: #fbeae1; --p-brand-softer: #fdf4ef; --p-brand-line: #f2c5ad;
+  --p-highlight: #0f766e;
+}
+:root[data-palette="graphite"] {
+  --p-brand: #292524; --p-brand-hover: #0c0a09; --p-brand-2: #d97706;
+  --p-brand-soft: #efebe5; --p-brand-softer: #f6f3ef; --p-brand-line: #d6cfc4;
+}
+:root[data-palette="indigo"] {
+  --p-brand: #4f46e5; --p-brand-hover: #3730a3; --p-brand-2: #7c74ff;
+  --p-brand-soft: #eceafe; --p-brand-softer: #f5f6ff; --p-brand-line: #c7d2fe;
+  --p-paper: #f5f6fb; --p-paper-2: #f0f1fa; --p-surface: #ffffff; --p-hover: #f5f7ff;
+  --p-line: #e4e6f2; --p-line-2: #d5d8ea;
+  --p-ink: #16182b; --p-ink-2: #464555; --p-muted: #6a6e88; --p-faint: #a3a6bd;
+  --p-highlight: #7c74ff; --p-shadow-ink: 22, 24, 43;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --p-brand: #0d9488; --p-brand-hover: #14b8a6; --p-brand-2: #2dd4bf;
+    --p-brand-soft: #133b36; --p-brand-softer: #102e2a; --p-brand-line: #1f5a52;
+    --p-paper: #121413; --p-paper-2: #222625; --p-surface: #1a1d1c; --p-hover: #222625;
+    --p-line: #2e3331; --p-line-2: #3c4240;
+    --p-ink: #eceae6; --p-ink-2: #d6d3ce; --p-muted: #a39e97; --p-faint: #77726b;
+    --p-highlight: #fbbf24; --p-shadow-ink: 0, 0, 0;
+  }
+}
+:root[data-theme="dark"] {
+  --p-brand: #0d9488; --p-brand-hover: #14b8a6; --p-brand-2: #2dd4bf;
+  --p-brand-soft: #133b36; --p-brand-softer: #102e2a; --p-brand-line: #1f5a52;
+  --p-paper: #121413; --p-paper-2: #222625; --p-surface: #1a1d1c; --p-hover: #222625;
+  --p-line: #2e3331; --p-line-2: #3c4240;
+  --p-ink: #eceae6; --p-ink-2: #d6d3ce; --p-muted: #a39e97; --p-faint: #77726b;
+  --p-highlight: #fbbf24; --p-shadow-ink: 0, 0, 0;
+}
+
+/* Dark brand colours of the other palettes (more specific than the dark default above). */
+@media (prefers-color-scheme: dark) {
+  :root[data-palette="forest"]:not([data-theme="light"]) { --p-brand: #15803d; --p-brand-hover: #16a34a; --p-brand-2: #4ade80; --p-brand-soft: #143a24; --p-brand-softer: #102e1d; --p-brand-line: #1f5a36; }
+  :root[data-palette="terracotta"]:not([data-theme="light"]) { --p-brand: #c2410c; --p-brand-hover: #ea580c; --p-brand-2: #fb923c; --p-brand-soft: #3d1f12; --p-brand-softer: #2f180e; --p-brand-line: #6b3218; --p-highlight: #2dd4bf; }
+  :root[data-palette="graphite"]:not([data-theme="light"]) { --p-brand: #b45309; --p-brand-hover: #d97706; --p-brand-2: #fbbf24; --p-brand-soft: #3a2a12; --p-brand-softer: #2a1f10; --p-brand-line: #5a4218; }
+  :root[data-palette="indigo"]:not([data-theme="light"]) {
+    --p-brand: #8b84ff; --p-brand-hover: #a9a3ff; --p-brand-2: #a9a3ff; --p-brand-soft: #25234a; --p-brand-softer: #1c1b38; --p-brand-line: #4a4690;
+    --p-paper: #0e0f1a; --p-paper-2: #1f2135; --p-surface: #171829; --p-hover: #1f2135; --p-line: #2a2c45; --p-line-2: #383b5a;
+    --p-ink: #eceefb; --p-ink-2: #d6d8ef; --p-muted: #9a9dbb; --p-faint: #6b6e8c; --p-highlight: #a9a3ff;
+  }
+}
+:root[data-palette="forest"][data-theme="dark"] { --p-brand: #15803d; --p-brand-hover: #16a34a; --p-brand-2: #4ade80; --p-brand-soft: #143a24; --p-brand-softer: #102e1d; --p-brand-line: #1f5a36; }
+:root[data-palette="terracotta"][data-theme="dark"] { --p-brand: #c2410c; --p-brand-hover: #ea580c; --p-brand-2: #fb923c; --p-brand-soft: #3d1f12; --p-brand-softer: #2f180e; --p-brand-line: #6b3218; --p-highlight: #2dd4bf; }
+:root[data-palette="graphite"][data-theme="dark"] { --p-brand: #b45309; --p-brand-hover: #d97706; --p-brand-2: #fbbf24; --p-brand-soft: #3a2a12; --p-brand-softer: #2a1f10; --p-brand-line: #5a4218; }
+:root[data-palette="indigo"][data-theme="dark"] {
+  --p-brand: #8b84ff; --p-brand-hover: #a9a3ff; --p-brand-2: #a9a3ff; --p-brand-soft: #25234a; --p-brand-softer: #1c1b38; --p-brand-line: #4a4690;
+  --p-paper: #0e0f1a; --p-paper-2: #1f2135; --p-surface: #171829; --p-hover: #1f2135; --p-line: #2a2c45; --p-line-2: #383b5a;
+  --p-ink: #eceefb; --p-ink-2: #d6d8ef; --p-muted: #9a9dbb; --p-faint: #6b6e8c; --p-highlight: #a9a3ff;
+}
+
+/* ── 2. Map the palette onto every token the Studio reads ─────────────────────
+   One mapping for light and dark: the dark values come from the --p-* above. The selectors
+   cover tokens.css's page-scoped blocks (editor, grading) and its dark blocks, so this wins
+   everywhere by coming later at equal or higher specificity. */
+
+:root,
+:root[data-page],
+:root:not([data-theme="light"]),
+:root[data-page]:not([data-theme="light"]),
+:root[data-theme="dark"],
+:root[data-page][data-theme="dark"] {
+  /* Newer tokens (dashboard, editor, grading) */
+  --bg: var(--p-paper);
+  --surface: var(--p-surface);
+  --surface-2: var(--p-paper-2);
+  --line: var(--p-line);
+  --line-2: var(--p-line-2);
+  --fg: var(--p-ink);
+  --muted: var(--p-muted);
+  --faint: var(--p-faint);
+  --accent: var(--p-brand);
+  --accent-2: var(--p-brand-2);
+  --accent-soft: var(--p-brand-soft);
+  --bg-top: var(--p-paper);
+  --glow1: color-mix(in srgb, var(--p-brand-2) 10%, transparent);
+  --glow2: color-mix(in srgb, var(--p-highlight) 6%, transparent);
+  --dot: rgba(var(--p-shadow-ink), .05);
+  --shadow: 0 1px 2px rgba(var(--p-shadow-ink), .05), 0 10px 30px -14px rgba(var(--p-shadow-ink), .2);
+
+  /* Older tokens (menus, dialogs, forms, tables, bank, faq, results) */
+  --primary: var(--p-brand);
+  --primary-hover: var(--p-brand-hover);
+  --primary-soft: var(--p-brand-soft);
+  --primary-softer: var(--p-brand-softer);
+  --primary-ring: color-mix(in srgb, var(--p-brand) 30%, transparent);
+  --canvas: var(--p-paper);
+  --surface-subtle: var(--p-paper-2);
+  --surface-hover: var(--p-hover);
+  --border: var(--p-line);
+  --border-strong: var(--p-line-2);
+  --text-strong: var(--p-ink);
+  --text: var(--p-ink-2);
+  --text-muted: var(--p-muted);
+  --text-faint: var(--p-faint);
+}
+
+/* Dark shadows stay the deep neutral ones from tokens.css. */
+@media (prefers-color-scheme: dark) {
+  :root[data-page]:not([data-theme="light"]),
+  :root:not([data-theme="light"]) { --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 30px -14px rgba(0, 0, 0, .6); }
+}
+:root[data-theme="dark"],
+:root[data-page][data-theme="dark"] { --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 30px -14px rgba(0, 0, 0, .6); }
+
+/* ── 3. Page-scoped tokens (bank, import) ─────────────────────────────────── */
+
+:root,
+:root:not([data-theme="light"]),
+:root[data-theme="dark"] {
+  --bk-glow: var(--p-brand-softer);
+  --bk-line-hi: var(--p-brand-line);
+  --bk-ans-bg: var(--p-paper-2);
+  --bk-selbar: var(--p-ink);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bk-selbar: var(--p-line); }
+}
+:root[data-theme="dark"] { --bk-selbar: var(--p-line); }
+
+.imp,
+:root:not([data-theme="light"]) .imp,
+:root[data-theme="dark"] .imp {
+  --imp-accent: var(--p-brand);
+  --imp-bg: var(--p-paper);
+  --imp-card: var(--p-surface);
+  --imp-border: var(--p-line);
+  --imp-info: var(--p-brand-soft);
+  --imp-drop-line: var(--p-brand-line);
+  --imp-drop-bg: var(--p-brand-softer);
+  --imp-tpl-line: var(--p-line);
+  --imp-tpl-bg: var(--p-paper-2);
+  --imp-divider: var(--p-line);
+  --imp-neutral: var(--p-paper-2);
+  --imp-text: var(--p-ink);
+  --imp-body: var(--p-ink-2);
+  --imp-secondary: var(--p-muted);
+  --imp-label: var(--p-muted);
+  --imp-muted: var(--p-faint);
+  --imp-placeholder: var(--p-faint);
+}
+
+/* ── 4. Colours that were written straight into component rules ───────────── */
+
+.btn-primary { box-shadow: 0 1px 2px color-mix(in srgb, var(--p-brand) 25%, transparent); }
+.bk-hero-mark,
+.fq-hero-mark,
+.fb-hero-mark { box-shadow: 0 8px 18px -8px color-mix(in srgb, var(--p-brand) 60%, transparent); }
+.fq-search-input { box-shadow: 0 6px 18px -12px rgba(var(--p-shadow-ink), .3); }
+.fq.is-open { box-shadow: 0 10px 26px -18px color-mix(in srgb, var(--p-brand) 50%, transparent); }
+.uq-pos-row.is-new { box-shadow: 0 4px 14px -8px color-mix(in srgb, var(--p-brand) 50%, transparent); }
+
+.bk-bar i { background: linear-gradient(90deg, var(--p-brand), var(--p-brand-2)); }
+.bk-selbar .btn-primary:hover:not(:disabled) { background: var(--p-brand-soft); }
+.uq-row,
+.uq-target { --uq-color: var(--p-brand); }
+
+/* Dashboard spotlight: a deep brand-colour card with a warm glow in the corner. */
+.dv-spot {
+  background:
+    radial-gradient(260px 180px at 100% 0%, color-mix(in srgb, var(--p-highlight) 28%, transparent), transparent 70%),
+    linear-gradient(135deg, var(--p-brand) 0%, var(--p-brand-hover) 100%);
+  box-shadow: 0 18px 40px -22px var(--p-brand);
+}
+.dv-b1,
+.dv .dv-b1 { color: var(--p-brand); }
+
+/* Results charts */
+.dist-bar,
+.acc-fill { background: color-mix(in srgb, var(--p-brand-2) 55%, var(--p-surface)); }
+
+/* Empty-state illustrations (ui/icons.js): repaint the indigo fills by their value. */
+.empty-art [fill="#3525cd"] { fill: var(--p-brand); }
+.empty-art [fill="#a5b4fc"] { fill: color-mix(in srgb, var(--p-brand-2) 55%, #fff); }
+.empty-art [fill="#c7d2fe"] { fill: var(--p-brand-line); }
+.empty-art [fill="#eef2ff"] { fill: var(--p-brand-soft); }
+.empty-art [stroke="#c7d2fe"] { stroke: var(--p-brand-line); }
+:root .gx .gempty-card .empty-art { background: var(--p-brand-softer); }

@@ -109,6 +109,23 @@ export function googleMark() {
   return wrap.firstChild;
 }
 
+/** The Quizoma mark without its launcher tile: an answer sheet and a pencil, painted from the
+ *  palette (.qz-mark in ui/layout.css) so it follows the colour and Light/Dark choices. */
+export function brandMark() {
+  const wrap = document.createElement("span");
+  wrap.innerHTML =
+    '<svg class="qz-mark" viewBox="0 0 48 48" aria-hidden="true">' +
+    '<rect class="m-back" x="9" y="8" width="25" height="33" rx="4" transform="rotate(-9 21 24)"/>' +
+    '<path class="m-sheet" d="M14 5h15l7 7v26a3 3 0 0 1-3 3H14a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3z"/>' +
+    '<path class="m-fold" d="M29 5v7h7"/>' +
+    '<circle class="m-dot" cx="17" cy="17" r="2.4"/><path class="m-line" d="M22 17h8"/>' +
+    '<circle class="m-dot on" cx="17" cy="24.5" r="2.4"/><path class="m-tick" d="M22 24.5l2 2 4-4"/>' +
+    '<circle class="m-dot" cx="17" cy="32" r="2.4"/><path class="m-line" d="M22 32h5"/>' +
+    '<path class="m-pencil" d="M30.5 41.5l1.2-5.6 10-10a2.6 2.6 0 0 1 3.7 3.7l-10 10z"/>' +
+    "</svg>";
+  return wrap.firstChild;
+}
+
 /** Friendly empty-state illustration (inline, decorative). */
 export function emptyArt(kind = "quizzes") {
   const wrap = document.createElement("span");

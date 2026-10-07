@@ -16,3 +16,5 @@
 @import url("./faq.css");
 @import url("./editor.css");
 @import url("./skeleton.css");
+/* Teal palette on top of everything above. Delete this line to go back to the original indigo. */
+@import url("./palette.css");
