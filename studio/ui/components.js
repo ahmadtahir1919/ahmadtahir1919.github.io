@@ -3,7 +3,8 @@
 
 import { S } from "../core/strings.js";
 import { signInWithGoogle, signInWithIdToken } from "../core/auth.js";
-import { brandMark, emptyArt, googleMark, icon } from "./icons.js";
+import { emptyArt, googleMark, icon } from "./icons.js";
+import { route } from "../core/paths.js";
 
 /** Escapes text destined for an HTML string. Prefer el()/textContent; this exists for the
  *  rare place a template is genuinely clearer. */
@@ -529,7 +530,7 @@ export function renderSignInGate(container) {
     el("div", { class: "bare" }, [
       el("div", { class: "card gate-card anim-enter" }, [
         betaBar(),
-        el("span", { class: "brand-logo brand-logo-lg", role: "img", "aria-label": S.APP_NAME }, [brandMark()]),
+        el("img", { class: "brand-logo brand-logo-lg", src: route("ui/logo.webp"), alt: S.APP_NAME, width: "64", height: "64" }),
         el("h1", { text: S.GATE_TITLE }),
         el("p", { text: S.GATE_BODY }),
         slot,

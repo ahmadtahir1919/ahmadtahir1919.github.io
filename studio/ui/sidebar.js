@@ -20,7 +20,7 @@ import { listMyQuizzes } from "../core/quizzes.js";
 import { displayNames, pendingMarking } from "../core/results.js";
 import { route } from "../core/paths.js";
 import { avatar, el, openMenu } from "./components.js";
-import { brandMark, icon } from "./icons.js";
+import { icon } from "./icons.js";
 import { applyPalette, applyTheme, PALETTES, storedPalette, storedTheme } from "./theme.js";
 
 const SITE = "https://quizoma.com";
@@ -179,7 +179,7 @@ export function buildSidebar({ user, active, fetchPending = true }) {
   const close = el("button", { type: "button", class: "sb-close", "aria-label": S.NAV_CLOSE_MENU, title: S.NAV_CLOSE_MENU }, [icon("x", "icon")]);
   const brand = () =>
     el("a", { class: "sb-brand", href: route(""), title: S.APP_NAME }, [
-      el("span", { class: "sb-logo" }, [brandMark()]),
+      el("span", { class: "sb-logo" }, [el("img", { src: route("ui/logo.webp"), alt: "", width: "36", height: "36" })]),
       el("div", { class: "sb-brand-text" }, [el("b", { text: S.APP_NAME }), el("span", { class: "sb-beta", text: S.BETA.toUpperCase() })]),
     ]);
 

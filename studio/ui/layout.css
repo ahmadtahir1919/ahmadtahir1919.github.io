@@ -67,25 +67,16 @@
 .sb-burger .icon { width: 18px; height: 18px; }
 .sb-close { display: none; }
 
-/* The Quizoma mark on its own: no tile behind it (ui/icons.js brandMark). */
+/* The app's own launcher icon (ui/logo.webp), round, with no tile or gradient behind it. */
 .sb-logo {
-  display: grid;
-  place-items: center;
   flex: none;
   width: 36px;
   height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
 }
 
-.qz-mark { width: 100%; height: 100%; overflow: visible; }
-.qz-mark .m-back { fill: var(--accent-soft); }
-.qz-mark .m-sheet { fill: var(--surface); stroke: var(--accent); stroke-width: 2.4; stroke-linejoin: round; }
-.qz-mark .m-fold { fill: none; stroke: var(--accent); stroke-width: 2.4; stroke-linejoin: round; }
-.qz-mark .m-dot { fill: none; stroke: var(--accent); stroke-width: 1.8; }
-.qz-mark .m-dot.on { fill: var(--accent); }
-.qz-mark .m-line,
-.qz-mark .m-tick { fill: none; stroke: var(--muted); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-.qz-mark .m-tick { stroke: var(--accent); }
-.qz-mark .m-pencil { fill: var(--warn, #f59e0b); stroke: var(--fg); stroke-width: 1.6; stroke-linejoin: round; }
+.sb-logo img { display: block; width: 100%; height: 100%; object-fit: contain; }
 
 .sb-beta { font-size: 10px; font-weight: 700; background: var(--warn); color: #3a2600; padding: 1px 6px; border-radius: 99px; letter-spacing: .04em; }
 
@@ -268,7 +259,7 @@
     font-family: var(--font);
   }
   .sb-mbar .sb-brand { flex: 1; min-width: 0; }
-  .sb-mbar .sb-logo { width: 32px; height: 32px; border-radius: 10px; }
+  .sb-mbar .sb-logo { width: 32px; height: 32px; }
   .sb-mbar a:hover { text-decoration: none; }
   .sb-mnew { display: grid; place-items: center; width: 38px; height: 34px; border-radius: 10px; background: var(--accent); color: #fff; box-shadow: 0 8px 18px -10px var(--accent); }
 
@@ -363,13 +354,13 @@
 .gate-card .beta-bar { width: 100%; border: 1px solid var(--line); border-radius: var(--r-md); }
 .gate-signin { display: flex; justify-content: center; min-height: 48px; width: 100%; }
 
-/* The Quizoma mark on the sign-in card (ui/icons.js brandMark). */
+/* The app's own launcher icon (copied from deploy/icon-192.webp). */
 .brand-logo {
-  display: grid;
-  place-items: center;
   flex: none;
   width: 36px;
   height: 36px;
+  border-radius: 50%;
+  object-fit: contain;
 }
 
 .brand-logo-lg { width: 64px; height: 64px; }
