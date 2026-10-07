@@ -236,6 +236,8 @@ const S = {
   resultHiddenAutoWithEnd: (when) => `Results will be announced when the quiz ends on ${when}.`,
   RESULT_HIDDEN_AUTO_NO_END: "Results will be announced when the quiz host ends the quiz.",
   RESULT_HIDDEN_MANUAL: "The quiz host hasn't announced the results yet. They'll appear here once announced.",
+  // Mirrors result_awaiting_server_grade: an exam-mode attempt the server hasn't graded yet.
+  RESULT_AWAITING_SERVER_GRADE: "Your answers have been submitted. Your score will appear once they're graded — this needs an internet connection.",
   RESULT_CANDIDATE: "Candidate:",
   marksLine: (awarded, total) => `${awarded} / ${total} MARKS`,
   RESULT_STAT_CORRECT: "Correct",

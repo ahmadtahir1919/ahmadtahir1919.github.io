@@ -71,7 +71,14 @@ function answersNeedMarking(answers) {
   return (answers || []).some((a) => a.needsManualMarking === true && a.awardedPoints == null);
 }
 
+/** Submitted from a keyless (exam-mode) copy and not graded by the server yet: an auto-graded answer
+ *  with no awarded points — every answer the server grades gets a number. No score to show yet,
+ *  only "Submitted". Mirrors AnswerResult.isAwaitingServerGrade in Grading.kt. */
+function answersAwaitingServerGrade(answers) {
+  return (answers || []).some((a) => a.needsManualMarking !== true && a.awardedPoints == null);
+}
+
 window.ResultsVisibility = {
-  resultsReleased, resultsVisible, resultsHiddenReason, resultsRecheckDelay, answersNeedMarking,
+  resultsReleased, resultsVisible, resultsHiddenReason, resultsRecheckDelay, answersNeedMarking, answersAwaitingServerGrade,
   MAX_TIMER_MS: RESULTS_MAX_TIMER_MS,
 };

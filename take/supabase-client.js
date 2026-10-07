@@ -222,7 +222,23 @@ async function fetchQuizByShareCode(code) {
     .rpc("questions_by_share_code", { p_code: code });
   if (qErr) return null;
 
-  return quizFromRow(quizRow, (questionRows || []).map(questionFromRow));
+  const quiz = quizFromRow(quizRow, (questionRows || []).map(questionFromRow));
+  // This copy came WITHOUT the answer key exactly when the server withheld it: an exam-mode quiz
+  // (Show Score off AND instant correctness off) that isn't this account's — the rule
+  // questions_by_share_code masks by (quiz_withholds_key in schema.sql). Fixed with the questions
+  // it describes, like Quiz.keyWithheld on Android. Signed out counts as not the owner.
+  const user = await getCurrentUser().catch(() => null);
+  quiz.keyWithheld = !quiz.showResult && !quiz.showCorrectnessInstantly && quiz.ownerId !== user?.id;
+  return quiz;
+}
+
+/** The answer key for one of this account's attempts — the quiz's questions with their keys — once
+ *  its results are visible (result_key checks on the server; empty before that). For the result
+ *  review of a keyless copy only. Null on failure/offline: the review then shows no key. */
+async function fetchResultKey(attemptId) {
+  const { data, error } = await supabaseClient.rpc("result_key", { p_attempt_id: attemptId });
+  if (error || !data) return null;
+  return data.map(questionFromRow);
 }
 
 /** The quiz's CURRENT result-related settings, read fresh — end time, Show Score and the release
@@ -550,6 +566,7 @@ window.SupabaseClient = {
   markQuizStarted,
   fetchExistingAttempt,
   fetchAttemptAnswers,
+  fetchResultKey,
   submitAttempt,
   ensurePollOpen,
   fetchPollStates,

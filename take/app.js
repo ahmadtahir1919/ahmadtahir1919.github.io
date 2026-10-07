@@ -113,6 +113,7 @@ const state = {
   result: null, // { score, total, answers }
   landingTickerHandle: null, // ticks the Scheduled-quiz countdown on the landing card
   resultRecheckHandle: null, // one timer at the end time of a hidden result (see scheduleResultRecheck)
+  serverGradeRecheckedFor: null, // attempt id whose one "graded yet?" re-read was scheduled (see scheduleServerGradeRecheck)
   hasJoined: false, // Join clicked (and joined_quizzes recorded) this session — gates Start Quiz
   // joined_quizzes.last_started_at for this account (epoch ms) or null. With no
   // existingAttempt it means "started, left without submitting" — see renderLanding.
@@ -1298,8 +1299,27 @@ async function goToExistingResult() {
   // they voted on stays. Same rule as while taking (pruneHiddenPolls / QuizPreviewViewModel).
   await pruneHiddenPolls();
   const pollItems = await buildResultPollItems(state.quiz, state.user);
-  state.result = { score: state.existingAttempt.score, total: state.existingAttempt.total, answers, pollItems };
+  state.result = { attemptId: state.existingAttempt.id, score: state.existingAttempt.score, total: state.existingAttempt.total, answers, pollItems };
   await openResultScreen();
+}
+
+/** Exam mode (a keyless copy, see fetchQuizByShareCode): the verdicts are the server's. Re-reads
+ *  this attempt's answers from the server — it grades within seconds of the submit — and, once
+ *  the result is visible, takes the answer key from result_key for the review (memory only).
+ *  Offline or not graded yet, the result stays "Submitted" (see renderResult). */
+async function refreshKeylessResult() {
+  if (PREVIEW || state.quiz.keyWithheld !== true || !state.result?.attemptId) return;
+  if (RV.answersAwaitingServerGrade(state.result.answers)) {
+    const fresh = await SC.fetchAttemptAnswers(state.result.attemptId).catch(() => []);
+    if (fresh.length > 0) state.result.answers = fresh;
+  }
+  const answers = state.result.answers;
+  if (RV.answersAwaitingServerGrade(answers)) return;
+  if (!RV.resultsVisible(state.quiz, RV.answersNeedMarking(answers), Date.now())) return;
+  const keyed = await SC.fetchResultKey(state.result.attemptId).catch(() => null);
+  if (!keyed) return;
+  const byId = new Map(keyed.map((q) => [q.id, q]));
+  state.quiz.questions = state.quiz.questions.map((q) => byId.get(q.id) || q);
 }
 
 /** Every review card starts expanded and the filter on "All" — the review is the point
@@ -1307,6 +1327,7 @@ async function goToExistingResult() {
 async function openResultScreen() {
   // Read fresh (end time, Show Score, release state) before deciding what this screen may show.
   await refreshQuizSettingsForResult();
+  await refreshKeylessResult();
   state.resultFilter = "all";
   state.resultAnimated = false; // the score counts up once per result
   // On a phone the details start folded away — there is no room to show them and the
@@ -2080,11 +2101,18 @@ async function finishQuiz() {
   }
 
   const scored = state.quiz.questions.filter((q) => q.type !== "POLL");
+  // A keyless copy (exam mode, see fetchQuizByShareCode) has nothing to grade against: every
+  // auto-graded answer goes with no verdict (awardedPoints null = awaiting the server) and the
+  // server grades it. A Studio preview always has the full key.
+  const keyless = !PREVIEW && state.quiz.keyWithheld === true;
   const answers = scored.map((q) => {
     const elapsedSec = state.questionTimings[q.id] || 0;
-    // The per-question rule lives in grade.js so the server's shadow grader runs the same code
+    // The per-question rule lives in grade.js so the server's grader runs the same code
     // (pinned to Android by webtest/fixtures/grading-cases.json).
     const graded = gradeQuestion(q, state.quiz, state.questionAnswers[q.id] || [], elapsedSec);
+    if (keyless && !graded.needsManualMarking) {
+      Object.assign(graded, { isCorrect: false, awardedPoints: null, evaluationResult: null });
+    }
     return {
       questionId: q.id,
       isCorrect: graded.isCorrect,
@@ -2105,14 +2133,14 @@ async function finishQuiz() {
   const score = answers.filter((a) => a.isCorrect && !a.needsManualMarking).length;
 
   SC.submitAttempt(state.quiz.id, state.user.id, score, scored.length, answers)
-    .then(async () => {
+    .then(async (attemptId) => {
       window.Analytics.track("attempt_submitted", {
         quiz_id: state.quiz.id,
         score: score,
         total: scored.length
       });
       const pollItems = await buildResultPollItems(state.quiz, state.user);
-      state.result = { score, total: scored.length, answers, pollItems };
+      state.result = { attemptId, score, total: scored.length, answers, pollItems };
       await openResultScreen();
     })
     .catch((err) => {
@@ -3168,8 +3196,23 @@ function scheduleResultRecheck(quiz, now) {
     state.resultRecheckHandle = null;
     if (state.screen !== "result") return;
     await refreshQuizSettingsForResult();
+    await refreshKeylessResult();
     if (state.screen === "result") render();
   }, delay);
+}
+
+/** One re-read, a few seconds after an exam-mode result first shows "Submitted": the server grades
+ *  a submission within seconds of it landing. Once per attempt — offline (or still not graded),
+ *  it stays "Submitted" until the next visit. */
+function scheduleServerGradeRecheck() {
+  const attemptId = state.result?.attemptId;
+  if (!attemptId || state.serverGradeRecheckedFor === attemptId) return;
+  state.serverGradeRecheckedFor = attemptId;
+  setTimeout(async () => {
+    if (state.screen !== "result" || state.result?.attemptId !== attemptId) return;
+    await refreshKeylessResult();
+    if (state.screen === "result" && state.result?.attemptId === attemptId) render();
+  }, 3000);
 }
 
 /** The sentence under "SUBMITTED" while results are held back — mirrors SubmittedCard in
@@ -3488,10 +3531,15 @@ function renderResult() {
   // off = released (quiz ended in AUTO mode, or announced) and nothing of this attempt waiting.
   const now = Date.now();
   const resultsOut = RV.resultsReleased(quiz, now);
-  const hidden = !RV.resultsVisible(quiz, pending > 0, now);
+  // Exam mode: no verdicts until the server grades the attempt — "Submitted", never a 0.
+  const awaitingServer = RV.answersAwaitingServerGrade(answers);
+  const hidden = awaitingServer || !RV.resultsVisible(quiz, pending > 0, now);
   scheduleResultRecheck(quiz, now);
+  if (awaitingServer) scheduleServerGradeRecheck();
   const pollOnly = total === 0;
-  if (nothingMarked || (!quiz.showResult && pending > 0)) {
+  if (awaitingServer) {
+    content.appendChild(buildResultInfoCard(S.RESULT_HIDDEN_LABEL, S.RESULT_AWAITING_SERVER_GRADE));
+  } else if (nothingMarked || (!quiz.showResult && pending > 0)) {
     // With Show Score off a partly-marked attempt shows the pending state, never a partial score;
     // the "checked so far" part of the card only once the results are out.
     content.appendChild(buildPendingCard(pending, resultsOut ? score : 0, resultsOut ? gradedCount : 0));
