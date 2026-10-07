@@ -543,6 +543,9 @@ html.theming *, html.theming *::before { transition: background-color .4s ease, 
 @media (max-width: 1280px) {
   .qe .editor { grid-template-columns: 200px minmax(0, 1fr); }
   .qe .panel { grid-column: 2; position: static; max-height: none; }
+  /* The panel is part of the page here (no max-height), so its body must not be a scroll container:
+     an overflow:auto + overscroll-behavior:contain box under the finger swallowed page scrolling on phones. */
+  .qe .pbody { overflow: visible; overscroll-behavior: auto; }
 }
 @media (max-width: 900px) {
   .qe .editor { grid-template-columns: minmax(0, 1fr); }

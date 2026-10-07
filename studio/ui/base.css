@@ -165,3 +165,10 @@ svg { display: block; }
     transition-duration: 0ms !important;
   }
 }
+
+/* Touch screens: a textarea's resize grip (bottom-right corner) takes the finger for a resize drag,
+   so a swipe that starts on it never scrolls the page. Nobody resizes with a thumb; the fields
+   already auto-grow where it matters. */
+@media (pointer: coarse) {
+  :is(textarea, .textarea, .ptxt, .ftxt, .imp-paste) { resize: none !important; }
+}
