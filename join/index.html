@@ -7,7 +7,7 @@
 <meta name="description" content="You've been invited to a Quizoma quiz. Get the app or take it straight in your browser with your room code.">
 <link rel="canonical" href="https://quizoma.com/join/">
 <meta name="robots" content="noindex, follow">
-<meta name="theme-color" content="#3525cd">
+<meta name="theme-color" content="#0f766e">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Quizoma">
 <meta property="og:title" content="Join a Quiz — Quizoma">
@@ -26,17 +26,18 @@
 <!-- Cookie consent gate — must load before the inline analytics script below
      holds off PostHog until the visitor accepts. Shared across home/take/join. -->
 <script src="/cookie-consent.js" defer></script>
+<link rel="stylesheet" href="/brand.css?v=1">
 <style>
-  body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:#4F46E5; color:#fff; margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; box-sizing:border-box; }
+  body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:var(--brand); color:#fff; margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; box-sizing:border-box; }
   .card { background:#fff; color:#111; border-radius:20px; padding:32px 28px; max-width:360px; width:100%; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.25); }
   h1 { font-size:20px; margin:0 0 8px; }
   p { color:#555; font-size:14px; margin:0 0 20px; line-height:1.5; }
-  .code { font-size:32px; font-weight:800; letter-spacing:4px; color:#4F46E5; background:#EEF2FF; border-radius:12px; padding:16px; margin-bottom:20px; }
-  .cta { display:block; background:#4F46E5; color:#fff; text-decoration:none; font-weight:700; font-size:15px; border-radius:12px; padding:14px; margin-bottom:12px; }
+  .code { font-size:32px; font-weight:800; letter-spacing:4px; color:var(--brand); background:var(--brand-soft); border-radius:12px; padding:16px; margin-bottom:20px; }
+  .cta { display:block; background:var(--brand); color:#fff; text-decoration:none; font-weight:700; font-size:15px; border-radius:12px; padding:14px; margin-bottom:12px; }
   .cta:active { opacity:0.85; }
-  .cta.secondary { background:#EEF0FE; color:#4F46E5; }
+  .cta.secondary { background:var(--brand-soft); color:var(--brand); }
   /* Pre-launch Play state (PLAY-CTA): a <span>, so it must not look tappable. */
-  .cta.is-soon { background:#EEF0FE; color:#4F46E5; opacity:0.8; cursor:default; border:1.5px dashed #C7CCF5; }
+  .cta.is-soon { background:var(--brand-soft); color:var(--brand); opacity:0.8; cursor:default; border:1.5px dashed var(--brand-line); }
   .divider { display:flex; align-items:center; gap:10px; margin:4px 0 16px; color:#bbb; font-size:12px; }
   .divider::before, .divider::after { content:""; flex:1; height:1px; background:#eee; }
   .hint { font-size:12px; color:#999; margin-bottom:0; }

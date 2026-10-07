@@ -2,15 +2,15 @@
    actual component styles in LoginScreen.kt / QuizPreviewScreen.kt / ResultScreen.kt —
    keep these in sync if those change. */
 :root {
-  --primary: #5B4FE8;
-  --primary-container: #E0E7FF;
-  --background: #F7F8FA;
+  --primary: var(--brand);   /* palette: deploy/brand.css */
+  --primary-container: var(--brand-soft);
+  --background: var(--paper);
   --surface: #FFFFFF;
-  --text-primary: #1C1B1F;
-  --text-secondary: #6B6880;
+  --text-primary: var(--ink);
+  --text-secondary: var(--ink-muted);
   --icon-gray: #9CA3AF;
-  --divider: #F0EFF8;
-  --border-light: #E0E0F5;
+  --divider: var(--paper-line-soft);
+  --border-light: var(--paper-line);
   --success: #22C55E;
   --success-bg: #ECFDF5;
   --error: #EF4444;
@@ -20,9 +20,9 @@
   --pending-bg: #FFF8E1;
   /* Skipped: a question nobody attempted isn't red either — it was never got wrong. */
   --skipped: #6B7280;
-  --skipped-bg: #F3F4F8;
+  --skipped-bg: var(--paper-2);
   --skipped-border: #DDDEE8;
-  --timer-track: #E8E7F8;
+  --timer-track: var(--paper-3);
   /* Per-quiz accent — set inline once a quiz loads, via QUIZ_THEME_COLORS. */
   --accent: var(--primary);
 }
@@ -33,8 +33,8 @@ body {
   margin: 0;
   font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   /* Dotted paper background behind every screen (the shared page chrome). */
-  background-color: #F4F5F9;
-  background-image: radial-gradient(#D3D5E2 1.1px, transparent 1.1px);
+  background-color: var(--paper);
+  background-image: radial-gradient(var(--paper-3) 1.1px, transparent 1.1px);
   background-size: 22px 22px;
   color: var(--text-primary);
   min-height: 100vh;
@@ -88,7 +88,7 @@ button, input, textarea { font-family: inherit; }
   background: rgba(255, 255, 255, 0.86);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border-bottom: 1px solid #E6E7EF;
+  border-bottom: 1px solid var(--paper-line);
 }
 .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .brand-tile {
@@ -100,10 +100,10 @@ button, input, textarea { font-family: inherit; }
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  box-shadow: 0 4px 10px rgba(91, 79, 232, 0.28);
+  box-shadow: 0 4px 10px rgba(var(--brand-rgb), 0.28);
 }
 .brand-icon { width: 100%; height: 100%; object-fit: cover; }
-.brand-name { font-size: 18px; font-weight: 800; letter-spacing: -0.3px; color: #1C1B2E; }
+.brand-name { font-size: 18px; font-weight: 800; letter-spacing: -0.3px; color: var(--ink); }
 
 .status-chip {
   display: inline-flex;
@@ -113,11 +113,11 @@ button, input, textarea { font-family: inherit; }
   height: 28px;
   padding: 0 12px;
   border-radius: 999px;
-  border: 1px solid #E6E7EF;
+  border: 1px solid var(--paper-line);
   background: #fff;
   font-size: 12px;
   font-weight: 600;
-  color: #3F3D56;
+  color: var(--ink-2);
   white-space: nowrap;
 }
 .status-chip.small { height: 24px; padding: 0 10px; font-size: 11px; }
@@ -134,7 +134,7 @@ button, input, textarea { font-family: inherit; }
   align-items: center;
   justify-content: center;
   padding: 0;
-  border: 1px solid #E6E7EF;
+  border: 1px solid var(--paper-line);
   border-radius: 10px;
   background: #fff;
   color: var(--text-secondary);
@@ -205,7 +205,7 @@ button, input, textarea { font-family: inherit; }
   display: flex;
   flex-direction: column;
   padding: 6px;
-  border: 1px solid #E6E7EF;
+  border: 1px solid var(--paper-line);
   border-radius: 14px;
   background: #fff;
   box-shadow: 0 16px 40px rgba(30, 30, 60, 0.16);
@@ -248,7 +248,7 @@ button, input, textarea { font-family: inherit; }
    <html>). The fullscreened element gets a UA-default black background, which would
    show through the dotted paper backdrop — repaint it, and make sure the app still
    measures its height against the fullscreen viewport. */
-html:fullscreen, html:-webkit-full-screen { background: #F4F5F9; }
+html:fullscreen, html:-webkit-full-screen { background: var(--paper); }
 html:fullscreen body, html:-webkit-full-screen body { min-height: 100vh; }
 .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18); }
 
@@ -322,9 +322,9 @@ html:fullscreen body, html:-webkit-full-screen body { min-height: 100vh; }
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 5px;
-  background: linear-gradient(90deg, #5B4FE8 0%, #8B5CF6 100%);
+  background: linear-gradient(90deg, var(--brand) 0%, var(--brand-light) 100%);
 }
-.card.enter-code-card::before { background: linear-gradient(90deg, #5B4FE8 0%, #EC4899 100%); }
+.card.enter-code-card::before { background: linear-gradient(90deg, var(--brand) 0%, #D97706 100%); }
 @media (max-width: 480px) {
   .card { padding: 26px 20px 22px; border-radius: 22px; }
 }
@@ -347,7 +347,7 @@ html:fullscreen body, html:-webkit-full-screen body { min-height: 100vh; }
 .centered { text-align: center; }
 .quiz-meta.centered, .quiz-title.centered { align-self: center; }
 
-.quiz-title { font-size: 24px; font-weight: 800; margin: 2px 0 0; letter-spacing: -0.4px; line-height: 1.2; color: #1C1B2E; }
+.quiz-title { font-size: 24px; font-weight: 800; margin: 2px 0 0; letter-spacing: -0.4px; line-height: 1.2; color: var(--ink); }
 .quiz-title .title-count { color: inherit; }
 .quiz-meta { font-size: 14px; color: var(--text-secondary); line-height: 1.55; margin: 0; }
 
@@ -361,7 +361,7 @@ html:fullscreen body, html:-webkit-full-screen body { min-height: 100vh; }
   height: 26px;
   padding: 0 10px;
   border-radius: 8px;
-  background: #F3F4F8;
+  background: var(--paper-2);
   color: #4B5563;
   font-size: 12px;
   font-weight: 600;
@@ -387,9 +387,9 @@ html:fullscreen body, html:-webkit-full-screen body { min-height: 100vh; }
   gap: 10px;
   padding: 14px 16px;
   border-radius: 14px;
-  background: #F6F7FC;
-  border: 1px solid #ECEDF5;
-  color: #3F3D56;
+  background: var(--paper);
+  border: 1px solid var(--paper-line-soft);
+  color: var(--ink-2);
   font-size: 13.5px;
   line-height: 1.5;
 }
@@ -417,7 +417,7 @@ html:fullscreen body, html:-webkit-full-screen body { min-height: 100vh; }
   padding: 12px 14px;
   border-radius: 14px;
   background: #F8F8FC;
-  border: 1px solid #ECEDF5;
+  border: 1px solid var(--paper-line-soft);
 }
 .avatar {
   position: relative;
@@ -445,7 +445,7 @@ html:fullscreen body, html:-webkit-full-screen body { min-height: 100vh; }
 }
 .signed-in-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .overline { font-size: 10px; font-weight: 700; letter-spacing: 0.8px; color: var(--icon-gray); }
-.signed-in-name { font-size: 15px; font-weight: 700; color: #1C1B2E; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.signed-in-name { font-size: 15px; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* Confirm-name card. */
 .title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
@@ -489,7 +489,7 @@ html:fullscreen body, html:-webkit-full-screen body { min-height: 100vh; }
   background: transparent;
   font-size: 15px;
   font-weight: 600;
-  color: #1C1B2E;
+  color: var(--ink);
   padding: 0;
 }
 .name-field input[type="text"]:focus { border: none; }
@@ -507,7 +507,7 @@ html:fullscreen body, html:-webkit-full-screen body { min-height: 100vh; }
   align-items: center;
   justify-content: center;
 }
-.field-clear:hover { background: #F3F4F8; color: var(--text-primary); }
+.field-clear:hover { background: var(--paper-2); color: var(--text-primary); }
 .field-helper { display: flex; align-items: center; gap: 6px; font-size: 12px; margin: -6px 0 0; color: var(--text-secondary); }
 .field-helper.synced { color: #16A34A; }
 .field-hint { font-size: 12px; color: var(--icon-gray); margin: -4px 0 0; line-height: 1.5; }
@@ -524,14 +524,14 @@ html:fullscreen body, html:-webkit-full-screen body { min-height: 100vh; }
   text-align: center;
   font-size: 22px;
   font-weight: 800;
-  color: #1C1B2E;
+  color: var(--ink);
   outline: none;
   padding: 0;
   caret-color: var(--accent);
   transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
 }
-.code-box::placeholder { color: #C7C9D9; font-weight: 700; }
-.code-box.filled { background: #F0F1F7; }
+.code-box::placeholder { color: color-mix(in srgb, var(--ink-muted) 45%, transparent); font-weight: 700; }
+.code-box.filled { background: var(--paper-2); }
 .code-box:focus { border-color: var(--accent); background: #fff; box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent); }
 @media (max-width: 400px) {
   .code-boxes { gap: 8px; }
@@ -548,7 +548,7 @@ html:fullscreen body, html:-webkit-full-screen body { min-height: 100vh; }
   border-radius: 10px;
   border: 1px solid var(--border-light);
   background: #fff;
-  color: #3F3D56;
+  color: var(--ink-2);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -619,7 +619,7 @@ button.google {
   justify-content: center;
   gap: 12px;
   background: #fff;
-  color: #1C1B2E;
+  color: var(--ink);
   border: 1.5px solid var(--border-light);
   border-radius: 16px;
   min-height: 56px;
@@ -1091,7 +1091,7 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
 .result-screen .quiz-title { font-size: 24px; margin: 4px 0 0; }
 .candidate-line { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); }
 .candidate-line svg { color: var(--accent); }
-.candidate-line strong { color: #1C1B2E; font-weight: 700; }
+.candidate-line strong { color: var(--ink); font-weight: 700; }
 /* The score hero — mirrors ResultScreen.kt's ScoreHero: one solid block of the quiz's
    color, the number carrying the card. No gradient, disc, badge or shadow. The .animate
    variant plays once per result (state.resultAnimated): the card rises in, the bar fills
@@ -1136,7 +1136,7 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
   border: 1px solid var(--q-border, #E5E7EB);
   border-radius: 14px;
   background: #fff;
-  color: #1C1B2E;
+  color: var(--ink);
   text-align: left;
   cursor: pointer;
 }
@@ -1207,7 +1207,7 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
   padding: 14px;
   border-radius: 14px;
   background: #fff;
-  border: 1px solid #ECEDF5;
+  border: 1px solid var(--paper-line-soft);
   box-shadow: 0 1px 4px rgba(17, 24, 39, 0.04);
 }
 .stat-icon {
@@ -1216,11 +1216,11 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
 }
 .stat-icon.correct { background: var(--success-bg); color: #16A34A; }
 .stat-icon.wrong { background: var(--error-bg); color: #DC2626; }
-.stat-icon.time { background: #F3F4F8; color: #4B5563; }
+.stat-icon.time { background: var(--paper-2); color: #4B5563; }
 .stat-icon.hint { background: #FFFBEB; color: #D97706; }
 .stat-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .stat-label { font-size: 12px; color: var(--text-secondary); }
-.stat-value { font-size: 16px; font-weight: 800; color: #1C1B2E; }
+.stat-value { font-size: 16px; font-weight: 800; color: var(--ink); }
 
 /* Marks / Correctness breakdown cards (shown while something is still pending). */
 .score-section-card {
@@ -1253,14 +1253,14 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
 
 /* Review header + filter tabs. */
 .review-head { width: 100%; margin-top: 6px; }
-.review-head-title { font-size: 12px; font-weight: 800; letter-spacing: 1px; color: #1C1B2E; }
+.review-head-title { font-size: 12px; font-weight: 800; letter-spacing: 1px; color: var(--ink); }
 .review-head-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
 .filter-tabs {
   display: inline-flex;
   gap: 4px;
   padding: 4px;
   border-radius: 12px;
-  background: #ECEDF5;
+  background: var(--paper-line-soft);
   align-self: flex-start;
   max-width: 100%;
   overflow-x: auto;
@@ -1279,7 +1279,7 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
 .filter-tab.incorrect { color: #DC2626; }
 .filter-tab.correct { color: #16A34A; }
 .filter-tab.poll { color: var(--accent); }
-.filter-tab.active { background: #fff; color: #1C1B2E; box-shadow: 0 1px 3px rgba(17, 24, 39, 0.08); }
+.filter-tab.active { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(17, 24, 39, 0.08); }
 .filter-tab.active.incorrect { color: #DC2626; }
 .filter-tab.active.correct { color: #16A34A; }
 .filter-tab.active.poll { color: var(--accent); }
@@ -1288,7 +1288,7 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
 .review-card {
   background: var(--surface);
   border-radius: 16px;
-  border: 1px solid #ECEDF5;
+  border: 1px solid var(--paper-line-soft);
   box-shadow: 0 2px 8px rgba(17, 24, 39, 0.05);
   overflow: hidden;
 }
@@ -1314,7 +1314,7 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
 .q-pill.pending { color: var(--pending); }
 .q-pill.skipped { color: var(--skipped); }
 .q-pill.poll { color: var(--accent); }
-.type-badge { font-size: 11px; font-weight: 600; border-radius: 6px; padding: 3px 8px; background: #F3F4F8; color: #4B5563; }
+.type-badge { font-size: 11px; font-weight: 600; border-radius: 6px; padding: 3px 8px; background: var(--paper-2); color: #4B5563; }
 .type-badge.correct { background: var(--success-bg); color: #15803D; }
 .type-badge.wrong { background: var(--error-bg); color: #B91C1C; }
 .type-badge.pending { background: var(--pending-bg); color: var(--pending); }
@@ -1360,7 +1360,7 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
   margin: 0 0 8px;
   font-size: 18px;
   font-weight: 800;
-  color: #1C1B2E;
+  color: var(--ink);
   line-height: 1.3;
 }
 .skip-confirm-body {
@@ -1390,7 +1390,7 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
   font-size: 11px; font-weight: 500; border-radius: 6px; padding: 3px 7px;
   background: #FFFBEB; color: #D97706;
 }
-.review-question { font-size: 15px; font-weight: 700; color: #1C1B2E; line-height: 1.35; }
+.review-question { font-size: 15px; font-weight: 700; color: var(--ink); line-height: 1.35; }
 .review-body { padding: 0 14px 14px 16px; display: flex; flex-direction: column; gap: 10px; }
 
 /* Written response. */
@@ -1411,7 +1411,7 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
 .answer-chip.correct { color: #16A34A; }
 .answer-chip.pending { color: var(--pending); }
 .answer-chip.skipped { color: var(--skipped); }
-.answer-box-text { font-size: 14px; color: #1C1B2E; word-break: break-word; }
+.answer-box-text { font-size: 14px; color: var(--ink); word-break: break-word; }
 .answer-box-text.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 .answer-box-text.strong { font-weight: 700; }
 .answer-box .written-eval-detail { margin-top: 8px; padding: 0; background: transparent; }
@@ -1421,23 +1421,23 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
 .reason-box {
   border-radius: 12px;
   padding: 12px 14px;
-  background: #F6F7FC;
-  border: 1px solid #ECEDF5;
+  background: var(--paper);
+  border: 1px solid var(--paper-line-soft);
   font-size: 13px;
   line-height: 1.5;
-  color: #3F3D56;
+  color: var(--ink-2);
 }
-.reason-box strong { color: #1C1B2E; }
+.reason-box strong { color: var(--ink); }
 
 /* Fill in the blanks — the sentence with the taker's words as chips. */
 .fb-review-sentence {
   border-radius: 12px;
   padding: 12px 14px;
-  background: #F8F9FB;
-  border: 1px solid #ECEDF5;
+  background: var(--paper);
+  border: 1px solid var(--paper-line-soft);
   font-size: 14px;
   line-height: 2;
-  color: #1C1B2E;
+  color: var(--ink);
   /* .review-card clips (overflow:hidden, for its rounded corners and status bar), so
      anything that cannot wrap here is lost rather than scrollable — a long unbroken
      answer or template word has to break mid-token. Same rule as .answer-box-text. */
@@ -1470,8 +1470,8 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
   border-radius: 12px;
   padding: 14px 10px;
   text-align: center;
-  border: 1.5px solid #ECEDF5;
-  background: #F8F9FB;
+  border: 1.5px solid var(--paper-line-soft);
+  background: var(--paper);
   color: var(--icon-gray);
 }
 .tf-tile-label { font-size: 13px; font-weight: 800; letter-spacing: 0.6px; }
@@ -1489,8 +1489,8 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
   gap: 10px;
   padding: 10px 12px;
   border-radius: 10px;
-  border: 1px solid #ECEDF5;
-  background: #F8F9FB;
+  border: 1px solid var(--paper-line-soft);
+  background: var(--paper);
   font-size: 14px;
   color: var(--icon-gray);
 }
@@ -1502,16 +1502,16 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
 .choice-marker.square { border-radius: 5px; }
 .choice-text { flex: 1; min-width: 0; }
 .choice-tag { font-size: 11px; font-weight: 600; white-space: nowrap; }
-.choice-row.correct { background: var(--success-bg); border-color: #A7F3D0; color: #1C1B2E; font-weight: 600; }
+.choice-row.correct { background: var(--success-bg); border-color: #A7F3D0; color: var(--ink); font-weight: 600; }
 .choice-row.correct .choice-marker { background: #16A34A; border-color: #16A34A; }
 .choice-row.correct .choice-tag { color: #16A34A; }
-.choice-row.wrong { background: var(--error-bg); border-color: #FECACA; color: #1C1B2E; font-weight: 600; }
+.choice-row.wrong { background: var(--error-bg); border-color: #FECACA; color: var(--ink); font-weight: 600; }
 .choice-row.wrong .choice-marker { background: #DC2626; border-color: #DC2626; }
 .choice-row.wrong .choice-tag { color: #DC2626; }
-.choice-row.pending { background: var(--pending-bg); border-color: #FDE68A; color: #1C1B2E; font-weight: 600; }
+.choice-row.pending { background: var(--pending-bg); border-color: #FDE68A; color: var(--ink); font-weight: 600; }
 .choice-row.pending .choice-marker { background: var(--pending); border-color: var(--pending); }
 .choice-row.pending .choice-tag { color: var(--pending); }
-.choice-row.answer { border-color: #A7F3D0; color: #1C1B2E; }
+.choice-row.answer { border-color: #A7F3D0; color: var(--ink); }
 .choice-row.answer .choice-marker { border-color: #16A34A; }
 .choice-row.answer .choice-tag { color: #16A34A; }
 
@@ -1520,12 +1520,12 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
 .result-screen .poll-result-row.mine { border: none; }
 .result-screen .poll-result-row .top { align-items: center; }
 .result-screen .label-wrap { display: inline-flex; align-items: center; gap: 8px; min-width: 0; flex-wrap: wrap; }
-.result-screen .poll-result-row .label { font-size: 14px; font-weight: 500; color: #3F3D56; }
+.result-screen .poll-result-row .label { font-size: 14px; font-weight: 500; color: var(--ink-2); }
 .result-screen .poll-result-row.mine .label { font-weight: 700; color: var(--accent); }
 .your-vote-tag { font-size: 11px; font-weight: 600; border-radius: 6px; padding: 2px 8px; background: color-mix(in srgb, var(--accent) 12%, #fff); color: var(--accent); }
 .result-screen .poll-result-row .pct { font-size: 13px; font-weight: 700; color: var(--accent); white-space: nowrap; }
 .result-screen .poll-result-row:not(.mine) .pct { color: var(--text-secondary); }
-.result-screen .poll-result-bar { background: #ECEDF5; }
+.result-screen .poll-result-bar { background: var(--paper-line-soft); }
 .result-screen .poll-result-row:not(.mine) .poll-result-bar-fill { background: #9CA3AF; }
 .poll-footer {
   display: flex;
@@ -1535,8 +1535,8 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
   margin-top: 4px;
   padding: 10px 12px;
   border-radius: 10px;
-  background: #F6F7FC;
-  border: 1px solid #ECEDF5;
+  background: var(--paper);
+  border: 1px solid var(--paper-line-soft);
   font-size: 12px;
   color: var(--text-secondary);
 }
@@ -1554,7 +1554,7 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
   border-radius: 14px;
   border: 1.5px solid var(--border-light);
   background: #fff;
-  color: #1C1B2E;
+  color: var(--ink);
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
@@ -1602,7 +1602,7 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
 .error-text { color: var(--error); font-size: 13px; }
 .muted { color: var(--text-secondary); font-size: 13px; }
 .sign-out-row { margin-top: 4px; padding-top: 4px; text-align: center; font-size: 13px; color: var(--text-secondary); }
-.sign-out-row .sign-out-link { font-size: 13px; font-weight: 700; color: #1C1B2E; padding: 0; }
+.sign-out-row .sign-out-link { font-size: 13px; font-weight: 700; color: var(--ink); padding: 0; }
 .sign-out-row .sign-out-link:hover { text-decoration: underline; }
 
 /* Quiz-taking and result screens sit in the same centered column as the cards. */
@@ -1799,7 +1799,7 @@ input[type="text"].fb-blank-input { width: 92px; } /* JS grows this inline as th
   --q-border: #E2E3E9;         /* OptionOutline */
   --q-border-strong: #D1D5DB;  /* md_theme_light_outline */
   --q-divider: #F1F2F4;        /* Divider */
-  --q-subtle: #F8F9FB;         /* DialogInfoBoxBg */
+  --q-subtle: var(--paper);         /* DialogInfoBoxBg */
   --q-false-icon-bg: #F3F4F6;  /* ChipBg */
   --q-reason-bg: #FAFAFC;      /* PreviewBg */
   --q-hint-icon: #F59E0B;      /* DialogWarnBadgeDot */
