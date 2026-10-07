@@ -36,6 +36,7 @@ import { reviewQuizSetup, setupSettings } from "../core/rules.js";
 import { showSetupReview } from "../ui/setup-review.js";
 import { buildSidebar } from "../ui/sidebar.js";
 import { openPreview } from "./qe-preview.js";
+import { track } from "../core/analytics.js";
 
 const AUTOSAVE_MS = 1500;
 const NOSET_KEY = "qz-noset";
@@ -1254,8 +1255,14 @@ function celebrate() {
     }
     btn.textContent = label;
   };
-  copyBtn.addEventListener("click", () => copy(code, copyBtn, S.QE_COPIED));
-  msgBtn.addEventListener("click", () => copy(invite, msgBtn, S.QE_MSG_COPIED));
+  copyBtn.addEventListener("click", () => {
+    track("quiz_shared", { quiz_id: state.quiz.id, method: "code_copied", from: "publish_celebration" });
+    copy(code, copyBtn, S.QE_COPIED);
+  });
+  msgBtn.addEventListener("click", () => {
+    track("quiz_shared", { quiz_id: state.quiz.id, method: "invite_copied", from: "publish_celebration" });
+    copy(invite, msgBtn, S.QE_MSG_COPIED);
+  });
   stay.addEventListener("click", close);
   x.addEventListener("click", close);
   overlay.addEventListener("click", (e) => {
@@ -1401,9 +1408,15 @@ async function save(reason) {
   const version = state.version;
   try {
     if (!state.quiz.shareCode) state.quiz.shareCode = await generateUniqueShareCode(state.quiz.id);
+    const wasDraft = state.quiz.isDraft;
     const quiz = { ...state.quiz, isDraft: publishing ? false : state.quiz.isDraft };
     state.quiz.serverUpdatedAt = await saveQuiz(quiz, questions.map(normalizeQuestion), state.user.id, { checkLock: !state.isNew });
     state.quiz.isDraft = quiz.isDraft;
+    // Publishing from the editor is a save with isDraft off, not core publishQuiz(), so the
+    // funnel step is recorded here (the dashboard's Publish goes through publishQuiz()).
+    if (wasDraft && !quiz.isDraft) {
+      track("quiz_published", { quiz_id: quiz.id, question_count: questions.length, from: "editor" });
+    }
     if (state.isNew) {
       state.isNew = false;
       window.history.replaceState(null, "", route(`create/?id=${encodeURIComponent(state.quiz.id)}`));

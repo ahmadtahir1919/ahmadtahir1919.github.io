@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <!-- Before anything paints: the theme and sidebar width chosen on any page (ui/theme.js,
      ui/sidebar.js), so no page flashes light or jumps from a wide sidebar to the rail. -->
-<script>try{var t=localStorage.getItem("qz-theme");if(t)document.documentElement.dataset.theme=t;var p=localStorage.getItem("qz-palette");if(p)document.documentElement.dataset.palette=p;if(localStorage.getItem("quizoma.studio.sidebarCollapsed")==="1")document.documentElement.classList.add("sb-collapsed")}catch(e){}</script>
+<script>try{var t=localStorage.getItem("qz-theme");if(t)document.documentElement.dataset.theme=t;if(localStorage.getItem("quizoma.studio.sidebarCollapsed")==="1")document.documentElement.classList.add("sb-collapsed")}catch(e){}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
 <title>Grading — Quizoma Studio</title>
 <!-- Not a public page: v2 is unreleased and must never be indexed even if it is ever
@@ -17,7 +17,7 @@
 <link rel="stylesheet" href="../ui/styles.css">
 <!-- The grading suite's own styles (design-reference/grading.html), after the shared ones. -->
 <link rel="stylesheet" href="grading.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
 </head>
 <body>
 <div id="root"></div>

@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="quizoma-page" content="404">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Page not found — Quizoma</title>
 <meta name="description" content="That page does not exist. Join a quiz with your room code, or head back to the Quizoma home page.">
@@ -13,13 +14,14 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
 <link rel="preload" href="/fonts/plus-jakarta-sans-latin-var.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/brand.css?v=1">
-<link rel="stylesheet" href="/styles.css?v=7">
-<link rel="stylesheet" href="/page.css?v=4">
+<link rel="stylesheet" href="/brand.css?v=158">
+<link rel="stylesheet" href="/styles.css?v=158">
+<link rel="stylesheet" href="/page.css?v=158">
 </head>
 <body>
-<script src="/cookie-consent.js" defer></script>
-<script src="/analytics.js" defer></script>
+<a class="skip-to-content" href="#main">Skip to content</a>
+<script src="/cookie-consent.js?v=158" defer></script>
+<script src="/analytics.js?v=158" defer></script>
 
 <header class="site-header" id="site-header">
   <div class="header-inner">
@@ -38,7 +40,7 @@
     </div>
     <div class="header-right">
       <a href="/take/" class="btn btn-cream btn-sm" target="_blank" rel="noopener"><img src="/assets/header_icon_02.svg" alt="" width="15" height="12"><span>Join Quiz</span></a>
-      <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+      <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false" aria-controls="mobile-nav">
         <span></span><span></span><span></span>
       </button>
     </div>
@@ -53,7 +55,7 @@
   </nav>
 </header>
 
-<main>
+<main id="main">
   <section class="error-page">
     <div class="container">
       <p class="error-code">404</p>
@@ -101,7 +103,7 @@
         <p>A free classroom quiz and test maker with typo-tolerant grading — the whole quiz marked automatically, or switched to manual marking so you score every answer yourself.</p>
       </div>
       <div class="footer-col">
-        <h4>Product</h4>
+        <h2>Product</h2>
         <a href="/how-it-works/">How It Works</a>
         <a href="/features/">Features</a>
         <a href="/smart-grading/">Smart Grading</a>
@@ -109,14 +111,14 @@
         <a href="/download/">Download the App</a>
       </div>
       <div class="footer-col">
-        <h4>Resources</h4>
+        <h2>Resources</h2>
         <a href="/for-teachers/">For Teachers</a>
         <a href="/why-quizoma/">Why Quizoma</a>
         <a href="/faq/">FAQ</a>
         <a href="/blog/">Blog</a>
       </div>
       <div class="footer-col">
-        <h4>Legal</h4>
+        <h2>Legal</h2>
         <a href="/privacy/">Privacy Policy</a>
         <a href="/terms/">Terms of Service</a>
         <a href="/delete-account/">Delete My Account</a>
@@ -128,12 +130,12 @@
       <div class="footer-links">
         <a href="/privacy/">Privacy Policy</a>
         <a href="/terms/">Terms of Service</a>
-        <a href="#" id="cookie-settings-link">Cookie Settings</a>
+        <button type="button" id="cookie-settings-link">Cookie Settings</button>
       </div>
     </div>
   </div>
 </footer>
 
-<script src="/script.js?v=4" defer></script>
+<script src="/script.js?v=158" defer></script>
 </body>
 </html>

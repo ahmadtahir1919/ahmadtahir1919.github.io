@@ -1,12 +1,16 @@
 # https://quizoma.com/robots.txt
-# Everything on this site is public and meant to be indexed. The unreleased v2
-# pages (web-v2/ in the source repo) are never published here at all, so there
-# is nothing to disallow — see DEPLOY.md.
+# Everything on this site is public and meant to be indexed, except the hidden
+# Studio beta at /studio/ (web-v2/ in the source repo). It is deliberately NOT
+# disallowed here: every Studio page carries <meta name="robots" content="noindex">,
+# and a crawler blocked by robots.txt never reads that tag, so a stray link could
+# still get the bare URL indexed.
 
 User-agent: *
 Allow: /
 
-# .well-known/assetlinks.json is for Android App Links, not for readers.
+# .well-known/ is for Android App Links, not for readers. assetlinks.json itself
+# stays fetchable: Google reads it to tie the site to the app.
+Allow: /.well-known/assetlinks.json
 Disallow: /.well-known/
 
 Sitemap: https://quizoma.com/sitemap.xml

@@ -3,8 +3,8 @@
   https://quizoma.com/sitemap.xml
 
   Hand-maintained: the site has no build step, so adding a page means adding a
-  <url> here AND a cp line in deploy/deploy.sh. Never list a web-v2 page — that
-  folder is unreleased and is not published at all (see DEPLOY.md).
+  <url> here AND a line in deploy/pages.list. Never list a web-v2 page — that
+  folder is the hidden /studio/ beta, noindex and unlinked (see DEPLOY.md).
 
   Update <lastmod> when a page's content genuinely changes; leaving it stale is
   better than bumping every date on every deploy, which teaches crawlers to
@@ -14,7 +14,7 @@
 
   <url>
     <loc>https://quizoma.com/</loc>
-    <lastmod>2026-09-24</lastmod>
+    <lastmod>2026-09-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>
   </url>
@@ -135,21 +135,21 @@
   <!-- Legal / support. Low priority but genuinely public pages. -->
   <url>
     <loc>https://quizoma.com/privacy/</loc>
-    <lastmod>2026-09-18</lastmod>
+    <lastmod>2026-10-07</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
 
   <url>
     <loc>https://quizoma.com/terms/</loc>
-    <lastmod>2026-09-16</lastmod>
+    <lastmod>2026-09-18</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
 
   <url>
     <loc>https://quizoma.com/delete-account/</loc>
-    <lastmod>2026-09-16</lastmod>
+    <lastmod>2026-10-07</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>

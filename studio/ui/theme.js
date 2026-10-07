@@ -33,47 +33,10 @@ export function applyTheme(theme, { animate = false, remember = false } = {}) {
 
 applyTheme(storedTheme());
 
-// Colour palette trial (ui/palette.css): localStorage "qz-palette", applied as data-palette on
-// <html>; absent = the default (Teal). Remove with the sidebar's swatch row once one is chosen.
-const PALETTE_KEY = "qz-palette";
-
-export const PALETTES = [
-  { value: "", name: "Teal", swatch: "#0f766e" },
-  { value: "forest", name: "Forest", swatch: "#166534" },
-  { value: "terracotta", name: "Terracotta", swatch: "#c2410c" },
-  { value: "graphite", name: "Graphite", swatch: "#292524" },
-  { value: "berry", name: "Berry", swatch: "#be185d" },
-  { value: "navy", name: "Navy & Gold", swatch: "#1e3a8a" },
-  { value: "plum", name: "Plum", swatch: "#86198f" },
-  { value: "indigo", name: "Indigo (old)", swatch: "#4f46e5" },
-];
-
-export function storedPalette() {
-  try {
-    return localStorage.getItem(PALETTE_KEY) || "";
-  } catch {
-    return "";
-  }
+// The palette trial is over (Teal won). Forget a trial choice so nothing lingers in storage.
+try {
+  localStorage.removeItem("qz-palette");
+} catch {
+  /* nothing stored */
 }
 
-export function applyPalette(palette, { remember = false } = {}) {
-  const root = document.documentElement;
-  root.classList.add("theming");
-  clearTimeout(applyPalette._t);
-  applyPalette._t = setTimeout(() => root.classList.remove("theming"), 450);
-  if (palette) root.dataset.palette = palette;
-  else delete root.dataset.palette;
-  if (remember) {
-    try {
-      if (palette) localStorage.setItem(PALETTE_KEY, palette);
-      else localStorage.removeItem(PALETTE_KEY);
-    } catch {
-      /* not remembered */
-    }
-  }
-}
-
-{
-  const p = storedPalette();
-  if (p) document.documentElement.dataset.palette = p;
-}

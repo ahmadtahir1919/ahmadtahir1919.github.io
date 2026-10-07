@@ -8,6 +8,7 @@
 // actions: { publish, closePoll, share, duplicate, archive, remove, saveToBank, announce }
 
 import { announceState, homeResultsChipKind, showsHomeAnnounceButton } from "../core/announce.js";
+import { track } from "../core/analytics.js";
 import { joinLink, themeColor } from "../core/models.js";
 import { route } from "../core/paths.js";
 import { S, t } from "../core/strings.js";
@@ -111,7 +112,10 @@ function chips({ quiz, bucket, questionCount, ready, missing, pending, submitted
   }
   if (bucket === "sched") {
     const code = el("button", { type: "button", class: "dv-code", "aria-label": t(S.COPY_CODE_LABEL, { code: quiz.shareCode }), text: quiz.shareCode });
-    code.addEventListener("click", () => copyWithTip(code, quiz.shareCode));
+    code.addEventListener("click", () => {
+      track("quiz_shared", { quiz_id: quiz.id, method: "code_copied", from: "dashboard_card" });
+      copyWithTip(code, quiz.shareCode);
+    });
     return [code];
   }
   if (pending > 0) return [el("span", { class: "warn", text: t(S.N_TO_MARK, { n: pending }) })];
@@ -157,7 +161,10 @@ function menuItems({ quiz, bucket, pollOnly, questionCount }, actions) {
   return [
     { label: S.EDIT, iconName: "pencil", onSelect: () => (window.location.href = editHref(quiz)) },
     !quiz.isDraft ? { label: S.VIEW_RESULTS, iconName: "chart", onSelect: () => (window.location.href = resultsHref(quiz)) } : null,
-    !quiz.isDraft ? { label: S.COPY_LINK, iconName: "link", onSelect: () => copyText(joinLink(quiz.shareCode), S.LINK_COPIED) } : null,
+    !quiz.isDraft ? { label: S.COPY_LINK, iconName: "link", onSelect: () => {
+      track("quiz_shared", { quiz_id: quiz.id, method: "link_copied", from: "dashboard_menu" });
+      copyText(joinLink(quiz.shareCode), S.LINK_COPIED);
+    } } : null,
     bucket === "live" && pollOnly ? { label: S.ACT_CLOSE_POLL, iconName: "stop", onSelect: () => actions.closePoll(quiz) } : null,
     // End quiz / Announce / Hide: one item whose label follows the quiz, the same as the app's Home menu.
     ...(!quiz.isDraft && !quiz.isArchived && !(bucket === "live" && pollOnly) ? [announceMenuItem(announceState(quiz, Date.now()))].filter(Boolean).map((item) => ({ ...item, onSelect: () => actions.announce(quiz) })) : []),

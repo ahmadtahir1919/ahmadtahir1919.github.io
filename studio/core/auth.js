@@ -2,6 +2,7 @@
 // rules every page shares.
 
 import * as backend from "./backend/index.js";
+import * as analytics from "./analytics.js";
 
 /** Same fallback chain as AuthRepository.kt's toDomainUser() and the take page's
  *  resolveDisplayName(), so one person shows up under one name everywhere. */
@@ -22,11 +23,16 @@ export async function signInWithGoogle(redirectTo = window.location.href) {
  *  already holds Google's ID token from the site's /google-signin.js button, so there is no
  *  redirect. [rawNonce] is the UNHASHED nonce. */
 export async function signInWithIdToken(credential, rawNonce) {
-  return backend.signInWithIdToken(credential, rawNonce);
+  const result = await backend.signInWithIdToken(credential, rawNonce);
+  analytics.track("signed_in", { method: "google_id_token" });
+  return result;
 }
 
 export async function signOut() {
-  return backend.signOut();
+  analytics.track("signed_out");
+  const result = await backend.signOut();
+  analytics.reset();
+  return result;
 }
 
 /** Every v2 page is creator-only, so each one calls this first. Returns the signed-in user,
@@ -34,5 +40,9 @@ export async function signOut() {
  *  prompt rather than redirecting, so a shared link doesn't bounce someone somewhere
  *  confusing before they've had a chance to sign in. */
 export async function requireUser() {
-  return currentUser();
+  const user = await currentUser();
+  // The one call every Studio page makes on load: the page view and, when signed in, who it is.
+  if (user) analytics.identify(user.id);
+  analytics.screen(analytics.currentPageName(), { signed_in: !!user });
+  return user;
 }

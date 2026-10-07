@@ -2,6 +2,7 @@
   "name": "Quizoma — Quiz & Test Maker",
   "short_name": "Quizoma",
   "description": "A free classroom quiz and test maker with typo-tolerant grading: mark the whole quiz automatically, or switch it to manual marking.",
+  "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

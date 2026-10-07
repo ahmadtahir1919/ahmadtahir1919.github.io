@@ -10,6 +10,7 @@
 // ./bank-rules.js (re-exported below, so pages import everything from this one file).
 
 import * as backend from "./backend/index.js";
+import * as analytics from "./analytics.js";
 import { asEntry, copyForQuiz, orderQuestions } from "./bank-rules.js";
 import { newId, newQuiz } from "./models.js";
 import { generateUniqueShareCode, isLockedForEditing, listMyQuizzes, loadQuestions, loadQuiz, questionCounts, saveQuiz } from "./quizzes.js";
@@ -41,6 +42,7 @@ export async function saveBankQuestion(userId, question, limits) {
   }
   const now = Date.now();
   await backend.upsertBankQuestions(userId, [asEntry(question, existing?.createdAt ?? now, now)]);
+  if (!existing) analytics.track("bank_question_added", { question_type: question.type });
   return { saved: true };
 }
 
@@ -146,6 +148,6 @@ export async function createQuizFromBank({ userId, entries, limits }) {
   const quiz = { ...newQuiz(), ownerId: userId };
   quiz.shareCode = await generateUniqueShareCode(quiz.id);
   const questions = entries.map((entry, index) => copyForQuiz(entry, quiz.id, { orderIndex: index }));
-  await saveQuiz(quiz, questions, userId, { checkLock: false });
+  await saveQuiz(quiz, questions, userId, { checkLock: false, source: "bank" });
   return { ok: true, quiz };
 }

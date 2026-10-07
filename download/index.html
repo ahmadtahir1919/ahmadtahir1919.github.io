@@ -16,6 +16,7 @@
 <meta property="og:image" content="https://quizoma.com/assets/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Quizoma — a free quiz and test maker for teachers, with dual smart grading.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Download Quizoma — Free Quiz &amp; Test Maker for Android">
 <meta name="twitter:description" content="Coming free to Google Play in October 2026. Android 7.0 and newer, no ads, no in-app purchases.">
@@ -24,9 +25,9 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
 <link rel="preload" href="/fonts/plus-jakarta-sans-latin-var.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/brand.css?v=1">
-<link rel="stylesheet" href="/styles.css?v=9">
-<link rel="stylesheet" href="/page.css?v=4">
+<link rel="stylesheet" href="/brand.css?v=158">
+<link rel="stylesheet" href="/styles.css?v=158">
+<link rel="stylesheet" href="/page.css?v=158">
 <!-- No aggregateRating / review markup here: there are no real ratings to cite
      yet, and inventing them is a manual-action risk. Add it only once the Play
      listing has genuine reviews to mirror. -->
@@ -36,6 +37,7 @@
   "@graph": [
     {
       "@type": "SoftwareApplication",
+      "@id": "https://quizoma.com/#app",
       "name": "Quizoma: Quiz & Test Maker",
       "operatingSystem": "Android 7.0+",
       "applicationCategory": "EducationalApplication",
@@ -43,8 +45,8 @@
       "softwareVersion": "1.0",
       "description": "A free classroom quiz and test maker with dual-track grading: objective questions are marked instantly, and written answers are graded against configurable rules or handed to the teacher for review. Creating and taking a quiz keep working offline and sync later; exports a full PDF report.",
       "image": "https://quizoma.com/icon-512.webp",
-      "author": { "@type": "Organization", "name": "CraftByte Studio" },
-      "publisher": { "@type": "Organization", "name": "CraftByte Studio" },
+      "author": { "@id": "https://quizoma.com/#organization" },
+      "publisher": { "@id": "https://quizoma.com/#organization" },
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
       "featureList": [
         "Six question formats including written short answer and fill in the blanks",
@@ -67,8 +69,9 @@
 </script>
 </head>
 <body>
-<script src="/cookie-consent.js" defer></script>
-<script src="/analytics.js" defer></script>
+<a class="skip-to-content" href="#main">Skip to content</a>
+<script src="/cookie-consent.js?v=158" defer></script>
+<script src="/analytics.js?v=158" defer></script>
 
 <header class="site-header" id="site-header">
   <div class="header-inner">
@@ -90,7 +93,7 @@
         <img src="/assets/header_icon_02.svg" alt="" width="15" height="12">
         <span>Join Quiz</span>
       </a>
-      <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+      <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false" aria-controls="mobile-nav">
         <span></span><span></span><span></span>
       </button>
     </div>
@@ -105,7 +108,7 @@
   </nav>
 </header>
 
-<main>
+<main id="main">
 
   <section class="page-hero">
     <div class="page-hero-glow" aria-hidden="true"></div>
@@ -252,12 +255,12 @@
       <div class="footer-links">
         <a href="/privacy/">Privacy Policy</a>
         <a href="/terms/">Terms of Service</a>
-        <a href="#" id="cookie-settings-link">Cookie Settings</a>
+        <button type="button" id="cookie-settings-link">Cookie Settings</button>
       </div>
     </div>
   </div>
 </footer>
 
-<script src="/script.js?v=5" defer></script>
+<script src="/script.js?v=158" defer></script>
 </body>
 </html>

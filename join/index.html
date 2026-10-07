@@ -16,6 +16,7 @@
 <meta property="og:image" content="https://quizoma.com/assets/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Quizoma — a free quiz and test maker for teachers, with dual smart grading.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Join a Quiz — Quizoma">
 <meta name="twitter:description" content="You've been invited to a Quizoma quiz. Get the app or take it straight in your browser with your room code.">
@@ -25,8 +26,8 @@
 <link rel="icon" href="/favicon.png" sizes="48x48" type="image/png">
 <!-- Cookie consent gate — must load before the inline analytics script below
      holds off PostHog until the visitor accepts. Shared across home/take/join. -->
-<script src="/cookie-consent.js" defer></script>
-<link rel="stylesheet" href="/brand.css?v=1">
+<script src="/cookie-consent.js?v=158" defer></script>
+<link rel="stylesheet" href="/brand.css?v=158">
 <style>
   body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:var(--brand); color:#fff; margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; box-sizing:border-box; }
   .card { background:#fff; color:#111; border-radius:20px; padding:32px 28px; max-width:360px; width:100%; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.25); }
@@ -75,7 +76,31 @@
 
       function loadPostHog() {
         !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],Object.defineProperty(u,"toString",{configurable:!0,enumerable:!0,writable:!0,value:function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e}}),Object.defineProperty(u.people,"toString",{configurable:!0,enumerable:!0,writable:!0,value:function(){return u.toString(1)+".people (stub)"}}),o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagResult isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
-        posthog.init(POSTHOG_API_KEY, { api_host: POSTHOG_HOST, defaults: "2026-05-30", capture_pageview: false, autocapture: false, disable_session_recording: true, capture_pageleave: false });
+        posthog.init(POSTHOG_API_KEY, {
+          api_host: POSTHOG_HOST, defaults: "2026-05-30", capture_pageview: false, autocapture: false, disable_session_recording: true, capture_pageleave: false,
+          // Never send a sign-in token to PostHog. Google sign-in's redirect fallback lands here
+          // with #access_token=...&refresh_token=... in the address bar, and the first screen
+          // view fires before app code tidies the URL away — PostHog puts the full URL on every
+          // event ($current_url) and on the person ($initial_current_url). So every URL-valued
+          // property loses its #fragment and any token-like query parameter before it leaves.
+          before_send: function (event) {
+            var TOKEN_PARAMS = /^(access_token|refresh_token|provider_token|provider_refresh_token|id_token|token|code_verifier)$/i;
+            function clean(url) {
+              if (typeof url !== "string" || url.indexOf("://") === -1) return url;
+              try {
+                var u = new URL(url);
+                u.hash = "";
+                Array.from(u.searchParams.keys()).forEach(function (k) { if (TOKEN_PARAMS.test(k)) u.searchParams.delete(k); });
+                return u.toString();
+              } catch (e) { return url.split("#")[0]; }
+            }
+            [event && event.properties, event && event.$set, event && event.$set_once].forEach(function (bag) {
+              if (!bag) return;
+              Object.keys(bag).forEach(function (k) { if (/url|referrer/i.test(k)) bag[k] = clean(bag[k]); });
+            });
+            return event;
+          },
+        });
         // Super property — see take/analytics.js's registerPlatform() for why every
         // page/platform registers its own, so events are never confused across them.
         try { posthog.register({ platform: "web" }); } catch (e) {}

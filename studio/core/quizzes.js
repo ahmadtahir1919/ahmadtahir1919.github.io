@@ -6,8 +6,16 @@
 import * as backend from "./backend/index.js";
 import { newId, randomShareCode } from "./models.js";
 import { duplicateDraft } from "./release.js";
+import * as analytics from "./analytics.js";
 
-export { loadQuiz, loadQuestions, questionsFor, questionCounts, deleteQuiz } from "./backend/index.js";
+export { loadQuiz, loadQuestions, questionsFor, questionCounts } from "./backend/index.js";
+
+/** Deletes a quiz (and, by cascade, its questions and results). */
+export async function deleteQuiz(quizId) {
+  const result = await backend.deleteQuiz(quizId);
+  analytics.track("quiz_deleted", { quiz_id: quizId });
+  return result;
+}
 
 /** The signed-in user's own quizzes, newest first. */
 export async function listMyQuizzes(userId) {
@@ -54,7 +62,7 @@ export class QuizChangedError extends Error {
  *  QuizChangedError if the server's copy is no longer the one [quiz] was loaded from
  *  (quiz.serverUpdatedAt). Re-checks the edit lock on the server copy right before writing.
  *  Resolves to the quiz's new serverUpdatedAt, which the caller keeps for its next save. */
-export async function saveQuiz(quiz, questions, ownerId, { checkLock = true } = {}) {
+export async function saveQuiz(quiz, questions, ownerId, { checkLock = true, source = "editor" } = {}) {
   if (checkLock) {
     const stored = await backend.loadQuiz(quiz.id);
     if (stored && (await isLockedForEditing(stored))) throw new QuizLockedError();
@@ -67,13 +75,25 @@ export async function saveQuiz(quiz, questions, ownerId, { checkLock = true } = 
     quiz.serverUpdatedAt ?? null
   );
   if (!result.ok) throw new QuizChangedError(result.conflict);
+  // No server version yet = this save created the quiz. [source] says where from (the editor,
+  // a duplicate, the question bank), the same event name as the app's QUIZ_CREATED.
+  if (quiz.serverUpdatedAt == null) {
+    analytics.track("quiz_created", {
+      quiz_id: quiz.id,
+      question_count: questions.length,
+      is_draft: !!quiz.isDraft,
+      source,
+    });
+  }
   return result.serverUpdatedAt;
 }
 
 /** Draft → published only. Once published a quiz never goes back to draft — its share code
  *  would stop working for everyone who already joined (HomeViewModel.kt:1252). */
 export async function publishQuiz(quizId) {
-  return backend.publishQuiz(quizId);
+  const result = await backend.publishQuiz(quizId);
+  analytics.track("quiz_published", { quiz_id: quizId });
+  return result;
 }
 
 /** Archive hides a quiz from the main list; the share code keeps working either way. */
@@ -87,12 +107,17 @@ export async function endQuizNow(quiz) {
   const now = Date.now();
   const startAt = quiz.startAt != null && quiz.startAt <= now ? quiz.startAt : null;
   await backend.setSchedule(quiz.id, startAt, now);
+  analytics.track("quiz_ended", { quiz_id: quiz.id });
   return { ...quiz, startAt, endAt: now };
 }
 
 /** The owner's Announce / Hide (set_results_release). false = refused; nothing was written. */
 export async function setResultsRelease(quizId, mode, releasedAt) {
-  return backend.setResultsRelease(quizId, mode, releasedAt);
+  const ok = await backend.setResultsRelease(quizId, mode, releasedAt);
+  if (ok !== false) {
+    analytics.track(releasedAt != null ? "results_announced" : "results_hidden", { quiz_id: quizId, mode });
+  }
+  return ok;
 }
 
 /** Title and theme of a locked quiz (the app allows both while the rules stay locked); writes nothing else. */
@@ -116,6 +141,6 @@ export async function duplicateQuiz(quizId, ownerId, { suffix, maxTitleChars }) 
     createdAt: Date.now(),
   });
   const copiedQuestions = questions.map((question) => ({ ...question, id: newId() }));
-  await saveQuiz(copy, copiedQuestions, ownerId, { checkLock: false });
+  await saveQuiz(copy, copiedQuestions, ownerId, { checkLock: false, source: "duplicate" });
   return copy;
 }

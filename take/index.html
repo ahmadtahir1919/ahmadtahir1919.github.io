@@ -2,6 +2,15 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<!-- Content-Security-Policy: this page holds the taker's Supabase session, so only the origins
+     it actually uses may run code or receive data. Every entry is a real dependency:
+       script   jsDelivr (supabase-js, pinned + SRI), Google sign-in, PostHog's loader
+       connect  Supabase (this project), PostHog, Google sign-in
+       frame    Google's sign-in button/popup iframe
+       style    'unsafe-inline' because app.js and Google's button set inline styles
+       img      https: for Google profile photos; data: for inline SVG/QR images
+     Adding a new third-party script or API means adding its origin here, or it is blocked. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://accounts.google.com https://us-assets.i.posthog.com; connect-src 'self' https://zorkzqyazigqucskseyp.supabase.co wss://zorkzqyazigqucskseyp.supabase.co https://us.i.posthog.com https://us-assets.i.posthog.com https://accounts.google.com; frame-src https://accounts.google.com; style-src 'self' 'unsafe-inline' https://accounts.google.com; img-src 'self' data: blob: https:; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Join a Quiz — Enter Your Quiz Code | Quizoma</title>
 <meta name="description" content="Enter your 6-character quiz code to take a Quizoma quiz right in the browser. Nothing to install — you just sign in with your Google account.">
@@ -16,6 +25,7 @@
 <meta property="og:image" content="https://quizoma.com/assets/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Quizoma — a free quiz and test maker for teachers, with dual smart grading.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Join a Quiz — Enter Your Quiz Code | Quizoma">
 <meta name="twitter:description" content="Enter your 6-character quiz code to take a Quizoma quiz right in the browser. Nothing to install — you just sign in with Google.">
@@ -32,12 +42,12 @@
      GitHub Pages/browsers otherwise happily serve a stale cached copy after an
      update (this cost real debugging time once already: fixes that were live on
      the server weren't showing up on-device because of exactly this). -->
-<!-- Plus Jakarta Sans — the quiz-taking screen's font (same as the Android app's quiz screen). -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="/brand.css?v=157">
-<link rel="stylesheet" href="style.css?v=157">
+<!-- Plus Jakarta Sans — the quiz-taking screen's font (same as the Android app's quiz screen).
+     Self-hosted, the same file home uses (@font-face in style.css), so a visitor coming from
+     the home page already has it cached and nothing is fetched from Google. -->
+<link rel="preload" href="/fonts/plus-jakarta-sans-latin-var.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/brand.css?v=158">
+<link rel="stylesheet" href="style.css?v=158">
 <!-- Styles for the crawler fallback in <body> only. Inline rather than pulling
      /page.css into the quiz-taking SPA for markup nobody actually looks at:
      app.js wipes it on first render. Sized so the brief flash before boot (or a
@@ -72,30 +82,32 @@
   <!-- Cookie consent gate — must load before analytics.js so it can hold off
        PostHog until the visitor accepts. Shared across home/take/join. -->
   <script src="/cookie-consent.js"></script>
-  <!-- Plain (non-module) — a UMD bundle that attaches itself as window.supabase. -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Plain (non-module) — a UMD bundle that attaches itself as window.supabase. Pinned to an
+       exact version with its SRI hash: a floating @2 meant any new release (or a tampered CDN
+       file) ran here unreviewed, next to the taker's session. Bump both together. -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js" integrity="sha384-dl/4LkSyQ4uEucc48NM6VDZLAjLLq9yMzZ5JLXumBq7Ld33XBof73hseOqPhO89+" crossorigin="anonymous"></script>
   <!-- Google sign-in. Does NOT load Google's script on first paint — it injects
        accounts.google.com/gsi/client only when the sign-in button is actually built, so a
        taker who never signs in never touches Google here. -->
-  <script src="/google-signin.js?v=157"></script>
+  <script src="/google-signin.js?v=158"></script>
   <!-- Plain (non-module), same as above — attaches itself as window.Analytics.
        Loaded before every other script below so they can all call it unconditionally. -->
-  <script src="analytics.js?v=157"></script>
+  <script src="analytics.js?v=158"></script>
   <!-- type="module": each file gets its own isolated top-level scope, so nothing
        declared in these (evaluate, supabase, etc.) can ever collide with the
        library above or with each other — that's what caused the blank-page
        SyntaxError. They still communicate via window.X, same as before;
        modules just can't leak their own top-level names into the global scope. -->
   <!-- strings.js first: every other module reads its user-facing text from window.S. -->
-  <script type="module" src="strings.js?v=157"></script>
-  <script type="module" src="evaluator.js?v=157"></script>
-  <script type="module" src="fillblank.js?v=157"></script>
-  <script type="module" src="grade.js?v=157"></script>
-  <script type="module" src="poll.js?v=157"></script>
-  <script type="module" src="results.js?v=157"></script>
-  <script type="module" src="supabase-client.js?v=157"></script>
+  <script type="module" src="strings.js?v=158"></script>
+  <script type="module" src="evaluator.js?v=158"></script>
+  <script type="module" src="fillblank.js?v=158"></script>
+  <script type="module" src="grade.js?v=158"></script>
+  <script type="module" src="poll.js?v=158"></script>
+  <script type="module" src="results.js?v=158"></script>
+  <script type="module" src="supabase-client.js?v=158"></script>
   <!-- Studio builder preview only (?preview=1): swaps in an in-memory client. -->
-  <script type="module" src="preview.js?v=157"></script>
-  <script type="module" src="app.js?v=157"></script>
+  <script type="module" src="preview.js?v=158"></script>
+  <script type="module" src="app.js?v=158"></script>
 </body>
 </html>

@@ -16,6 +16,7 @@
 <meta property="og:image" content="https://quizoma.com/assets/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Quizoma — a free quiz and test maker for teachers, with dual smart grading.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Quizoma FAQ — Questions from Teachers and Students">
 <meta name="twitter:description" content="Is Quizoma free? Does it work offline? Can it grade written answers? Do students need an account?">
@@ -24,9 +25,9 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
 <link rel="preload" href="/fonts/plus-jakarta-sans-latin-var.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/brand.css?v=1">
-<link rel="stylesheet" href="/styles.css?v=9">
-<link rel="stylesheet" href="/page.css?v=4">
+<link rel="stylesheet" href="/brand.css?v=158">
+<link rel="stylesheet" href="/styles.css?v=158">
+<link rel="stylesheet" href="/page.css?v=158">
 <!-- FAQPage: every question and answer below is also visible on the page, which
      is a requirement for the rich result. Keep the two in sync when editing. -->
 <script type="application/ld+json">
@@ -135,8 +136,9 @@
 </script>
 </head>
 <body>
-<script src="/cookie-consent.js" defer></script>
-<script src="/analytics.js" defer></script>
+<a class="skip-to-content" href="#main">Skip to content</a>
+<script src="/cookie-consent.js?v=158" defer></script>
+<script src="/analytics.js?v=158" defer></script>
 
 <header class="site-header" id="site-header">
   <div class="header-inner">
@@ -158,7 +160,7 @@
         <img src="/assets/header_icon_02.svg" alt="" width="15" height="12">
         <span>Join Quiz</span>
       </a>
-      <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+      <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false" aria-controls="mobile-nav">
         <span></span><span></span><span></span>
       </button>
     </div>
@@ -173,7 +175,7 @@
   </nav>
 </header>
 
-<main>
+<main id="main">
 
   <section class="page-hero">
     <div class="page-hero-glow" aria-hidden="true"></div>
@@ -195,119 +197,119 @@
 
         <div class="faq-item">
           <button class="faq-question" type="button" aria-expanded="false">
-            <span>Is Quizoma free?</span><span class="faq-caret">＋</span>
+            <span>Is Quizoma free?</span><span class="faq-caret" aria-hidden="true">＋</span>
           </button>
           <div class="faq-answer"><p>Yes, completely. There is no paid tier, no per-seat pricing, no trial that expires and no in-app purchases. There is also no advertising anywhere in the app or on the website.</p></div>
         </div>
 
         <div class="faq-item">
           <button class="faq-question" type="button" aria-expanded="false">
-            <span>Can a participant get an unfair zero for a small mistake?</span><span class="faq-caret">＋</span>
+            <span>Can a participant get an unfair zero for a small mistake?</span><span class="faq-caret" aria-hidden="true">＋</span>
           </button>
           <div class="faq-answer"><p>Small typos and close spellings are accepted, and numbers match in any form, so a spelling slip does not cost marks. If you would rather read every written answer yourself, switch the quiz to manual marking and nothing is graded automatically. <a href="/smart-grading/">See how the rules work</a>.</p></div>
         </div>
 
         <div class="faq-item">
           <button class="faq-question" type="button" aria-expanded="false">
-            <span>What happens if the Wi-Fi drops during a test?</span><span class="faq-caret">＋</span>
+            <span>What happens if the Wi-Fi drops during a test?</span><span class="faq-caret" aria-hidden="true">＋</span>
           </button>
           <div class="faq-answer"><p>Nothing is lost. Answers are saved on the participant's device the moment they are given, so a dropped connection never costs progress. Everything syncs back up automatically once the device is online again.</p></div>
         </div>
 
         <div class="faq-item">
           <button class="faq-question" type="button" aria-expanded="false">
-            <span>Does Quizoma work offline?</span><span class="faq-caret">＋</span>
+            <span>Does Quizoma work offline?</span><span class="faq-caret" aria-hidden="true">＋</span>
           </button>
           <div class="faq-answer"><p>Mostly, yes. Creating a quiz works offline, and so does answering one you have already joined — answers are saved on the device and sync when the network returns. Two things do need a connection: signing in, and joining a quiz by code or QR, because the code has to be looked up. The practical advice is to get everyone joined while the network is working; after that it can drop without costing anything.</p></div>
         </div>
 
         <div class="faq-item">
           <button class="faq-question" type="button" aria-expanded="false">
-            <span>Do participants need to pay or create an account?</span><span class="faq-caret">＋</span>
+            <span>Do participants need to pay or create an account?</span><span class="faq-caret" aria-hidden="true">＋</span>
           </button>
           <div class="faq-answer"><p>There is nothing to pay. Participants join with a 6-character room code or a QR code, then sign in with their existing Google account — there is no Quizoma password to create and no separate signup form.</p></div>
         </div>
 
         <div class="faq-item">
           <button class="faq-question" type="button" aria-expanded="false">
-            <span>Can I create a quiz from the website?</span><span class="faq-caret">＋</span>
+            <span>Can I create a quiz from the website?</span><span class="faq-caret" aria-hidden="true">＋</span>
           </button>
           <div class="faq-answer"><p>Not yet. Quizzes are currently created in the Android app, and the website is where people join and take them. Creating from the browser is on the way.</p></div>
         </div>
 
         <div class="faq-item">
           <button class="faq-question" type="button" aria-expanded="false">
-            <span>What devices can participants take a quiz on?</span><span class="faq-caret">＋</span>
+            <span>What devices can participants take a quiz on?</span><span class="faq-caret" aria-hidden="true">＋</span>
           </button>
           <div class="faq-answer"><p>Any of them. Taking a quiz runs in a normal web browser, so an iPhone, iPad, Android phone, Chromebook, Windows laptop or Mac all work. Participants go to <a href="/take/">quizoma.com/take</a> and enter the room code — there is nothing to install.</p></div>
         </div>
 
         <div class="faq-item">
           <button class="faq-question" type="button" aria-expanded="false">
-            <span>How does Quizoma grade written short answers?</span><span class="faq-caret">＋</span>
+            <span>How does Quizoma grade written short answers?</span><span class="faq-caret" aria-hidden="true">＋</span>
           </button>
           <div class="faq-answer"><p>Each question carries a matching rule that you choose: exact match, case-sensitive exact, smart typo-tolerant match, keyword coverage, or numeric equivalence. A question can use several rules at once and is accepted if any of them is satisfied. Typo tolerance is the rule a new question starts with, and an answer that satisfies none of the rules is marked wrong.</p></div>
         </div>
 
         <div class="faq-item">
           <button class="faq-question" type="button" aria-expanded="false">
-            <span>Does it understand that 7 and seven are the same answer?</span><span class="faq-caret">＋</span>
+            <span>Does it understand that 7 and seven are the same answer?</span><span class="faq-caret" aria-hidden="true">＋</span>
           </button>
           <div class="faq-answer"><p>Yes, with the numeric equivalence rule. Numbers are compared as numbers rather than as text, so <code>7</code>, <code>seven</code> and <code>7.0</code> all count as the same answer, as do written forms like "one thousand five hundred" and <code>1500</code>.</p></div>
         </div>
 
         <div class="faq-item">
           <button class="faq-question" type="button" aria-expanded="false">
-            <span>What question formats are supported?</span><span class="faq-caret">＋</span>
+            <span>What question formats are supported?</span><span class="faq-caret" aria-hidden="true">＋</span>
           </button>
           <div class="faq-answer"><p>Six: single choice (multiple choice), multiple correct with partial credit, true/false, written short answer, fill in the blanks with multiple blanks, and polls. All six can be mixed inside one quiz. <a href="/features/">See the full list</a>.</p></div>
         </div>
 
         <div class="faq-item">
           <button class="faq-question" type="button" aria-expanded="false">
-            <span>Can I get a report of the results?</span><span class="faq-caret">＋</span>
+            <span>Can I get a report of the results?</span><span class="faq-caret" aria-hidden="true">＋</span>
           </button>
           <div class="faq-answer"><p>Yes. Scores, a per-question breakdown, every answer as it was typed, and any comments you added while marking are generated automatically as a PDF report for every quiz, ready to save, print or share.</p></div>
         </div>
 
         <div class="faq-item">
           <button class="faq-question" type="button" aria-expanded="false">
-            <span>Are there any limits?</span><span class="faq-caret">＋</span>
+            <span>Are there any limits?</span><span class="faq-caret" aria-hidden="true">＋</span>
           </button>
           <div class="faq-answer"><p>Yes, and they are worth knowing before you start building. By default an account can own <strong>10 quizzes</strong>, each quiz can hold <strong>20 questions</strong>, and an account can be joined to <strong>50 quizzes</strong>. A choice question can have 30 options, and a fill-in-the-blanks question up to 20 blanks with 10 accepted answers each. These are defaults the Quizoma team can adjust without an app update, and none of them are a paywall — everything is free.</p></div>
         </div>
 
         <div class="faq-item">
           <button class="faq-question" type="button" aria-expanded="false">
-            <span>Can people see who voted for what in a poll?</span><span class="faq-caret">＋</span>
+            <span>Can people see who voted for what in a poll?</span><span class="faq-caret" aria-hidden="true">＋</span>
           </button>
           <div class="faq-answer"><p>Not in the app. Polls are not scored, and with anonymous voting switched on participants see totals rather than names, so people answer more honestly. Treat that as “not shown” rather than a privacy guarantee — a vote record still carries an account identifier, so a poll is not the right place for anything sensitive. Use a written or multiple-choice question if you need to know who said what.</p></div>
         </div>
 
         <div class="faq-item">
           <button class="faq-question" type="button" aria-expanded="false">
-            <span>Does answering faster give a higher score?</span><span class="faq-caret">＋</span>
+            <span>Does answering faster give a higher score?</span><span class="faq-caret" aria-hidden="true">＋</span>
           </button>
           <div class="faq-answer"><p>No. Scores are not weighted by speed, so a careful answer is worth exactly as much as a fast one.</p></div>
         </div>
 
         <div class="faq-item">
           <button class="faq-question" type="button" aria-expanded="false">
-            <span>Can I import questions instead of typing them?</span><span class="faq-caret">＋</span>
+            <span>Can I import questions instead of typing them?</span><span class="faq-caret" aria-hidden="true">＋</span>
           </button>
           <div class="faq-answer"><p>Yes, from a <strong>.txt or .csv</strong> file, or from text pasted straight in, up to about 2 MB. A spreadsheet works once you save it as CSV — .xlsx, Word and PDF files are not read. Import covers single choice, multiple correct and true/false questions; written, fill-in-the-blanks and poll questions are added in the editor. You get a preview to review and fix everything before it is saved.</p></div>
         </div>
 
         <div class="faq-item">
           <button class="faq-question" type="button" aria-expanded="false">
-            <span>What data does Quizoma collect, and is it sold?</span><span class="faq-caret">＋</span>
+            <span>What data does Quizoma collect, and is it sold?</span><span class="faq-caret" aria-hidden="true">＋</span>
           </button>
           <div class="faq-answer"><p>Quizoma stores what it needs to run a quiz and produce your report, and it does not sell personal data. The full detail of what is stored and for how long is in the <a href="/privacy/">privacy policy</a>.</p></div>
         </div>
 
         <div class="faq-item">
           <button class="faq-question" type="button" aria-expanded="false">
-            <span>How do I delete my account?</span><span class="faq-caret">＋</span>
+            <span>How do I delete my account?</span><span class="faq-caret" aria-hidden="true">＋</span>
           </button>
           <div class="faq-answer"><p>Account deletion instructions, and what happens to your data afterwards, are on the <a href="/delete-account/">account deletion page</a>.</p></div>
         </div>
@@ -381,12 +383,12 @@
       <div class="footer-links">
         <a href="/privacy/">Privacy Policy</a>
         <a href="/terms/">Terms of Service</a>
-        <a href="#" id="cookie-settings-link">Cookie Settings</a>
+        <button type="button" id="cookie-settings-link">Cookie Settings</button>
       </div>
     </div>
   </div>
 </footer>
 
-<script src="/script.js?v=5" defer></script>
+<script src="/script.js?v=158" defer></script>
 </body>
 </html>

@@ -109,14 +109,6 @@
 .sb-theme button .icon { width: 14px; height: 14px; }
 .sb-theme button:hover { color: var(--fg); }
 .sb-theme button.on { background: var(--surface); color: var(--fg); box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
-/* Colour palette trial (ui/palette.css): a row of swatches above the theme switch. */
-.sb-pal { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; padding: 2px 4px; font-size: 11.5px; }
-.sb-pal-label { font-weight: 700; color: var(--muted); }
-.sb-pal-name { margin-left: auto; font-weight: 600; color: var(--fg); }
-.sb-pal-sw { display: flex; flex-wrap: wrap; gap: 5px; width: 100%; }
-.sb-pal-sw button { width: 20px; height: 20px; padding: 0; border: 0; border-radius: 50%; background: var(--sw); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .18), 0 0 0 1px var(--line-2); transition: transform .15s; }
-.sb-pal-sw button:hover { transform: scale(1.12); }
-.sb-pal-sw button.on { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--sw); }
 .sb-theme-cycle { display: none; place-items: center; width: 44px; height: 40px; padding: 0; border: 0; border-radius: 10px; background: var(--surface-2); color: var(--fg); }
 .sb-theme-cycle .icon { width: 18px; height: 18px; }
 
@@ -156,7 +148,6 @@
   .sb-collapsed .sb-navlabel,
   .sb-collapsed .sb-quota,
   .sb-collapsed .sb-theme,
-  .sb-collapsed .sb-pal,
   .sb-collapsed .sb-user-text,
   .sb-collapsed .sb-user-chev { display: none; }
 

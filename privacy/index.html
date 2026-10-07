@@ -3,22 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Privacy Policy — Quizoma</title>
-<meta name="description" content="How Quizoma collects, uses, shares and protects your information, and the choices you have.">
+<title>Quizoma Privacy Policy — Quiz App for Classrooms</title>
+<meta name="description" content="How Quizoma, the classroom quiz and poll app, collects, uses, shares and protects your information, and the choices you have.">
 <link rel="canonical" href="https://quizoma.com/privacy/">
 <meta name="robots" content="index, follow">
 <meta name="theme-color" content="#0f766e">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Quizoma">
-<meta property="og:title" content="Privacy Policy — Quizoma">
-<meta property="og:description" content="How Quizoma collects, uses, shares and protects your information, and the choices you have.">
+<meta property="og:title" content="Quizoma Privacy Policy — Quiz App for Classrooms">
+<meta property="og:description" content="How Quizoma, the classroom quiz and poll app, collects, uses, shares and protects your information, and the choices you have.">
 <meta property="og:url" content="https://quizoma.com/privacy/">
 <meta property="og:image" content="https://quizoma.com/assets/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Quizoma — a free quiz and test maker for teachers, with dual smart grading.">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Privacy Policy — Quizoma">
-<meta name="twitter:description" content="How Quizoma collects, uses, shares and protects your information, and the choices you have.">
+<meta name="twitter:title" content="Quizoma Privacy Policy — Quiz App for Classrooms">
+<meta name="twitter:description" content="How Quizoma, the classroom quiz and poll app, collects, uses, shares and protects your information, and the choices you have.">
 <meta name="twitter:image" content="https://quizoma.com/assets/og-image.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
@@ -33,10 +34,14 @@
 }
 </script>
 <link rel="icon" href="/favicon.png" sizes="48x48" type="image/png">
-<link rel="stylesheet" href="/brand.css?v=1">
-<link rel="stylesheet" href="/legal.css">
+<link rel="stylesheet" href="/brand.css?v=158">
+<link rel="stylesheet" href="/legal.css?v=158">
 </head>
 <body>
+<a class="skip-to-content" href="#main">Skip to content</a>
+<!-- Cookie consent + PostHog page view, the same pair every other page loads. -->
+<script src="/cookie-consent.js?v=158" defer></script>
+<script src="/analytics.js?v=158" defer></script>
 
 <header class="site-header">
   <div class="inner">
@@ -52,11 +57,11 @@
   </div>
 </header>
 
-<main class="page">
+<main id="main" class="page">
   <div class="doc-head">
     <p class="eyebrow">Legal</p>
     <h1>Privacy Policy</h1>
-    <p class="meta">Effective 16 September 2026 &middot; Last updated 18 September 2026</p>
+    <p class="meta">Effective 16 September 2026 &middot; Last updated 7 October 2026</p>
   </div>
 
   <div class="layout">
@@ -120,7 +125,7 @@
         <ul>
           <li><strong>Notification token.</strong> A push token issued by Google Firebase Cloud Messaging, linked to your account so we can send the notifications you have not turned off. It is removed when you sign out.</li>
           <li><strong>Usage analytics.</strong> Events such as &ldquo;quiz created&rdquo;, &ldquo;quiz joined&rdquo; or &ldquo;answers submitted&rdquo; (with the quiz ID and score), screens viewed, app version, device model, operating system version and an approximate region derived from your IP address. These are linked only to a random account ID, never to your name or email, and never include the text of your questions or answers.</li>
-          <li><strong>Crash reports.</strong> When the app crashes: the technical error, device model, operating system and app version, linked to the same random account ID.</li>
+          <li><strong>Crash reports.</strong> When the app crashes: the technical error, the app screens open just before it, device model, operating system and app version, linked to the same random account ID.</li>
           <li><strong>Advertising ID.</strong> Your resettable Google Advertising ID (from Android device settings), collected through Firebase Analytics. We do not currently show ads, but this identifier keeps the app ready for a future ads or personalised-content feature. You can reset or delete this identifier at any time in your device&rsquo;s Google Settings &rarr; Ads.</li>
         </ul>
 
@@ -186,9 +191,10 @@
         <h2><span class="num">7.</span>How long we keep data</h2>
         <ul>
           <li><strong>Account, quizzes, activity and feedback:</strong> kept until you delete your account, or until you delete a quiz, which removes its questions and all participants&rsquo; answers to it.</li>
+          <li><strong>Removal from a quiz:</strong> if a quiz&rsquo;s host removes you from it, we keep a note of that removal so you cannot join that quiz again. It names only the quiz and your account, and is deleted when the quiz or your account is deleted.</li>
           <li><strong>Notices</strong> that a quiz was deleted or that a participant left, and <strong>announcements</strong>: deleted automatically after 5 days.</li>
           <li><strong>Notification tokens:</strong> removed when you sign out, delete your account, or when Google reports the token is no longer valid.</li>
-          <li><strong>Poll votes in other people&rsquo;s polls:</strong> kept after you delete your account so that poll results stay correct, but no longer linked to your name, email or any account.</li>
+          <li><strong>Poll votes in other people&rsquo;s polls:</strong> deleted when you delete your account, together with any comment you added.</li>
           <li><strong>Analytics and crash reports:</strong> kept by Google and PostHog for the period set in those services, then deleted automatically. They contain only the random account ID, which no longer connects to you once your account is deleted.</li>
           <li><strong>Backups:</strong> deleted information can remain in routine database backups for a short period until those backups are replaced.</li>
         </ul>
@@ -224,7 +230,7 @@
 
       <section id="web">
         <h2><span class="num">11.</span>Our website and web quiz page</h2>
-        <p>The web quiz page lets you take a quiz in a browser after signing in with Google. It keeps your sign-in session in your browser&rsquo;s local storage so you stay signed in; signing out removes it. It also loads a font from Google Fonts, which means Google receives your IP address and browser details.</p>
+        <p>The web quiz page lets you take a quiz in a browser after signing in with Google. It keeps your sign-in session in your browser&rsquo;s local storage so you stay signed in; signing out removes it. Its fonts come from Quizoma&rsquo;s own site. The pages quiz hosts use to build and mark quizzes in a browser still load a font from Google Fonts, which means Google receives your IP address and browser details when you open them.</p>
         <p>Our pages do not set advertising cookies. Product analytics (PostHog) only starts after you accept the cookie banner shown on first visit; declining keeps it off. When enabled, PostHog stores a random identifier in your browser to count visits and the events listed above; it does not record your typing, clicks on page text, or screen recordings. You can change your choice anytime via the &ldquo;Cookie Settings&rdquo; link in the site footer. We do not respond to browser &ldquo;Do Not Track&rdquo; signals, because there is no agreed standard for them, but we do not track you across other websites.</p>
       </section>
 

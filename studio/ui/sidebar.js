@@ -21,7 +21,7 @@ import { displayNames, pendingMarking } from "../core/results.js";
 import { route } from "../core/paths.js";
 import { avatar, el, openMenu } from "./components.js";
 import { icon } from "./icons.js";
-import { applyPalette, applyTheme, PALETTES, storedPalette, storedTheme } from "./theme.js";
+import { applyTheme, storedTheme } from "./theme.js";
 
 const SITE = "https://quizoma.com";
 const COLLAPSE_KEY = "quizoma.studio.sidebarCollapsed";
@@ -108,31 +108,6 @@ export function buildSidebar({ user, active, fetchPending = true }) {
   }
   syncTheme();
 
-  // ── Colour palette trial: one swatch per palette in ui/palette.css ──
-  const paletteBtns = PALETTES.map((p) =>
-    el("button", { type: "button", role: "radio", "data-pal": p.value, title: p.name, "aria-label": p.name, style: `--sw:${p.swatch}`, onclick: () => setPalette(p.value) })
-  );
-  const paletteName = el("span", { class: "sb-pal-name" });
-  const syncPalette = () => {
-    const current = PALETTES.find((p) => p.value === storedPalette()) ?? PALETTES[0];
-    for (const b of paletteBtns) {
-      const on = b.dataset.pal === current.value;
-      b.classList.toggle("on", on);
-      b.setAttribute("aria-checked", String(on));
-    }
-    paletteName.textContent = current.name;
-  };
-  function setPalette(value) {
-    applyPalette(value, { remember: true });
-    syncPalette();
-  }
-  syncPalette();
-  const paletteRow = el("div", { class: "sb-pal" }, [
-    el("span", { class: "sb-pal-label", text: "Colour" }),
-    paletteName,
-    el("div", { class: "sb-pal-sw", role: "radiogroup", "aria-label": "Colour" }, paletteBtns),
-  ]);
-
   // ── Account ──
   const name = displayNameOf(user) || user?.email || "";
   const nameEl = el("span", { class: "sb-user-name ellipsis", text: name });
@@ -193,7 +168,6 @@ export function buildSidebar({ user, active, fetchPending = true }) {
     el("nav", { class: "sb-nav", "aria-label": S.NAV_SECTION }, [el("div", { class: "sb-navlabel", text: S.NAV_SECTION }), ...NAV.map((item) => navLink(item))]),
     el("nav", { class: "sb-nav sb-help", "aria-label": S.QE_HELP }, [el("div", { class: "sb-navlabel", text: S.QE_HELP }), ...HELP.slice(0, 1).map((item) => navLink(item, { external: true })), navLink(FAQ), ...HELP.slice(1).map((item) => navLink(item, { external: true })), navLink(FEEDBACK)]),
     el("div", { class: "sb-foot" }, [
-      paletteRow,
       el("div", { class: "sb-theme", role: "radiogroup", "aria-label": S.QE_THEME }, themeBtns),
       themeCycle,
       quotaNode,

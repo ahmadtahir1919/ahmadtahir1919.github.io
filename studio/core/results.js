@@ -3,6 +3,7 @@
 // Reads go through core/backend/; the scoring that decides what a save writes lives here.
 
 import * as backend from "./backend/index.js";
+import * as analytics from "./analytics.js";
 import { GRADE_FEEDBACK_MAX_CHARS, scoreBreakdown, withAutoVerdict, withManualMark } from "./scoring.js";
 
 export {
@@ -80,6 +81,7 @@ export async function saveGrades(
   const write = buildGradeWrite(attempt, current, { marks, overallFeedback, questionFeedback, restore }, Date.now());
   const saved = await backend.saveGradesRows(write.payload);
   if (!saved) throw new GradesNotSavedError();
+  analytics.track("grades_saved", { quiz_id: attempt.quizId, attempt_count: 1 });
   return write.result;
 }
 
@@ -99,7 +101,7 @@ export async function saveGradesBatch(quizId, entries) {
   const attemptById = new Map(attempts.map((a) => [a.id, a]));
   const answersBy = groupByAttempt(answers);
   const now = Date.now();
-  return Promise.all(
+  const results = await Promise.all(
     entries.map(async (entry) => {
       const attempt = attemptById.get(entry.attemptId);
       if (!attempt) return { attemptId: entry.attemptId, ok: false, error: new GradesNotSavedError() };
@@ -113,6 +115,9 @@ export async function saveGradesBatch(quizId, entries) {
       }
     })
   );
+  const savedCount = results.filter((r) => r.ok).length;
+  if (savedCount > 0) analytics.track("grades_saved", { quiz_id: quizId, attempt_count: savedCount });
+  return results;
 }
 
 /** The save_grades payload for one attempt, from the server's current rows plus only what the

@@ -22,6 +22,7 @@ import { openAnnounceFlow } from "../ui/announce-flow.js";
 import { confetti } from "../ui/motion.js";
 import { mountShell } from "../ui/shell.js";
 import { route } from "../core/paths.js";
+import { track } from "../core/analytics.js";
 import { footer } from "./dash-util.js";
 import { renderEmpty } from "./empty-view.js";
 import { pickNextStep } from "./next-step.js";
@@ -273,11 +274,13 @@ async function share(quiz) {
   if (navigator.share) {
     try {
       await navigator.share({ title: quiz.title?.trim() || S.UNTITLED_QUIZ, url });
+      track("quiz_shared", { quiz_id: quiz.id, method: "share_sheet", from: "dashboard" });
       return;
     } catch (error) {
       if (error?.name === "AbortError") return;
     }
   }
+  track("quiz_shared", { quiz_id: quiz.id, method: "link_copied", from: "dashboard" });
   await copyText(url, S.LINK_COPIED);
 }
 

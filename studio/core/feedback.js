@@ -6,6 +6,7 @@
 // so pages import everything from this one file).
 
 import * as backend from "./backend/index.js";
+import * as analytics from "./analytics.js";
 import { FeedbackCooldownError, clampRating, isCooldownRefusal } from "./feedback-rules.js";
 
 export * from "./feedback-rules.js";
@@ -24,6 +25,7 @@ export async function submitFeedback(userId, { rating, category, message }) {
       message: message.trim(),
       createdAt: Date.now(),
     });
+    analytics.track("feedback_submitted", { rating: clampRating(rating), category });
   } catch (error) {
     if (isCooldownRefusal(error)) throw new FeedbackCooldownError();
     throw error;

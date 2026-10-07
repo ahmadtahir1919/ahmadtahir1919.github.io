@@ -20,6 +20,7 @@ import { button, confirmDialog, copyText, el, emptyState, errorBlock, loadingBlo
 import { mountShell } from "../ui/shell.js";
 import { importResult } from "../bank/bank-dialogs.js";
 import * as V from "./import-views.js";
+import { track } from "../core/analytics.js";
 
 const { TRUE_FALSE } = QUESTION_TYPES;
 const root = document.getElementById("root");
@@ -423,6 +424,7 @@ async function importToBank(parsed) {
     // Questions already in the bank are left out, as on every bulk save (the app's importToBank too).
     const { toImport, skippedTexts } = dedupeForBank(await listMyBank(state.user.id), questions);
     const result = await saveAllToBank(state.user.id, toImport, state.limits);
+    if (result?.saved || result?.ok) track("questions_imported", { count: toImport.length });
     if (result.atCap) {
       limitDialog(S.IMP_LIMIT_BANK_BADGE, S.BANK_FULL_TITLE, t(S.BANK_FULL_IMPORT_BODY, { n: result.atCap }));
       return;

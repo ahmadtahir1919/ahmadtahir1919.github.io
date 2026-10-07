@@ -5,6 +5,7 @@
 //
 // renderPopulated(container, ctx) → cleanup()
 
+import { track } from "../core/analytics.js";
 import { S, t } from "../core/strings.js";
 import { route } from "../core/paths.js";
 import { el, withLoading } from "../ui/components.js";
@@ -99,7 +100,10 @@ function spotlight(ctx, quizzesNode) {
       title = t(S.NS_SOON_TITLE, { quiz: name, time: timeOrDate(quiz.startAt) });
       body = S.NS_SOON_BODY;
       const copy = el("button", { type: "button", class: "dv-b1", text: t(S.NS_SOON_COPY, { code: quiz.shareCode }) });
-      copy.addEventListener("click", () => copyWithTip(copy, quiz.shareCode));
+      copy.addEventListener("click", () => {
+        track("quiz_shared", { quiz_id: quiz.id, method: "code_copied", from: "dashboard_next_step" });
+        copyWithTip(copy, quiz.shareCode);
+      });
       buttons = [copy, act("dv-b2", S.ACT_SHARE, () => actions.share(quiz))];
       break;
     }
