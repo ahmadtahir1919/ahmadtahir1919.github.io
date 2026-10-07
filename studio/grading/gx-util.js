@@ -12,11 +12,11 @@ export const SPRING = "cubic-bezier(.34,1.56,.64,1)";
 
 /** Question-type colours, the editor's. Soft backgrounds are computed in CSS (color-mix). */
 export const TYPES = {
-  [QT.SINGLE_CHOICE]: { c: "#4f46e5", n: () => S.GX_T_SINGLE },
+  [QT.SINGLE_CHOICE]: { c: "var(--accent)", n: () => S.GX_T_SINGLE },
   [QT.MULTIPLE_CORRECT]: { c: "#7c3aed", n: () => S.GX_T_MULTI },
-  [QT.TRUE_FALSE]: { c: "#0d9488", n: () => S.GX_T_TF },
+  [QT.TRUE_FALSE]: { c: "#a16207", n: () => S.GX_T_TF },
   [QT.WRITTEN]: { c: "#ea580c", n: () => S.GX_T_WRITTEN },
-  [QT.FILL_BLANK]: { c: "#0284c7", n: () => S.GX_T_BLANKS },
+  [QT.FILL_BLANK]: { c: "#4d7c0f", n: () => S.GX_T_BLANKS },
   [QT.POLL]: { c: "#db2777", n: () => S.GX_T_POLL },
 };
 export const typeOf = (type) => TYPES[type] ?? TYPES[QT.SINGLE_CHOICE];
@@ -24,7 +24,7 @@ export const typeOf = (type) => TYPES[type] ?? TYPES[QT.SINGLE_CHOICE];
 export const softOf = (c) => `color-mix(in srgb,${c} 15%,var(--surface))`;
 
 /** Student avatar colours: picked from the name, so a student has one colour everywhere. */
-export const COLS = ["#4f46e5", "#0d9488", "#db2777", "#ea580c", "#0284c7", "#7c3aed", "#15803d", "#b45309", "#be123c", "#334155"];
+export const COLS = ["#65a30d", "#0d9488", "#db2777", "#ea580c", "#0284c7", "#7c3aed", "#15803d", "#b45309", "#be123c", "#334155"];
 export const colOf = (name) => COLS[[...String(name)].reduce((a, c) => a + c.charCodeAt(0), 0) % COLS.length];
 export const ini = (name) =>
   String(name)

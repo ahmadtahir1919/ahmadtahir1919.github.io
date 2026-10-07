@@ -52,7 +52,7 @@ const BUILDERS = {
 /** Cards for the dashboard. Labels are functions so they read the current strings; swatch
  *  colour and glyph are the ones in design-reference/dashboard-welcome.html. */
 export const TEMPLATES = [
-  { id: "math", swatch: "#4f46e5", glyph: "#", title: () => S.TPL_MATH_TITLE, body: () => S.TPL_MATH_BODY, group: () => S.TPL_MATH_GROUP },
+  { id: "math", swatch: "#0f766e", glyph: "#", title: () => S.TPL_MATH_TITLE, body: () => S.TPL_MATH_BODY, group: () => S.TPL_MATH_GROUP },
   { id: "history", swatch: "#d97706", glyph: "H", title: () => S.TPL_HISTORY_TITLE, body: () => S.TPL_HISTORY_BODY, group: () => S.TPL_HISTORY_GROUP },
   { id: "checkin", swatch: "#0d9488", glyph: "✓", title: () => S.TPL_CHECKIN_TITLE, body: () => S.TPL_CHECKIN_BODY, group: () => S.TPL_CHECKIN_GROUP },
 ];

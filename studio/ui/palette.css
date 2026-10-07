@@ -247,3 +247,18 @@
 .empty-art [fill="#eef2ff"] { fill: var(--p-brand-soft); }
 .empty-art [stroke="#c7d2fe"] { stroke: var(--p-brand-line); }
 :root .gx .gempty-card .empty-art { background: var(--p-brand-softer); }
+
+/* Question-type chips that were indigo / blue: Single choice in the Question Bank and
+   Multiple choice in Import now use the brand colour. */
+:root,
+:root:not([data-theme="light"]),
+:root[data-theme="dark"] {
+  --bk-single-bg: var(--p-brand-soft);
+  --bk-single: var(--p-brand);
+}
+.imp,
+:root:not([data-theme="light"]) .imp,
+:root[data-theme="dark"] .imp {
+  --imp-multi-bg: var(--p-brand-soft);
+  --imp-multi: var(--p-brand);
+}

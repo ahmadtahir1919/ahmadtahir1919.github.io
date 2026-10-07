@@ -187,11 +187,11 @@ html[data-page="editor"] body { background: var(--bg); color: var(--fg); font-fa
 .qe .todo-t { color: var(--faint); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .qe .tyi { display: inline-grid; place-items: center; color: var(--tc); flex: none; }
 .qe .tyi svg { width: 11px; height: 11px; }
-.qe [data-ty="SINGLE_CHOICE"] { --tc: #4f46e5; --tc-soft: #eef0ff; }
+.qe [data-ty="SINGLE_CHOICE"] { --tc: var(--accent); --tc-soft: var(--accent-soft); }
 .qe [data-ty="MULTIPLE_CORRECT"] { --tc: #7c3aed; --tc-soft: #f3edff; }
-.qe [data-ty="TRUE_FALSE"] { --tc: #0d9488; --tc-soft: #e3f7f4; }
+.qe [data-ty="TRUE_FALSE"] { --tc: #a16207; --tc-soft: #fbf1d3; }
 .qe [data-ty="WRITTEN"] { --tc: #c2410c; --tc-soft: #fff0e6; }
-.qe [data-ty="FILL_BLANK"] { --tc: #0369a1; --tc-soft: #e6f3fb; }
+.qe [data-ty="FILL_BLANK"] { --tc: #4d7c0f; --tc-soft: #eef5df; }
 .qe [data-ty="POLL"] { --tc: #be185d; --tc-soft: #fde9f2; }
 :root[data-theme="dark"] .qe .ri { --tc-soft: color-mix(in srgb, var(--tc) 22%, var(--surface)); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .qe .ri { --tc-soft: color-mix(in srgb, var(--tc) 22%, var(--surface)); } }
