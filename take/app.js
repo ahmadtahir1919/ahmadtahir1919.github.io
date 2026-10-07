@@ -47,10 +47,11 @@ if (!PREVIEW && window.SupabaseClient.initError) {
   throw new Error("Quizoma web: Supabase client failed to initialize — aborting boot.");
 }
 
-const { evaluate, gradeWritten, defaultAnswerRule } = window.Evaluator;
+const { evaluate, gradeWritten } = window.Evaluator;
 const S = window.S;
 const SC = PREVIEW ? window.PreviewClient : window.SupabaseClient;
 const FB = window.FillBlank;
+const { gradeQuestion, answerRuleFor, requiresManualMarking, rapidBonusApplies } = window.Grade;
 const PL = window.Poll;
 const RV = window.ResultsVisibility;
 
@@ -2008,7 +2009,7 @@ function buildInstantFeedback(q, rawKeys) {
       if (!expected.trim()) {
         correct = true;
       } else {
-        const rule = q.answerRule || defaultAnswerRule();
+        const rule = answerRuleFor(q);
         // Same verdict finishQuiz stores — see gradeWritten.
         correct = gradeWritten(evaluate(userInput, expected, rule), q.points, rule).isCorrect;
       }
@@ -2032,12 +2033,6 @@ function proceedPastQuestion() {
   }
   state.currentIndex += 1;
   prepareCurrentQuestion();
-}
-
-/** Mirrors Grading.kt's requiresManualMarking: all-or-nothing at the quiz level, no
- *  per-question override. Polls are never hand-marked — nothing to be right about. */
-function requiresManualMarking(q, quiz) {
-  return q.type !== "POLL" && quiz.manualMarkingDefault === true;
 }
 
 async function finishQuiz() {
@@ -2084,101 +2079,25 @@ async function finishQuiz() {
     return;
   }
 
-  const evaluator = window.Evaluator;
   const scored = state.quiz.questions.filter((q) => q.type !== "POLL");
   const answers = scored.map((q) => {
-    const rawKeys = state.questionAnswers[q.id] || [];
-    let given;
-    if (q.type === "WRITTEN" || q.type === "FILL_BLANK") given = rawKeys;
-    else given = rawKeys.map((k) => (q.options || [])[Number(k)]).filter((v) => v !== undefined);
-
-    // Hand-marked questions skip evaluation entirely and submit as pending, exactly as
-    // QuizPreviewViewModel.finishPreview does. Grading them here would hand the taker a
-    // verdict the owner never gave — and one the owner's marking would then overwrite.
-    const isManual = requiresManualMarking(q, state.quiz);
-
-    let isCorrect = false;
-    // rawPoints mirrors exactly what awardedPoints was before split-points/time-weightage
-    // existed for every type except a split-points-enabled MULTIPLE_CORRECT — see
-    // QuizPreviewViewModel.finishPreview's identical comment on the Android side.
-    let rawPoints = 0;
-    // Populated only for an auto-graded WRITTEN answer with something on both sides to
-    // actually compare — mirrors Android's evalResult, which is likewise null for the
-    // trivial blank-input/blank-expected-answer cases. Used by the review card to show
-    // the same status label/points/word-by-word detail Android's WrittenEvalRow does,
-    // instead of a flat correct/wrong line with no explanation of *why*.
-    let evaluationResult = null;
-    if (!isManual) {
-      if (q.type === "WRITTEN") {
-        const userInput = given[0] || "";
-        const expected = q.writtenAnswer || "";
-        if (!userInput.trim()) {
-          isCorrect = false;
-          rawPoints = 0;
-        } else if (!expected.trim()) {
-          // No expected answer was ever set — any attempt counts as correct, for full marks.
-          isCorrect = true;
-          rawPoints = q.points;
-        } else {
-          const rule = q.answerRule || defaultAnswerRule();
-          evaluationResult = evaluator.evaluate(userInput, expected, rule);
-          // G-01: the award IS computeScore's partial credit rounded to a whole mark, and the
-          // verdict comes from that same number — mirrors finishPreview via gradeWritten.
-          const grade = evaluator.gradeWritten(evaluationResult, q.points, rule);
-          isCorrect = grade.isCorrect;
-          rawPoints = grade.awardedPoints;
-        }
-      } else if (q.type === "FILL_BLANK") {
-        isCorrect = q.fillBlankContent ? FB.fillBlankIsQuestionCorrect(q.fillBlankContent, given) : false;
-        rawPoints = isCorrect ? q.points : 0;
-      } else if (q.type === "MULTIPLE_CORRECT") {
-        // By option position, same as buildInstantFeedback — both verdicts come from
-        // evaluator.isMultipleCorrectAnswer (mirrors Android's finishPreview).
-        const options = q.options || [];
-        const correctIdx = options.map((_, i) => i).filter((i) => (q.correctAnswers || []).includes(options[i]));
-        const pickedIdx = new Set(rawKeys.map(Number).filter((n) => !Number.isNaN(n)));
-        const acceptAny = !!q.acceptAnyCorrect;
-        if (state.quiz.splitPointsAcrossChoices) {
-          // Correctness is a set comparison inside scoreSplitMultipleCorrect, not
-          // "rawPoints === q.points" as it used to be — see that function's doc in
-          // evaluator.js for the two ways that comparison marked wrong answers correct.
-          const scored = evaluator.scoreSplitMultipleCorrect(correctIdx, pickedIdx, q.points, acceptAny);
-          rawPoints = scored.rawPoints;
-          isCorrect = scored.isCorrect;
-        } else {
-          isCorrect = evaluator.isMultipleCorrectAnswer(new Set(correctIdx), pickedIdx, acceptAny);
-          rawPoints = isCorrect ? q.points : 0;
-        }
-      } else {
-        const a = new Set(given), b = new Set(q.correctAnswers || []);
-        // Non-empty: a skipped question must never match a keyless one (empty == empty).
-        isCorrect = a.size > 0 && a.size === b.size && [...a].every((x) => b.has(x));
-        rawPoints = isCorrect ? q.points : 0;
-      }
-    }
-
-    // Uniform across every scored type — no-op when the toggle is off, when the creator opted
-    // this question out of it, or when it has no active timer (see applyTimeWeightage's doc
-    // in evaluator.js).
     const elapsedSec = state.questionTimings[q.id] || 0;
-    const effectiveTimeLimitSec = state.quiz.showTimers ? q.timeSec : 0;
-    const finalPoints = evaluator.applyTimeWeightage(rawPoints, elapsedSec, effectiveTimeLimitSec, rapidBonusApplies(q, state.quiz));
-
+    // The per-question rule lives in grade.js so the server's shadow grader runs the same code
+    // (pinned to Android by webtest/fixtures/grading-cases.json).
+    const graded = gradeQuestion(q, state.quiz, state.questionAnswers[q.id] || [], elapsedSec);
     return {
       questionId: q.id,
-      isCorrect,
-      givenAnswers: given,
+      isCorrect: graded.isCorrect,
+      givenAnswers: graded.given,
       timeTakenSec: elapsedSec,
-      needsManualMarking: isManual,
-      // null on a manual answer is what marks it pending — a blank answer included, so the
-      // owner's queue counts every question. Mirrors QuizPreviewViewModel.finishPreview.
-      awardedPoints: isManual ? null : finalPoints,
+      needsManualMarking: graded.needsManualMarking,
+      awardedPoints: graded.awardedPoints,
       maxPoints: q.points,
       usedHint: state.hintUsed[q.id] === true,
       // In-memory only for this same-session review — attempt_answers has no column for
       // it (mirrors what's actually persisted), same as Android's evalResult isn't
       // re-derivable after the fact either without re-running the evaluator.
-      evaluationResult,
+      evaluationResult: graded.evaluationResult,
     };
   });
 
@@ -2364,12 +2283,6 @@ function buildHintBox(hint) {
     ]),
     el("p", { class: "hint-box-text" }, [hint]),
   ]);
-}
-
-/** Whether this question's own rapid bonus choice (Question.rapidBonus) or, failing one, the
- *  quiz-wide toggle switches the bonus on. Mirrors Models.kt's rapidBonusApplies. */
-function rapidBonusApplies(q, quiz) {
-  return q.rapidBonus ?? quiz.timeWeightageEnabled === true;
 }
 
 /** Whether the rapid bonus really scales this question — the same condition scoring applies
