@@ -437,7 +437,7 @@ function paletteGroup(ctx, render) {
   const quiz = ctx.quiz();
   const current = QUIZ_THEMES.find((x) => x.name === quiz.themeColorName) ?? QUIZ_THEMES[0];
   return el("div", { class: "grp" }, [
-    el("h5", {}, [S.QE_PALETTE, el("span", { class: "cname", text: current.name })]),
+    el("h5", {}, [S.QE_PALETTE, el("span", { class: "cname", text: current.label ?? current.name })]),
     el(
       "div",
       { class: "colors", role: "radiogroup", "aria-label": S.QE_PALETTE },

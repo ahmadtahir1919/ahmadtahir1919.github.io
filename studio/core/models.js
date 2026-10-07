@@ -214,9 +214,20 @@ export function hasOnlyUntimedQuestions(questions) {
 
 // ── Quiz themes and reading time ────────────────────────────────────────────
 
+/** The brand colour as the stylesheet currently has it (ui/palette.css), "#0F766E" outside a browser. */
+function brandColor() {
+  try {
+    return getComputedStyle(document.documentElement).getPropertyValue("--p-brand").trim() || "#0F766E";
+  } catch {
+    return "#0F766E";
+  }
+}
+
 /** QUIZ_THEME_COLORS (ui/theme/QuizThemeColors.kt) — `name` is what theme_color_name stores. */
 export const QUIZ_THEMES = [
-  { name: "Indigo", color: "#4F46E5" },
+  // The stored name stays "Indigo" (that is what the app writes and reads), but on the web it is
+  // the site's own brand colour: it follows --p-brand (ui/palette.css) and is shown as "Quizoma".
+  { name: "Indigo", label: "Quizoma", get color() { return brandColor(); } },
   { name: "Forest", color: "#16A34A" },
   { name: "Crimson", color: "#DC2626" },
   { name: "Teal", color: "#0F766E" },

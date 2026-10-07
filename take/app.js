@@ -12,8 +12,12 @@ const QUIZ_THEME_COLORS = {
   Amber: "#D97706", Rose: "#BE185D", Sky: "#0284C7", Violet: "#7C3AED",
   Orange: "#EA580C", Cyan: "#0891B2",
 };
+// "Indigo" is the app's default theme and what almost every quiz stores, so on the web it is the
+// site's brand colour (--brand in /brand.css) rather than the app's indigo.
 function themeColorFromName(name) {
-  return QUIZ_THEME_COLORS[name] || QUIZ_THEME_COLORS.Indigo;
+  const c = QUIZ_THEME_COLORS[name] || QUIZ_THEME_COLORS.Indigo;
+  if (c !== QUIZ_THEME_COLORS.Indigo) return c;
+  return getComputedStyle(document.documentElement).getPropertyValue("--brand").trim() || "#0F766E";
 }
 
 const app = document.getElementById("app");
