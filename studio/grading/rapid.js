@@ -369,8 +369,11 @@ function endNode(ctx) {
           ? el("button", { class: "bt pri subbtn", type: "button", id: "endSubmit", onclick: () => ctx.submit() }, [G.send(), S.GX_SUBMIT_MARKS, el("i", { class: "subn", text: String(drafts) })])
           : null,
         el("button", { class: drafts ? "bt" : "bt pri", type: "button", id: "seeChart", text: S.GX_VIEW_CHART, onclick: () => ctx.celebrate(true) }),
-        el("button", { class: "bt", type: "button", id: "remark", onclick: again }, [G.redo(14), S.GX_MARK_AGAIN]),
         el("button", { class: "bt", type: "button", "data-goto": "ind", text: S.GX_REVIEW_BY_STUDENT, onclick: () => ctx.setMode("ind") }),
+      ]),
+      el("button", { class: "again", type: "button", id: "remark", onclick: again }, [
+        G.redo(16),
+        el("span", {}, [el("b", { text: S.GX_MARK_AGAIN }), el("small", { text: S.GX_REMARK_BODY })]),
       ]),
     ]);
   }
