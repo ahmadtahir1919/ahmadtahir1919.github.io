@@ -106,25 +106,27 @@ export async function askSubmitMarks({ quizId, marks, students }) {
     if (!hidden) {
       extras.push(
         el("label", { class: "card card-pad", style: "display:flex;align-items:center;gap:12px;cursor:pointer" }, [
-          el("span", { style: "flex:1" }, [
+          el("span", { style: "flex:1;min-width:0" }, [
             el("strong", { text: S.GRADE_SUBMIT_NOTIFY }),
             el("span", { class: "small muted", style: "display:block", text: S.GRADE_SUBMIT_NOTIFY_HINT }),
           ]),
-          switchControl({
-            checked: notify,
-            label: S.GRADE_SUBMIT_NOTIFY,
-            onChange: (value) => {
-              notify = value;
-              writeNotify(value);
-              refresh();
-            },
-          }),
+          el("span", { style: "flex-shrink:0" }, [
+            switchControl({
+              checked: notify,
+              label: S.GRADE_SUBMIT_NOTIFY,
+              onChange: (value) => {
+                notify = value;
+                writeNotify(value);
+                refresh();
+              },
+            }),
+          ]),
         ])
       );
     } else if (options.length) {
       const name = `rel-${Math.random().toString(36).slice(2)}`;
       extras.push(
-        el("fieldset", { class: "card card-pad stack-sm", style: "border:0;margin:0" }, [
+        el("fieldset", { class: "card card-pad stack-sm", style: "border:0;margin:0;min-width:0" }, [
           el("legend", { class: "small", style: "font-weight:700;padding:0", text: S.GRADE_SUBMIT_RELEASE_LABEL }),
           ...options.map((option) => {
             const input = el("input", { type: "radio", name, value: option, checked: option === release });

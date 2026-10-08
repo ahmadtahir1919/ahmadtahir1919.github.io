@@ -15,11 +15,12 @@ import { betaBar, el, errorBlock, loadingBlock, renderSignInGate, renderSpinner 
 import { buildSidebar } from "../ui/sidebar.js";
 import "../ui/theme.js";
 import { renderHome } from "./home.js";
-import { mountSuite } from "./suite.js";
+import { announceItem, mountSuite, refreshQuizState } from "./suite.js";
+import { openAnnounceFlow } from "../ui/announce-flow.js";
 import { openReport } from "./reports.js";
 import { bottomTabs } from "./mtabs.js";
 import { mountToast, toast } from "./toast.js";
-import { loadAll, pendingTotal, store, subscribe } from "./store.js";
+import { draftCount, loadAll, pendingTotal, store, stuStatus, subscribe } from "./store.js";
 
 const root = document.getElementById("root");
 document.documentElement.dataset.page = "grading";
@@ -55,7 +56,27 @@ async function start() {
     });
 
   const renderHub = () =>
-    renderHome(hub, { onOpen: (qm, mode) => openQuiz(qm, mode), onReport: (qm) => report(qm, { scope: "class" }) });
+    renderHome(hub, {
+      onOpen: (qm, mode) => openQuiz(qm, mode),
+      onReport: (qm) => report(qm, { scope: "class" }),
+      announceItem,
+      onAnnounce: (qm) => announceFromList(qm),
+    });
+  /** ⋮ End quiz / Announce / Hide on a list row. Marks still waiting to be submitted: open the quiz
+   *  first, where its own ⋮ submits them before announcing. */
+  const announceFromList = (qm) => {
+    if (draftCount(qm)) {
+      openQuiz(qm, "ind");
+      toast(S.GX_ANNOUNCE_SUBMIT_FIRST);
+      return;
+    }
+    return openAnnounceFlow({
+      quizId: qm.id,
+      pendingCount: qm.studs.filter((s) => stuStatus(qm, s) === "need").length,
+      onMarkFirst: () => openQuiz(qm, "rapid"),
+      onDone: () => refreshQuizState(qm).then(() => !hub.hidden && renderHub()),
+    });
+  };
   const showHome = ({ push = true } = {}) => {
     suite.close();
     suiteSec.hidden = true;

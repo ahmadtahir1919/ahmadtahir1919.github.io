@@ -1547,6 +1547,7 @@ export const S = {
   GX_PROG_MARKED: " answers marked",
   GX_PROG_AUTO: "Auto-marked · nothing to mark",
   GX_SUBMIT_MARKS: "Submit marks",
+  GX_ANNOUNCE_SUBMIT_FIRST: "Submit your marks first, then use ⋮ to announce.",
   GX_SUBMIT_MARKS_TITLE: "Marks stay a draft until you submit them",
   GX_SUBMIT: "Submit",
   GX_SUBMIT_TITLE_ONE: "Submit {n} mark?",

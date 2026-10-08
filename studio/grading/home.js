@@ -4,14 +4,15 @@
 
 import { S, t } from "../core/strings.js";
 import { route } from "../core/paths.js";
-import { el, emptyState } from "../ui/components.js";
+import { el, emptyState, menuButton } from "../ui/components.js";
 import { G, iniTile, plural } from "./gx-util.js";
 import { draftCount, manualKeys, pendingOf, pollOnly, store, subs } from "./store.js";
 
 /**
- * renderHome(section, { onOpen(qm, mode), onReport(qm) })
+ * renderHome(section, { onOpen(qm, mode), onReport(qm), announceItem(qm), onAnnounce(qm) })
+ *   announceItem(qm): the ⋮ End quiz / Announce / Hide item for a row, or null for no ⋮.
  */
-export function renderHome(section, { onOpen, onReport }) {
+export function renderHome(section, { onOpen, onReport, announceItem = () => null, onAnnounce = () => {} }) {
   const last = (qm) => Math.max(0, ...subs(qm).map((s) => s.sub));
   const sorted = [...store.quizzes].sort((a, b) => pendingOf(b) - pendingOf(a) || last(b) - last(a));
   const pend = sorted.filter((qm) => pendingOf(qm) > 0);
@@ -94,6 +95,8 @@ export function renderHome(section, { onOpen, onReport }) {
     const dl = el("button", { class: "icob", type: "button", title: S.GX_DOWNLOAD_REPORTS, "aria-label": t(S.GX_DOWNLOAD_FOR, { title: qm.title }), onclick: () => onReport(qm) }, [G.download()]);
     const only = pollOnly(qm);
     const polls = qm.polls.length;
+    const item = announceItem(qm);
+    const more = item ? menuButton(() => [{ ...item, danger: item.iconName === "stop", onSelect: () => onAnnounce(qm) }]) : null;
     return el("div", { class: `qrowc ${p ? "" : "donec"}`, style: `animation-delay:${i * 60}ms` }, [
       iniTile("", qm.color, { text: qm.ini }),
       el("div", { style: "min-width:0" }, [
@@ -124,8 +127,9 @@ export function renderHome(section, { onOpen, onReport }) {
               el("button", { class: "bt pri", type: "button", onclick: () => onOpen(qm, "rapid") }, [G.bolt(14), S.GX_START_RAPID]),
               el("button", { class: "bt", type: "button", onclick: () => onOpen(qm, "ind"), text: S.GX_OPEN }),
               dl,
-            ]
-          : [el("button", { class: "bt", type: "button", onclick: () => onOpen(qm, "rapid"), text: S.GX_REVIEW_MARKS }), dl]
+              more,
+            ].filter(Boolean)
+          : [el("button", { class: "bt", type: "button", onclick: () => onOpen(qm, "rapid"), text: S.GX_REVIEW_MARKS }), dl, more].filter(Boolean)
       ),
     ]);
   }

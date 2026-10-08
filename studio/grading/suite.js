@@ -4,8 +4,10 @@
 // down while the Download reports dialog is open).
 
 import { S, t } from "../core/strings.js";
-import { button, el, openDialog } from "../ui/components.js";
-import { runAnnounceAction } from "../ui/announce-flow.js";
+import { button, el, menuButton, openDialog } from "../ui/components.js";
+import { announceMenuItem, openAnnounceFlow, runAnnounceAction } from "../ui/announce-flow.js";
+import { announceState } from "../core/announce.js";
+import { loadQuiz } from "../core/quizzes.js";
 import { askSubmitMarks } from "./submit-dialog.js";
 import { G, countTo, kbd, plural, reduce, typing } from "./gx-util.js";
 import { clearUndo, discardDrafts, draftCount, draftStudents, manualKeys, pendingOf, pollOnly, stuStatus, submitDrafts, subscribe, undo, undoStack } from "./store.js";
@@ -17,6 +19,22 @@ import { commitNotes, indKey, renderInd } from "./by-student.js";
 import { celebrate, closeCeleb } from "./celebrate.js";
 
 const MODES = ["rapid", "byq", "ind"];
+
+/** The ⋮ item for a quiz in the grading suite or list: End quiz / Announce / Hide, or null. */
+export function announceItem(qm) {
+  if (!qm.quiz || qm.quiz.isArchived || pollOnly(qm)) return null;
+  return announceMenuItem(announceState(qm.quiz, Date.now()));
+}
+
+/** Re-reads the quiz's settings (release, end time) into qm.quiz after an announce, end or hide. */
+export async function refreshQuizState(qm) {
+  try {
+    const fresh = await loadQuiz(qm.id);
+    if (fresh) qm.quiz = fresh;
+  } catch (error) {
+    console.warn(error); // offline: keep what we had
+  }
+}
 const celebrated = new Set();
 
 /**
@@ -125,6 +143,13 @@ export function mountSuite(section, { onBack, openReport, onModeChange = () => {
     toggleKb();
   });
 
+  // ⋮ End quiz / Announce / Hide results — the same flow as the results page, for this quiz.
+  const announceBtn = menuButton(() => {
+    const item = ctx.qm ? announceItem(ctx.qm) : null;
+    return item ? [{ ...item, danger: item.iconName === "stop", onSelect: () => announceFromSuite() }] : [];
+  });
+  announceBtn.classList.add("announcebtn");
+
   const sbar = el("div", { class: "sbar" }, [
     el("button", { class: "back", type: "button", id: "toHub", onclick: () => onBack() }, [G.back(), S.GRADING_TITLE]),
     qname,
@@ -133,6 +158,7 @@ export function mountSuite(section, { onBack, openReport, onModeChange = () => {
     progress,
     el("div", { class: "stools" }, [undoBtn, pollChip, dlBtn, kbw]),
     submitBtn,
+    announceBtn,
   ]);
   section.replaceChildren(sbar, ctx.stage);
 
@@ -145,6 +171,28 @@ export function mountSuite(section, { onBack, openReport, onModeChange = () => {
   ctx.renderMode = renderMode;
   ctx.updProgress = updProgress;
   ctx.submit = () => askSubmit();
+
+  /** Shown only when there is something to do (never for a draft, an archived quiz or Show Score on and over). */
+  function updAnnounce() {
+    announceBtn.hidden = !ctx.qm || !announceItem(ctx.qm);
+  }
+
+  /** Marks waiting go first — an announcement must not go out over unsent drafts — then the flow, read fresh. */
+  async function announceFromSuite() {
+    const qm = ctx.qm;
+    if (!qm) return;
+    if (draftCount(qm) && !(await askSubmit())) return;
+    if (ctx.qm !== qm) return;
+    await openAnnounceFlow({
+      quizId: qm.id,
+      pendingCount: qm.studs.filter((s) => stuStatus(qm, s) === "need").length,
+      onMarkFirst: () => {
+        ctx.filter = "unmarked";
+        setMode("rapid");
+      },
+      onDone: () => refreshQuizState(qm).then(() => ctx.qm === qm && updAnnounce()),
+    });
+  }
 
   function updUndo() {
     undoBtn.disabled = !ctx.qm || !undoStack(ctx.qm).length;
@@ -198,6 +246,20 @@ export function mountSuite(section, { onBack, openReport, onModeChange = () => {
     if (res.sent) toast(plural(res.sent, S.GX_SUBMITTED_ONE, S.GX_SUBMITTED_MANY));
     if (res.failed) toast(plural(res.failed, S.GX_SUBMIT_FAILED_ONE, S.GX_SUBMIT_FAILED_MANY));
     if (releaseFailed) toast(S.GRADE_SUBMIT_RELEASE_FAILED);
+    else if (choice.action && choice.action !== "END_ONLY") {
+      // Announced: the app's "Results announced — Hide", which takes it back at once.
+      toast(S.ANNOUNCE_SNACKBAR_ANNOUNCED, {
+        label: S.ANNOUNCE_SNACKBAR_HIDE,
+        fn: () =>
+          runAnnounceAction("HIDE", choice.quiz)
+            .catch((error) => {
+              console.error(error);
+              toast(S.ANNOUNCE_FAILED);
+            })
+            .finally(() => refreshQuizState(qm).then(() => ctx.qm === qm && updAnnounce())),
+      });
+    }
+    if (choice.action) refreshQuizState(qm).then(() => ctx.qm === qm && updAnnounce());
     return draftCount(qm) === 0;
   }
 
@@ -423,6 +485,9 @@ export function mountSuite(section, { onBack, openReport, onModeChange = () => {
       pollChip.hidden = only || !qm.polls.length;
       pollChip.querySelector(".pcw").textContent = plural(qm.polls.length, S.GX_POLL_CHIP_ONE, S.GX_POLL_CHIP_MANY);
       for (const n of [modes, progress, submitBtn, dlBtn, undoBtn, kbw]) n.hidden = only;
+      updAnnounce();
+      // The list's copy may be old (announced in the app since): re-read it for the menu.
+      refreshQuizState(qm).then(() => ctx.qm === qm && updAnnounce());
       pDone.dataset.v = "0";
       updProgress();
       updDrafts();

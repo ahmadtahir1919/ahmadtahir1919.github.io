@@ -707,11 +707,15 @@ html[data-page="grading"].theming .gx *{transition:background-color .4s,border-c
   .gx .rlist{overflow:visible}
   .gx .pbody{overflow:visible}
   .gx .mback{display:inline-flex}
-  .gx .pfoot{position:sticky;bottom:64px;z-index:5}
+  .gx .pfoot{position:sticky;bottom:64px;z-index:5;flex-wrap:wrap}
+  /* "Everyone is marked" / "Next to mark" (+ Submit) on its own row above Previous / Next — on one
+     row they ran past a phone's edge and widened the whole page (and the sheets opened over it). */
+  .gx .pfoot .pway{order:-1;flex-basis:100%;justify-content:center;flex-wrap:wrap}
+  .gx .pfoot .bt.pri{margin-left:auto}
   .gx .hstats,.gx .gsteps{grid-template-columns:minmax(0,1fr)}
   .gx .qrowc{grid-template-columns:auto minmax(0,1fr);}
   .gx .qrowc .ringw{display:none}
-  .gx .qrowc .qacts{grid-column:1/-1}
+  .gx .qrowc .qacts{grid-column:1/-1;flex-wrap:wrap}
   .gx .qacts .bt{flex:1}
   .gx .bqhead{grid-template-columns:minmax(0,1fr)}
   .gx .stamp{top:14px;right:14px}
