@@ -573,7 +573,7 @@ export const FAQ_ITEMS = [
     id: "when-students-see",
     category: "results",
     question: "When do participants see their results?",
-    answer: "You choose, under **Show results**: **When the quiz ends** or **When I announce them**. With the first, results appear at the end time (or when you end the quiz, if there is no end time). With the second, nobody sees anything until you announce. The Show Score & Result setting must also allow it.",
+    answer: "You choose, under **Show results**: **When the quiz ends** or **When I announce them**. With the first, results appear at the end time (or when you end the quiz, if there is no end time). With the second, nobody sees anything until you announce. Either way, **End quiz / Announce** (or the Submit marks dialog while grading) can also announce early and keep the quiz open — you are warned first, since people who have seen their result can share answers with those still taking it. The Show Score & Result setting must also allow it.",
     keywords: ["release", "announce", "visible", "show results"],
   },
   {

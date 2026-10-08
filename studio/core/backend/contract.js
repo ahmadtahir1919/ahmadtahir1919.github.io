@@ -221,7 +221,7 @@ export const BACKEND_FUNCTIONS = {
 //                                                 still waiting for a mark; avgPct = mean of
 //                                                 score/total as a whole percent
 //   displayNames(userIds): Map<userId, string>    blank names left out
-//   saveGradesRows({attemptId, score, total, overallFeedback, gradedAt, rows: GradeRow[]}):
+//   saveGradesRows({attemptId, score, total, overallFeedback, gradedAt, rows: GradeRow[], notify?}):
 //                                                 boolean — atomic; false = refused (retake
 //                                                 since read, or not the owner), nothing written
 //   removeParticipant(quizId, userId)             their attempt + membership; never the owner

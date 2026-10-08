@@ -869,6 +869,9 @@ export const S = {
   ANNOUNCE_CHOICE_KEEP_OPEN: "Announce now, keep quiz open",
   ANNOUNCE_CHOICE_KEEP_OPEN_HELPER: "Anyone who submits after this sees their result right away and can share answers.",
   ANNOUNCE_CHOICE_HIDE: "Hide results",
+  // Announce now, keep quiz open: the cheating warning before anything is written.
+  ANNOUNCE_KEEP_OPEN_WARN_TITLE: "The quiz is still open",
+  ANNOUNCE_KEEP_OPEN_WARN_BODY: "Anyone who has seen their result can share the answers with people still taking the quiz. To prevent cheating, end the quiz first.",
   ANNOUNCE_HAND_MARKED_NOTE: "Participants with written answers see their result after you mark them.",
   ANNOUNCE_CONFIRM_END_AUTO: "The quiz will close and everyone will see their result.",
   ANNOUNCE_CONFIRM_END_AUTO_MARKED: "The quiz will close and everyone will see their result. Participants with written answers see theirs after you mark them.",
@@ -896,7 +899,6 @@ export const S = {
   ANNOUNCE_CARD_ANNOUNCED: "Results are out. Participants can see them.",
   ANNOUNCE_CARD_PENDING_ONE: "{n} paper still to mark. Participants with unmarked answers wait for your marks.",
   ANNOUNCE_CARD_PENDING_MANY: "{n} papers still to mark. Participants with unmarked answers wait for your marks.",
-  ANNOUNCE_CARD_END_NOW: "End quiz now",
   HOME_RESULTS_CHIP_AUTO_WITH_END: "Results at {when}",
   HOME_RESULTS_CHIP_AUTO_NO_END: "Results when you end the quiz",
   HOME_RESULTS_CHIP_NOT_ANNOUNCED: "Not announced",
@@ -1549,11 +1551,28 @@ export const S = {
   GX_SUBMIT: "Submit",
   GX_SUBMIT_TITLE_ONE: "Submit {n} mark?",
   GX_SUBMIT_TITLE_MANY: "Submit {n} marks?",
-  // Marks submitted while results are hidden (Show Score off, not announced) notify nobody — the app's
-  // gradedNotificationText stays silent until results come out — so this can't promise a notification.
-  GX_SUBMIT_BODY_ONE: "{n} participant's marks will be submitted. They're notified if they can see their result now; if results are still hidden, they'll hear when results come out. Are you sure you want to submit?",
-  GX_SUBMIT_BODY_MANY: "{n} participants' marks will be submitted. They're notified if they can see their result now; if results are still hidden, they'll hear when results come out. Are you sure you want to submit?",
-  GX_SUBMIT_BADGE: "Marks go to participants",
+  // The Submit confirm — the app's SubmitMarksDialog, same words (webtest/text-parity.test.mjs).
+  GRADE_SUBMIT_CONFIRM: "Yes, submit",
+  GRADE_SUBMIT_BADGE: "Participants are notified",
+  GRADE_SUBMIT_BODY_ONE: "{n} participant will get a notification that their marks were updated. Are you sure you want to submit?",
+  GRADE_SUBMIT_BODY_MANY: "{n} participants will get a notification that their marks were updated. Are you sure you want to submit?",
+  // Results hidden (Show Score off, not released yet): submitting notifies nobody.
+  GRADE_SUBMIT_BADGE_HIDDEN: "Results are hidden",
+  GRADE_SUBMIT_BODY_HIDDEN_MANUAL: "Show Score & Result is off for this quiz, so participants won't be notified yet. They'll see these marks when you announce results.",
+  GRADE_SUBMIT_BODY_HIDDEN_AUTO_END: "Show Score & Result is off for this quiz, so participants won't be notified yet. They'll see these marks when the quiz ends.",
+  GRADE_SUBMIT_BODY_HIDDEN_AUTO_NO_END: "Show Score & Result is off for this quiz, so participants won't be notified yet. They'll see these marks when you end the quiz.",
+  // Show Score off but already released: a paper with answers still to mark stays hidden.
+  GRADE_SUBMIT_BODY_RELEASED: "Participants whose answers are all marked will be notified and can see their marks. Anyone with answers still to mark hears once you finish their paper.",
+  // "Notify participants" (results visible): off = submitted quietly, no notification.
+  GRADE_SUBMIT_NOTIFY: "Notify participants",
+  GRADE_SUBMIT_NOTIFY_HINT: "Send a notification that their marks changed. Your choice is remembered.",
+  GRADE_SUBMIT_BADGE_QUIET: "No notification",
+  GRADE_SUBMIT_BODY_QUIET: "Marks will be updated without a notification. Participants see them the next time they open their result.",
+  // Results hidden: what happens to them after submitting. Keep hidden is always the default.
+  GRADE_SUBMIT_RELEASE_LABEL: "After submitting",
+  GRADE_SUBMIT_RELEASE_KEEP_HIDDEN: "Keep results hidden",
+  GRADE_SUBMIT_RELEASE_ANNOUNCE: "Announce results",
+  GRADE_SUBMIT_RELEASE_FAILED: "Marks submitted, but results weren't announced. Try Announce from the quiz.",
   GX_SUBMITTED_ONE: "Marks sent to {n} participant",
   GX_SUBMITTED_MANY: "Marks sent to {n} participants",
   GX_SUBMIT_FAILED_ONE: "Couldn't send marks for {n} participant. They're kept as a draft — check your connection and submit again.",

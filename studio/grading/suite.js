@@ -4,7 +4,9 @@
 // down while the Download reports dialog is open).
 
 import { S, t } from "../core/strings.js";
-import { button, confirmDialog, el, openDialog } from "../ui/components.js";
+import { button, el, openDialog } from "../ui/components.js";
+import { runAnnounceAction } from "../ui/announce-flow.js";
+import { askSubmitMarks } from "./submit-dialog.js";
 import { G, countTo, kbd, plural, reduce, typing } from "./gx-util.js";
 import { clearUndo, discardDrafts, draftCount, draftStudents, manualKeys, pendingOf, pollOnly, stuStatus, submitDrafts, subscribe, undo, undoStack } from "./store.js";
 import { toast } from "./toast.js";
@@ -163,19 +165,26 @@ export function mountSuite(section, { onBack, openReport, onModeChange = () => {
     const n = qm ? draftCount(qm) : 0;
     if (!n) return true;
     const m = draftStudents(qm).length;
-    const ok = await confirmDialog({
-      title: plural(n, S.GX_SUBMIT_TITLE_ONE, S.GX_SUBMIT_TITLE_MANY),
-      body: plural(m, S.GX_SUBMIT_BODY_ONE, S.GX_SUBMIT_BODY_MANY),
-      badge: S.GX_SUBMIT_BADGE,
-      confirmLabel: S.GX_SUBMIT,
-      danger: false,
-    });
-    if (!ok || ctx.qm !== qm) return false;
+    const choice = await askSubmitMarks({ quizId: qm.id, marks: n, students: m });
+    if (!choice || ctx.qm !== qm) return false;
     submitBtn.classList.add("busy");
     submitBtn.disabled = true;
     let res;
+    let releaseFailed = false;
     try {
-      res = await submitDrafts(qm);
+      res = await submitDrafts(qm, { notify: choice.notify });
+      // Marks first, then the end / announce the owner picked — and only when every mark landed:
+      // an announce over a failed student's old marks would show them the wrong result.
+      if (choice.action) {
+        if (res.failed === 0 && res.sent > 0) {
+          try {
+            await runAnnounceAction(choice.action, choice.quiz);
+          } catch (error) {
+            console.error(error);
+            releaseFailed = true;
+          }
+        } else releaseFailed = true;
+      }
     } finally {
       submitBtn.classList.remove("busy");
       updDrafts();
@@ -188,6 +197,7 @@ export function mountSuite(section, { onBack, openReport, onModeChange = () => {
     if (ctx.qm === qm && ctx.mode === "ind") renderInd(ctx, true);
     if (res.sent) toast(plural(res.sent, S.GX_SUBMITTED_ONE, S.GX_SUBMITTED_MANY));
     if (res.failed) toast(plural(res.failed, S.GX_SUBMIT_FAILED_ONE, S.GX_SUBMIT_FAILED_MANY));
+    if (releaseFailed) toast(S.GRADE_SUBMIT_RELEASE_FAILED);
     return draftCount(qm) === 0;
   }
 

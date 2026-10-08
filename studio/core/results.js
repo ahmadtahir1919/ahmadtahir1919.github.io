@@ -91,11 +91,12 @@ export async function saveGrades(
  * each attempt's write is atomic on its own, exactly as in saveGrades.
  *
  *   entries: [{ attemptId, marks, overallFeedback, questionFeedback, restore }]
+ *   notify:  false = submitted quietly, no notification (save_grades p_notify)
  *   returns: [{ attemptId, ok: true, attempt, answers } | { attemptId, ok: false, error }]
  * A false from the server comes back as error = GradesNotSavedError; a network failure as
  * the thrown error, so the caller can tell "retry later" from "this sheet changed".
  */
-export async function saveGradesBatch(quizId, entries) {
+export async function saveGradesBatch(quizId, entries, { notify = true } = {}) {
   const ids = entries.map((e) => e.attemptId);
   const [attempts, answers] = await Promise.all([backend.loadAttempts([quizId]), backend.loadAnswers(ids)]);
   const attemptById = new Map(attempts.map((a) => [a.id, a]));
@@ -107,7 +108,7 @@ export async function saveGradesBatch(quizId, entries) {
       if (!attempt) return { attemptId: entry.attemptId, ok: false, error: new GradesNotSavedError() };
       try {
         const write = buildGradeWrite(attempt, answersBy.get(entry.attemptId) ?? [], entry, now);
-        const saved = await backend.saveGradesRows(write.payload);
+        const saved = await backend.saveGradesRows({ ...write.payload, notify });
         if (!saved) return { attemptId: entry.attemptId, ok: false, error: new GradesNotSavedError() };
         return { attemptId: entry.attemptId, ok: true, ...write.result };
       } catch (error) {

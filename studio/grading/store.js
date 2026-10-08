@@ -439,12 +439,12 @@ function entryFor(qm, s) {
  * failed ones stay drafts to try again; rejected ones (the student retook, the sheet changed)
  * are dropped and the quiz is re-read.
  */
-export async function submitDrafts(qm) {
+export async function submitDrafts(qm, { notify = true } = {}) {
   const studs = draftStudents(qm);
   if (!studs.length) return { sent: 0, failed: 0, rejected: 0 };
   let results;
   try {
-    results = await saveGradesBatch(qm.id, studs.map((s) => entryFor(qm, s)));
+    results = await saveGradesBatch(qm.id, studs.map((s) => entryFor(qm, s)), { notify });
   } catch (error) {
     console.warn(error); // offline or a dropped request: everything stays a draft
     return { sent: 0, failed: studs.length, rejected: 0 };

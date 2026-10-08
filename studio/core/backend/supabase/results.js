@@ -165,7 +165,7 @@ export async function displayNames(userIds) {
 
 /** One atomic write of an attempt's marks (save_grades RPC). Returns false when the server
  *  refused — the taker retook, or the caller isn't the owner — and nothing was written. */
-export async function saveGradesRows({ attemptId, score, total, overallFeedback, gradedAt, rows }) {
+export async function saveGradesRows({ attemptId, score, total, overallFeedback, gradedAt, rows, notify = true }) {
   const { data, error } = await db.rpc("save_grades", {
     p_attempt_id: attemptId,
     p_score: score,
@@ -173,6 +173,7 @@ export async function saveGradesRows({ attemptId, score, total, overallFeedback,
     p_overall_feedback: overallFeedback,
     p_graded_at: gradedAt,
     p_answers: rows,
+    p_notify: notify,
   });
   if (error) throw error;
   return data === true;

@@ -75,11 +75,12 @@ export function announceStep(quiz, questions, now, pendingCount) {
     case ANNOUNCE_STATE.PLAIN_END:
       return { kind: "CONFIRM_END", plain: true, handMarked: false };
     case ANNOUNCE_STATE.LIVE_AUTO:
-      return { kind: "CONFIRM_END", plain: false, handMarked };
+      // "When the quiz ends": ending is what announces, so the sheet has no "End quiz only".
+      return { kind: "CHOICE", scheduledNotStarted: notStarted, handMarked, alreadyAnnounced: false, auto: true };
     case ANNOUNCE_STATE.LIVE_MANUAL:
-      return { kind: "CHOICE", scheduledNotStarted: notStarted, handMarked, alreadyAnnounced: false };
+      return { kind: "CHOICE", scheduledNotStarted: notStarted, handMarked, alreadyAnnounced: false, auto: false };
     case ANNOUNCE_STATE.LIVE_ANNOUNCED:
-      return { kind: "CHOICE", scheduledNotStarted: notStarted, handMarked, alreadyAnnounced: true };
+      return { kind: "CHOICE", scheduledNotStarted: notStarted, handMarked, alreadyAnnounced: true, auto: false };
     case ANNOUNCE_STATE.ANNOUNCED:
       return { kind: "CONFIRM_HIDE", wasAuto: !isManual(quiz) };
     default:
@@ -98,8 +99,8 @@ export function announceStep(quiz, questions, now, pendingCount) {
 export function announceMenuKey(state) {
   switch (state) {
     case ANNOUNCE_STATE.PLAIN_END:
-    case ANNOUNCE_STATE.LIVE_AUTO:
       return "END_QUIZ";
+    case ANNOUNCE_STATE.LIVE_AUTO:
     case ANNOUNCE_STATE.LIVE_MANUAL:
       return "END_OR_ANNOUNCE";
     case ANNOUNCE_STATE.LIVE_ANNOUNCED:

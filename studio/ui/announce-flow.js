@@ -47,7 +47,9 @@ export async function openAnnounceFlow({ quizId, pendingCount = null, poll = fal
         return;
       }
       case "CHOICE": {
-        const action = await choiceSheet(step);
+        let action = await choiceSheet(step);
+        // Keep open: the cheating warning first; nothing is written until it is answered.
+        if (action === "ANNOUNCE_KEEP_OPEN") action = await keepOpenWarning(step.auto);
         if (action) await act(action, quiz, done);
         return;
       }
@@ -99,26 +101,40 @@ export async function openAnnounceFlow({ quizId, pendingCount = null, poll = fal
   }
 }
 
-/** Runs the owner's choice. Announcing is always MANUAL + now; hiding is MANUAL + null (so an AUTO quiz that
- *  was showing results because it ended stays hidden) — exactly the app's announceNow / hideNow. */
-async function act(action, quiz, done, endedMessage = S.QUIZ_ENDED) {
+/**
+ * Does [action] to [quiz] — no dialog, no toast (the app's ResultsAnnounceFlow.run). Announcing is always
+ * MANUAL + now; hiding is MANUAL + null (so an AUTO quiz that was showing results because it ended stays
+ * hidden) — exactly the app's announceNow / hideNow. Throws on failure; the error's `ended` says the quiz
+ * did end first. The grading Submit dialog runs its "after submitting" choice through this too.
+ */
+export async function runAnnounceAction(action, quiz) {
   let ended = false;
   try {
     if (action === "END_ONLY" || action === "END_AND_ANNOUNCE") {
       await endQuizNow(quiz);
       ended = true;
-      if (action === "END_ONLY") {
-        toast(endedMessage, { tone: "success" });
-        done();
-        return;
-      }
+      if (action === "END_ONLY") return;
     }
-    if (action === "HIDE") {
-      if (!(await setResultsRelease(quiz.id, "MANUAL", null))) throw new Error("refused");
+    const releasedAt = action === "HIDE" ? null : Date.now();
+    if (!(await setResultsRelease(quiz.id, "MANUAL", releasedAt))) throw new Error("refused");
+  } catch (error) {
+    throw Object.assign(error instanceof Error ? error : new Error(String(error?.message ?? error)), { ended });
+  }
+}
+
+/** Runs the owner's choice, then says how it went. */
+async function act(action, quiz, done, endedMessage = S.QUIZ_ENDED) {
+  try {
+    await runAnnounceAction(action, quiz);
+    if (action === "END_ONLY") {
+      toast(endedMessage, { tone: "success" });
       done();
       return;
     }
-    if (!(await setResultsRelease(quiz.id, "MANUAL", Date.now()))) throw new Error("refused");
+    if (action === "HIDE") {
+      done();
+      return;
+    }
     done();
     toast(S.ANNOUNCE_SNACKBAR_ANNOUNCED, {
       tone: "success",
@@ -126,6 +142,7 @@ async function act(action, quiz, done, endedMessage = S.QUIZ_ENDED) {
     });
   } catch (error) {
     console.error(error);
+    const ended = error.ended === true;
     // The quiz did end, so the page must show that even though the announce did not land.
     if (ended) done();
     toast(ended && action === "END_AND_ANNOUNCE" ? S.ANNOUNCE_ENDED_NOT_ANNOUNCED : S.ANNOUNCE_FAILED, { tone: "error" });
@@ -159,8 +176,9 @@ function choiceSheet(step) {
           button({ label: S.ANNOUNCE_CHOICE_HIDE, variant: "secondary", onClick: pick("HIDE"), attrs: block }),
         ]
       : [
-          button({ label: S.ANNOUNCE_CHOICE_END_AND_ANNOUNCE, variant: "primary", onClick: pick("END_AND_ANNOUNCE"), attrs: block }),
-          button({ label: S.ANNOUNCE_CHOICE_END_ONLY, variant: "secondary", onClick: pick("END_ONLY"), attrs: block }),
+          // "When the quiz ends": ending is what announces, so there is no "End quiz only".
+          button({ label: S.ANNOUNCE_CHOICE_END_AND_ANNOUNCE, variant: "primary", onClick: pick(step.auto ? "END_ONLY" : "END_AND_ANNOUNCE"), attrs: block }),
+          step.auto ? null : button({ label: S.ANNOUNCE_CHOICE_END_ONLY, variant: "secondary", onClick: pick("END_ONLY"), attrs: block }),
           // Not offered before the quiz has started: there is nothing open to keep open.
           step.scheduledNotStarted
             ? null
@@ -177,6 +195,35 @@ function choiceSheet(step) {
         ].filter(Boolean)),
       ],
       actions: [button({ label: S.CANCEL, variant: "secondary", onClick: () => dlg.close("cancel") })],
+      onClose: () => resolve(result),
+    });
+  });
+}
+
+/**
+ * "The quiz is still open" — after "Announce now, keep quiz open", before anything is written. End quiz and
+ * announce (the safe way; END_ONLY for an AUTO quiz, where ending is announcing) or Announce anyway
+ * (ANNOUNCE_KEEP_OPEN). Resolves null for Cancel. Shared with the grading Submit dialog.
+ */
+export function keepOpenWarning(auto) {
+  return new Promise((resolve) => {
+    let result = null;
+    const pick = (value) => () => {
+      result = value;
+      dlg.close("pick");
+    };
+    const endBtn = button({ label: S.ANNOUNCE_CHOICE_END_AND_ANNOUNCE, variant: "primary", onClick: pick(auto ? "END_ONLY" : "END_AND_ANNOUNCE") });
+    const dlg = openDialog({
+      badge: S.ANNOUNCE_BADGE,
+      badgeTone: "warn",
+      title: S.ANNOUNCE_KEEP_OPEN_WARN_TITLE,
+      content: [el("p", { class: "dialog-body", text: S.ANNOUNCE_KEEP_OPEN_WARN_BODY })],
+      actions: [
+        button({ label: S.CANCEL, variant: "secondary", onClick: () => dlg.close("cancel") }),
+        button({ label: S.ANNOUNCE_ANYWAY, variant: "secondary", onClick: pick("ANNOUNCE_KEEP_OPEN") }),
+        endBtn,
+      ],
+      initialFocus: () => endBtn,
       onClose: () => resolve(result),
     });
   });
@@ -255,7 +302,7 @@ export function announceCard({ quiz, now, pendingPapers, onAction }) {
     ANNOUNCED: () => S.ANNOUNCE_CARD_ANNOUNCED,
   }[kind]();
   const label =
-    kind === "ANNOUNCED" ? S.ANNOUNCE_MENU_HIDE : kind === "MANUAL_NOT_ANNOUNCED" ? S.ANNOUNCE_MENU_ANNOUNCE : S.ANNOUNCE_CARD_END_NOW;
+    kind === "ANNOUNCED" ? S.ANNOUNCE_MENU_HIDE : kind === "MANUAL_NOT_ANNOUNCED" ? S.ANNOUNCE_MENU_ANNOUNCE : S.ANNOUNCE_MENU_END_OR_ANNOUNCE;
   return el("section", { class: "card card-pad stack-sm announce-card" }, [
     el("h3", { class: "chart-title", text: S.ANNOUNCE_CARD_TITLE }),
     el("p", { class: "muted", text: line }),
