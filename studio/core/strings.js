@@ -1549,9 +1549,11 @@ export const S = {
   GX_SUBMIT: "Submit",
   GX_SUBMIT_TITLE_ONE: "Submit {n} mark?",
   GX_SUBMIT_TITLE_MANY: "Submit {n} marks?",
-  GX_SUBMIT_BODY_ONE: "{n} participant will get a notification that their marks were updated. Are you sure you want to submit?",
-  GX_SUBMIT_BODY_MANY: "{n} participants will get a notification that their marks were updated. Are you sure you want to submit?",
-  GX_SUBMIT_BADGE: "Participants are notified",
+  // Marks submitted while results are hidden (Show Score off, not announced) notify nobody — the app's
+  // gradedNotificationText stays silent until results come out — so this can't promise a notification.
+  GX_SUBMIT_BODY_ONE: "{n} participant's marks will be submitted. They're notified if they can see their result now; if results are still hidden, they'll hear when results come out. Are you sure you want to submit?",
+  GX_SUBMIT_BODY_MANY: "{n} participants' marks will be submitted. They're notified if they can see their result now; if results are still hidden, they'll hear when results come out. Are you sure you want to submit?",
+  GX_SUBMIT_BADGE: "Marks go to participants",
   GX_SUBMITTED_ONE: "Marks sent to {n} participant",
   GX_SUBMITTED_MANY: "Marks sent to {n} participants",
   GX_SUBMIT_FAILED_ONE: "Couldn't send marks for {n} participant. They're kept as a draft — check your connection and submit again.",
