@@ -6,8 +6,10 @@
 //   • rating is optional (0 = a plain suggestion), category and a message of 5+ characters are required;
 //   • one submission per 24h (the server's policy is the real gate; the page shows the time left);
 //   • below the form: your past feedback with the team's replies, filterable by rating.
+//   • ?category=FEATURE_REQUEST (any FEEDBACK_CATEGORIES value) starts the form on that category —
+//     the public site's "Request a feature" button links here that way.
 
-import { cooldownRemaining, filterHistory, formatCooldown, listMyFeedback, submitFeedback, validateFeedback, FeedbackCooldownError } from "../core/feedback.js";
+import { cooldownRemaining, filterHistory, formatCooldown, listMyFeedback, submitFeedback, validateFeedback, FeedbackCooldownError, FEEDBACK_CATEGORIES } from "../core/feedback.js";
 import { requireUser } from "../core/auth.js";
 import { fetchLimits } from "../core/limits.js";
 import { route } from "../core/paths.js";
@@ -18,13 +20,14 @@ import { mountShell } from "../ui/shell.js";
 import * as V from "./feedback-views.js";
 
 const root = document.getElementById("root");
+const startCategory = new URLSearchParams(location.search).get("category");
 
 const state = {
   user: null,
   history: [],
   maxChars: 500,
   rating: 0,
-  category: null,
+  category: FEEDBACK_CATEGORIES.includes(startCategory) ? startCategory : null,
   message: "",
   /** null | "category" | "message" | "send" — what the form is complaining about. */
   error: null,

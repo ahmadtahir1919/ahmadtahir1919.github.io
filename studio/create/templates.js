@@ -42,8 +42,8 @@ const BUILDERS = {
     q(POLL, "How are you feeling about today's topic?", {
       options: ["Confident", "Mostly fine", "A bit lost", "Totally lost"],
     }),
-    q(POLL, "How was the pace of today's lesson?", { options: ["Too slow", "Just right", "Too fast"] }),
-    q(POLL, "What would help you most next lesson?", {
+    q(POLL, "How was the pace of today's session?", { options: ["Too slow", "Just right", "Too fast"] }),
+    q(POLL, "What would help you most next time?", {
       options: ["More examples", "More practice time", "Group work", "A quick recap"],
     }),
   ],
