@@ -581,7 +581,7 @@ function renderGoogleSignIn(slot) {
   document.head.appendChild(script);
 }
 
-/** "Beta · Test mode" strip shown at the top of every studio page and on the sign-in card. */
+/** "Beta · Quizzes you make here also appear in your Quizoma app." strip shown at the top of every studio page and on the sign-in card. */
 export function betaBar() {
   return el("div", { class: "beta-bar", role: "note" }, [el("b", { text: S.BETA }), S.BETA_SEP, S.BETA_NOTE]);
 }

@@ -3,8 +3,9 @@
   https://quizoma.com/sitemap.xml
 
   Hand-maintained: the site has no build step, so adding a page means adding a
-  <url> here AND a line in deploy/pages.list. Never list a web-v2 page — that
-  folder is the hidden /studio/ beta, noindex and unlinked (see DEPLOY.md).
+  <url> here AND a line in deploy/pages.list. Never list a web-v2 page — /studio/ is the
+  signed-in app (public beta), noindex on purpose; its indexable page is
+  /online-quiz-maker/.
 
   Update <lastmod> when a page's content genuinely changes; leaving it stale is
   better than bumping every date on every deploy, which teaches crawlers to
@@ -14,21 +15,28 @@
 
   <url>
     <loc>https://quizoma.com/</loc>
-    <lastmod>2026-09-27</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>
   </url>
 
   <url>
+    <loc>https://quizoma.com/online-quiz-maker/</loc>
+    <lastmod>2026-10-09</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
     <loc>https://quizoma.com/how-it-works/</loc>
-    <lastmod>2026-09-24</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
 
   <url>
     <loc>https://quizoma.com/features/</loc>
-    <lastmod>2026-09-24</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -42,28 +50,28 @@
 
   <url>
     <loc>https://quizoma.com/for-teachers/</loc>
-    <lastmod>2026-09-24</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
 
   <url>
     <loc>https://quizoma.com/why-quizoma/</loc>
-    <lastmod>2026-09-24</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
     <loc>https://quizoma.com/faq/</loc>
-    <lastmod>2026-09-24</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
     <loc>https://quizoma.com/download/</loc>
-    <lastmod>2026-09-24</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -92,7 +100,7 @@
 
   <url>
     <loc>https://quizoma.com/blog/create-an-online-mcq-test-free/</loc>
-    <lastmod>2026-09-24</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.6</priority>
   </url>

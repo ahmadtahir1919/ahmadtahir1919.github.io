@@ -26,8 +26,8 @@
 <link rel="icon" href="/favicon.png" sizes="48x48" type="image/png">
 <!-- Cookie consent gate — must load before the inline analytics script below
      holds off PostHog until the visitor accepts. Shared across home/take/join. -->
-<script src="/cookie-consent.js?v=161" defer></script>
-<link rel="stylesheet" href="/brand.css?v=161">
+<script src="/cookie-consent.js?v=162" defer></script>
+<link rel="stylesheet" href="/brand.css?v=162">
 <style>
   body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:var(--brand); color:#fff; margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; box-sizing:border-box; }
   .card { background:#fff; color:#111; border-radius:20px; padding:32px 28px; max-width:360px; width:100%; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.25); }
@@ -51,12 +51,12 @@
        "get the app, here's your code for after." -->
   <div class="card">
     <h1>You're invited to a quiz! 🎉</h1>
-    <p>Quizoma is coming to Google Play in October 2026. Until then, take the quiz right in your browser with this code:</p>
+    <p>The Quizoma app arrives on Google Play on 1 November 2026. Until then, take the quiz right in your browser with this code:</p>
     <div class="code" id="code">------</div>
     <!-- PLAY-CTA (join fallback). At launch, restore the <a> so the install
          referrer below is applied again:
     <a class="cta" id="playStoreLink" href="https://play.google.com/store/apps/details?id=com.craftbytestudio.quizoma">📲 Get Quizoma on Google Play</a> -->
-    <span class="cta is-soon" id="playStoreLink">📲 Coming soon on Google Play</span>
+    <span class="cta is-soon" id="playStoreLink">📲 On Google Play from 1 Nov 2026</span>
     <div class="divider">or</div>
     <a class="cta" id="takeInBrowserLink" href="/take/" target="_blank" rel="noopener">🌐 Take it in your browser</a>
     <p class="hint" style="margin-top:12px">No app needed — the browser works on any phone or laptop.</p>
@@ -120,6 +120,20 @@
           window.Analytics = { track: noop, screen: noop };
         });
       }
+    })();
+
+    // From the 1 November 2026 launch (Pakistan midnight) the inert "On Google Play from…"
+    // span becomes the real Play link, with no redeploy — same date as /script.js. Runs before
+    // the click tracking and showCode() below, so both see the <a>.
+    (function () {
+      var soon = document.getElementById('playStoreLink');
+      if (!soon || soon.tagName === 'A' || Date.now() < Date.parse('2026-11-01T00:00:00+05:00')) return;
+      var a = document.createElement('a');
+      a.className = 'cta';
+      a.id = 'playStoreLink';
+      a.href = 'https://play.google.com/store/apps/details?id=com.craftbytestudio.quizoma';
+      a.textContent = '📲 Get Quizoma on Google Play';
+      soon.replaceWith(a);
     })();
 
     // Both CTAs report through window.Analytics, which stays a no-op stub until the

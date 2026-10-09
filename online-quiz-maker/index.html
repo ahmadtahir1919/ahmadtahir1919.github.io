@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Online Quiz Maker — Build &amp; Grade Quizzes in Your Browser | Quizoma</title>
+<meta name="description" content="Quizoma Studio is a free online quiz maker: build MCQ quizzes and tests in your browser, share a code or QR, grade written answers fast and see results. No ads.">
+<link rel="canonical" href="https://quizoma.com/online-quiz-maker/">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="theme-color" content="#0f766e">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Quizoma">
+<meta property="og:title" content="Quizoma Studio — Free Online Quiz Maker">
+<meta property="og:description" content="Build, share and grade quizzes in your browser. Same quizzes as the Quizoma Android app. Free, no ads.">
+<meta property="og:url" content="https://quizoma.com/online-quiz-maker/">
+<meta property="og:image" content="https://quizoma.com/assets/web-studio-dashboard-1280.webp">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="800">
+<meta property="og:image:alt" content="The Quizoma Studio dashboard in a browser.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Quizoma Studio — Free Online Quiz Maker">
+<meta name="twitter:description" content="Build, share and grade quizzes in your browser. Same quizzes as the Quizoma Android app. Free, no ads.">
+<meta name="twitter:image" content="https://quizoma.com/assets/web-studio-dashboard-1280.webp">
+<link rel="icon" href="/favicon.png" sizes="48x48" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<link rel="preload" href="/fonts/plus-jakarta-sans-latin-var.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" as="image" href="/assets/web-studio-dashboard-1280.webp" type="image/webp" fetchpriority="high">
+<link rel="stylesheet" href="/brand.css?v=162">
+<link rel="stylesheet" href="/styles.css?v=162">
+<link rel="stylesheet" href="/page.css?v=162">
+<!-- BreadcrumbList + WebApplication + FAQPage. The FAQ answers mirror the visible FAQ at the
+     bottom of this page word for word — edit both together. -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://quizoma.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Online Quiz Maker", "item": "https://quizoma.com/online-quiz-maker/" }
+      ]
+    },
+    {
+      "@type": "WebApplication",
+      "@id": "https://quizoma.com/#studio",
+      "name": "Quizoma Studio",
+      "alternateName": "Quizoma online quiz maker",
+      "applicationCategory": "EducationalApplication",
+      "operatingSystem": "Any modern web browser",
+      "browserRequirements": "Requires JavaScript. Sign in with Google.",
+      "url": "https://quizoma.com/online-quiz-maker/",
+      "description": "A free online quiz maker: build quizzes in the browser, import questions from a file, keep a Question Bank, mark written answers quickly and see results — the same quizzes as the Quizoma Android app.",
+      "image": "https://quizoma.com/assets/web-studio-dashboard-1280.webp",
+      "screenshot": [
+        "https://quizoma.com/assets/web-studio-dashboard-1280.webp",
+        "https://quizoma.com/assets/web-studio-builder-1200.webp",
+        "https://quizoma.com/assets/web-studio-grading-1200.webp",
+        "https://quizoma.com/assets/web-studio-results-1200.webp"
+      ],
+      "featureList": [
+        "Six question types: single choice, multiple correct, true/false, written, fill in the blanks, polls",
+        "Import questions from .txt or .csv, or paste them",
+        "Question Bank",
+        "Share with a 6-character code or QR code",
+        "Typo-tolerant grading of written answers",
+        "Rapid Grade and grade-by-question with keyboard shortcuts",
+        "Choose when results are announced",
+        "Results charts and CSV export"
+      ],
+      "publisher": { "@type": "Organization", "name": "CraftByte Studio", "url": "https://quizoma.com/" },
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Is Quizoma Studio free?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes. There is no paid tier, no trial and no ads. You sign in with your Google account and start building." }
+        },
+        {
+          "@type": "Question",
+          "name": "Do I need the Android app?",
+          "acceptedAnswer": { "@type": "Answer", "text": "No. You can build, share and grade entirely in the browser, and participants can take the quiz on any phone or computer. If you use the app too, it shows the same quizzes, results and marks." }
+        },
+        {
+          "@type": "Question",
+          "name": "How do participants take my quiz?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Share the 6-character code, the link or the QR code. Participants open it in the Quizoma app or at quizoma.com/take in any browser and sign in with Google — there is nothing to install." }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I mark written answers myself?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes. Written answers are graded with typo tolerance by default, and you can override any mark. Turn on manual marking and every answer waits for you, with Rapid Grade, grade by question and per-person marking to get through them fast." }
+        },
+        {
+          "@type": "Question",
+          "name": "What does Beta mean?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Studio is new, so we are still polishing it. Your quizzes and results are real and are saved to the same account as the Android app. If something looks wrong, use Send feedback inside Studio." }
+        }
+      ]
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<a class="skip-to-content" href="#main">Skip to content</a>
+<script src="/cookie-consent.js?v=162" defer></script>
+<script src="/analytics.js?v=162" defer></script>
+
+<header class="site-header" id="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <a href="/" class="brand">
+        <span class="brand-mark"><img src="/icon-72.webp" alt="" class="brand-icon" width="36" height="36"></span>
+        <span class="brand-name">Quizoma</span>
+      </a>
+      <nav class="main-nav" id="main-nav">
+        <a href="/online-quiz-maker/" class="nav-studio" aria-current="page">Studio <span class="nav-beta">Beta</span></a>
+        <a href="/how-it-works/">How It Works</a>
+        <a href="/features/">Features</a>
+        <a href="/smart-grading/">Smart Grading</a>
+        <a href="/for-teachers/">For Teachers</a>
+        <a href="/faq/">FAQ</a>
+      </nav>
+    </div>
+    <div class="header-right">
+      <a href="/studio/" class="btn btn-primary btn-sm" data-analytics="home_studio_clicked" data-analytics-props='{"location":"oqm_header"}'>Open Studio</a>
+      <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false" aria-controls="mobile-nav">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+  <nav class="mobile-nav" id="mobile-nav">
+    <a href="/online-quiz-maker/" class="nav-studio">Studio <span class="nav-beta">Beta</span></a>
+    <a href="/how-it-works/">How It Works</a>
+    <a href="/features/">Features</a>
+    <a href="/smart-grading/">Smart Grading</a>
+    <a href="/for-teachers/">For Teachers</a>
+    <a href="/faq/">FAQ</a>
+    <a href="/take/" class="btn btn-cream btn-sm" target="_blank" rel="noopener">Join Quiz</a>
+  </nav>
+</header>
+
+<main id="main">
+
+  <!-- ── Hero ── -->
+  <section class="oqm-hero">
+    <div class="studio-glow" aria-hidden="true"></div>
+    <div class="container">
+      <nav class="breadcrumb oqm-crumb" aria-label="Breadcrumb">
+        <a href="/">Home</a><span class="sep-slash">/</span><span aria-current="page">Online Quiz Maker</span>
+      </nav>
+      <div class="oqm-hero-copy">
+        <span class="eyebrow-new"><span class="eyebrow-dot"></span>Quizoma Studio · Beta</span>
+        <h1 class="display-1">The online quiz maker that <span class="grad-text">grades like a teacher</span>.</h1>
+        <p class="lead lead-lg">Build in your browser, share a code, and mark written answers in seconds — typos and all.</p>
+        <div class="cta-row cta-center">
+          <a href="/studio/" class="btn btn-primary btn-lg btn-hero-cta" data-analytics="home_studio_clicked" data-analytics-props='{"location":"oqm_hero"}'>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            <span>Open Quizoma Studio</span>
+          </a>
+        </div>
+        <ul class="oqm-ticks" aria-label="At a glance">
+          <li>Free forever</li><li>Sign in with Google</li><li>No ads</li><li>Works with the Android app</li>
+        </ul>
+      </div>
+
+      <div class="device-stage oqm-stage">
+        <figure class="browser-frame">
+          <div class="browser-bar" aria-hidden="true">
+            <span class="bdot"></span><span class="bdot"></span><span class="bdot"></span>
+            <span class="browser-url">quizoma.com/studio</span>
+          </div>
+          <img src="/assets/web-studio-dashboard-1280.webp"
+               srcset="/assets/web-studio-dashboard-1280.webp 1280w, /assets/web-studio-dashboard-2400.webp 2400w"
+               sizes="(max-width: 1100px) 92vw, 1040px" width="1280" height="800" fetchpriority="high"
+               alt="Quizoma Studio dashboard: 7 answers waiting for marks, quiz counts, participants reached, average score, and cards for live, scheduled, ended and draft quizzes.">
+        </figure>
+        <figure class="phone-frame">
+          <img src="/assets/web-phone-result-390.webp"
+               srcset="/assets/web-phone-result-390.webp 390w, /assets/web-phone-result-780.webp 780w"
+               sizes="210px" width="390" height="844" loading="lazy" decoding="async"
+               alt="A participant's result on a phone: 3 out of 3, 100%, with Summary, Review answers and a PDF result.">
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Three steps ── -->
+  <section class="section oqm-steps-wrap">
+    <div class="container">
+      <ol class="oqm-steps">
+        <li class="step-card-w">
+          <span class="step-num">1</span>
+          <h2>Build</h2>
+          <p>Write, paste or import questions. Six types, one quiz.</p>
+        </li>
+        <li class="step-card-w">
+          <span class="step-num">2</span>
+          <h2>Share</h2>
+          <p>A 6-character code, a link or a QR. Nothing to install.</p>
+        </li>
+        <li class="step-card-w">
+          <span class="step-num">3</span>
+          <h2>Grade &amp; announce</h2>
+          <p>Auto-graded, typo-tolerant, then released when you say so.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ── The tour: one idea, one screenshot ── -->
+  <section class="section oqm-tour">
+    <div class="container">
+
+      <article class="tour-row" id="build">
+        <div class="tour-copy">
+          <span class="bento-kicker">Build</span>
+          <h2>A whole quiz before your tea gets cold.</h2>
+          <p>Single choice, multiple correct, true/false, written, fill in the blanks and polls — mixed freely. Start from a template, then fly through with keyboard shortcuts.</p>
+          <ul class="tour-points">
+            <li>Timers, points, hints and explanations per question</li>
+            <li>Test, Practice or Speed drill in one click</li>
+            <li>Schedule a start and end time</li>
+          </ul>
+        </div>
+        <figure class="tour-shot">
+          <img src="/assets/web-studio-builder-1200.webp" width="1200" height="750" loading="lazy" decoding="async" alt="The Studio quiz builder: a question list, the question editor with 1945 marked correct, and Quiz settings with Test, Practice and Speed drill.">
+        </figure>
+      </article>
+
+      <article class="tour-row tour-flip" id="bank">
+        <div class="tour-copy">
+          <span class="bento-kicker">Import &amp; reuse</span>
+          <h2>Last term’s questions, in 10 seconds.</h2>
+          <p>Paste text or drop a .txt / .csv file and get a ready quiz. Keep your best questions in a Question Bank and drop them into any quiz.</p>
+          <ul class="tour-points">
+            <li>A starter template to download</li>
+            <li>Duplicates skipped automatically</li>
+            <li>Shared with the app — save once, use anywhere</li>
+          </ul>
+        </div>
+        <figure class="tour-shot">
+          <img src="/assets/web-studio-bank-1200.webp" width="1200" height="750" loading="lazy" decoding="async" alt="The Question Bank: filters by question type and saved questions with their answers and a Use in Quiz button.">
+        </figure>
+      </article>
+
+      <article class="tour-row" id="grade">
+        <div class="tour-copy">
+          <span class="bento-kicker">Grade</span>
+          <h2>Thirty papers. A few minutes.</h2>
+          <p>Identical answers are grouped into one card, so one key marks them all. “carbon dioxde” still gets the mark — you only judge what really needs a human.</p>
+          <ul class="tour-points">
+            <li>Rapid Grade, by question, or one person at a time</li>
+            <li>Notes and quick comments on any answer</li>
+            <li>Marks stay drafts until you press Submit</li>
+          </ul>
+        </div>
+        <figure class="tour-shot">
+          <img src="/assets/web-studio-grading-1200.webp" width="1200" height="750" loading="lazy" decoding="async" alt="Rapid Grade in Studio: 8 participants answered carbon dioxide, grouped into one card with Zero, Half and Full buttons and keyboard shortcuts.">
+        </figure>
+      </article>
+
+      <article class="tour-row tour-flip" id="results">
+        <div class="tour-copy">
+          <span class="bento-kicker">Results</span>
+          <h2>Know who needs help — before the next lesson.</h2>
+          <p>Score spread, accuracy per question and who took it where. Download PDF, Excel or CSV reports, and announce results when you are ready — not a second before.</p>
+          <ul class="tour-points">
+            <li>Results when the quiz ends, or when you announce</li>
+            <li>A warning before announcing while it is still open</li>
+            <li>Urdu text exports correctly to Excel</li>
+          </ul>
+        </div>
+        <figure class="tour-shot">
+          <img src="/assets/web-studio-results-1200.webp" width="1200" height="750" loading="lazy" decoding="async" alt="Results for a Science quiz: participants submitted, average score, average time, answers waiting to mark, a score distribution chart and accuracy by question.">
+        </figure>
+      </article>
+    </div>
+  </section>
+
+  <!-- ── Works with the app ── -->
+  <section class="section section-alt">
+    <div class="container">
+      <div class="sync-band">
+        <div class="sync-copy">
+          <span class="bento-kicker">One account, every device</span>
+          <h2 class="display-3">Make it on a laptop. Take it on a phone. Mark it anywhere.</h2>
+          <p class="lead">Studio and the Android app share the same quizzes, Question Bank, marks and results. Participants answer in the app or at <a href="/take/">quizoma.com/take</a>.</p>
+          <!-- PLAY-CTA (online-quiz-maker): becomes the Google Play badge on 1 Nov 2026 (script.js). -->
+          <div class="launch-chip" data-play-cta data-play-location="online_quiz_maker">
+            <img src="/assets/hero_icon_05.svg" alt="" width="13" height="11">
+            <span>Android app on Google Play · <strong>1 Nov 2026</strong></span>
+            <span class="launch-count" data-launch-count hidden>In 23 days</span>
+          </div>
+        </div>
+        <div class="sync-phones" aria-hidden="true">
+          <img src="/assets/web-phone-question-390.webp" width="390" height="844" loading="lazy" decoding="async" alt="">
+          <img src="/assets/web-phone-result-390.webp" width="390" height="844" loading="lazy" decoding="async" alt="">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Why Studio ── -->
+  <section class="section">
+    <div class="container">
+      <div class="section-head center narrow">
+        <h2 class="display-3">What you don’t get: ads, paywalls, a credit card form.</h2>
+      </div>
+      <div class="compare-table-wrap">
+        <table class="compare-table oqm-compare">
+          <thead>
+            <tr><th scope="col"></th><th scope="col">Quizoma Studio</th><th scope="col">Typical quiz tools</th></tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row">Price</th><td>Free, every feature</td><td>Free tier, paid plans</td></tr>
+            <tr><th scope="row">Ads</th><td>None</td><td>Often</td></tr>
+            <tr><th scope="row">Written answers</th><td>Typo-tolerant, or marked by you</td><td>Usually exact match</td></tr>
+            <tr><th scope="row">Marking many papers</th><td>Identical answers grouped</td><td>Usually one at a time</td></tr>
+            <tr><th scope="row">Phone app</th><td>Same quizzes, synced</td><td>Varies</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FAQ (mirrors the FAQPage JSON-LD above) ── -->
+  <section class="section section-alt" id="faq">
+    <div class="container">
+      <div class="section-head center">
+        <h2 class="h2">Questions</h2>
+      </div>
+      <div class="faq-list">
+        <div class="faq-item">
+          <button class="faq-question" type="button" aria-expanded="false"><span>Is Quizoma Studio free?</span><span class="faq-caret" aria-hidden="true">＋</span></button>
+          <div class="faq-answer"><p>Yes. There is no paid tier, no trial and no ads. You sign in with your Google account and start building.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" type="button" aria-expanded="false"><span>Do I need the Android app?</span><span class="faq-caret" aria-hidden="true">＋</span></button>
+          <div class="faq-answer"><p>No. You can build, share and grade entirely in the browser, and participants can take the quiz on any phone or computer. If you use the app too, it shows the same quizzes, results and marks.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" type="button" aria-expanded="false"><span>How do participants take my quiz?</span><span class="faq-caret" aria-hidden="true">＋</span></button>
+          <div class="faq-answer"><p>Share the 6-character code, the link or the QR code. Participants open it in the Quizoma app or at quizoma.com/take in any browser and sign in with Google — there is nothing to install.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" type="button" aria-expanded="false"><span>Can I mark written answers myself?</span><span class="faq-caret" aria-hidden="true">＋</span></button>
+          <div class="faq-answer"><p>Yes. Written answers are graded with typo tolerance by default, and you can override any mark. Turn on manual marking and every answer waits for you, with Rapid Grade, grade by question and per-person marking to get through them fast.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" type="button" aria-expanded="false"><span>What does Beta mean?</span><span class="faq-caret" aria-hidden="true">＋</span></button>
+          <div class="faq-answer"><p>Studio is new, so we are still polishing it. Your quizzes and results are real and are saved to the same account as the Android app. If something looks wrong, use Send feedback inside Studio.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Closing ── -->
+  <section class="section">
+    <div class="container">
+      <div class="oqm-final">
+        <h2 class="display-3">Your next quiz is two minutes away.</h2>
+        <div class="cta-row cta-center">
+          <a href="/studio/" class="btn btn-primary btn-lg" data-analytics="home_studio_clicked" data-analytics-props='{"location":"oqm_final"}'>Open Quizoma Studio — Free</a>
+          <a href="/features/" class="btn-link">All features <span aria-hidden="true">→</span></a>
+        </div>
+      </div>
+      <div class="next-links oqm-next">
+        <a class="next-link" href="/smart-grading/"><strong>How the grading works</strong><span>Five matching modes, with worked examples.</span></a>
+        <a class="next-link" href="/how-it-works/"><strong>How it works</strong><span>Create, invite, answer, review.</span></a>
+        <a class="next-link" href="/download/"><strong>The Android app</strong><span>On Google Play from 1 November 2026.</span></a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="/" class="brand">
+          <span class="brand-mark"><img src="/icon-72.webp" alt="" class="brand-icon" width="36" height="36"></span>
+          <span class="brand-name">Quizoma</span>
+        </a>
+        <p>A free classroom quiz and test maker with typo-tolerant grading — the whole quiz marked automatically, or switched to manual marking so you score every answer yourself.</p>
+      </div>
+      <div class="footer-col">
+        <h2>Product</h2>
+        <a href="/online-quiz-maker/">Online Quiz Maker</a>
+        <a href="/studio/">Open Quizoma Studio</a>
+        <a href="/how-it-works/">How It Works</a>
+        <a href="/features/">Features</a>
+        <a href="/smart-grading/">Smart Grading</a>
+        <a href="/take/" target="_blank" rel="noopener">Join a Quiz</a>
+        <a href="/download/">Download the App</a>
+      </div>
+      <div class="footer-col">
+        <h2>Resources</h2>
+        <a href="/for-teachers/">For Teachers</a>
+        <a href="/why-quizoma/">Why Quizoma</a>
+        <a href="/faq/">FAQ</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div class="footer-col">
+        <h2>Legal</h2>
+        <a href="/privacy/">Privacy Policy</a>
+        <a href="/terms/">Terms of Service</a>
+        <a href="/delete-account/">Delete My Account</a>
+        <a href="/contact/">Contact</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2026 Quizoma. Built for thoughtful classrooms.</p>
+      <div class="footer-links">
+        <a href="/privacy/">Privacy Policy</a>
+        <a href="/terms/">Terms of Service</a>
+        <button type="button" id="cookie-settings-link">Cookie Settings</button>
+      </div>
+    </div>
+  </div>
+</footer>
+<script src="/script.js?v=162" defer></script>
+</body>
+</html>
